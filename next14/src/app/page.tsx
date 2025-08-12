@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -50,6 +51,9 @@ export default function Home() {
             Read our docs
           </a>
         </div>
+        <Link href="/legacy" className="text-blue-600 underline text-sm">
+          Open legacy app
+        </Link>
       </main>
       <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
         <a
