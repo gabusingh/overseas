@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import Link from "next/link";
-import { getJobListForSearch } from "../../../..//legacy/services/job.service";
+import { getJobListForSearch } from "../../../services/job.service";
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Array<{ id?: string | number; title?: string; job_title?: string; location?: string; country?: string }>>([]);
@@ -13,7 +13,7 @@ export default function JobsPage() {
     (async () => {
       try {
         const data = await getJobListForSearch({});
-        if (mounted) setJobs(data?.jobs ?? data ?? []);
+        if (mounted) setJobs(Array.isArray(data) ? data : (data?.jobs ?? []));
       } catch (e) {
         console.error(e);
       } finally {

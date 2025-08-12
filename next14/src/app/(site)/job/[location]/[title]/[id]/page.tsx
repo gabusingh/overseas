@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../../../components/ui/card";
-import { getJobById } from "../../../../../../../legacy/services/job.service";
+import { getJobById } from "../../../../../../services/job.service";
 
 export default function JobDetailsPage() {
   const params = useParams<{ id: string; title: string; location: string }>();

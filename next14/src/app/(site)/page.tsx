@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { motion } from "framer-motion";
-import { getHomeData } from "../../../legacy/services/info.service";
+import { getHomeData } from "../../services/info.service";
 
 type Country = { name?: string } | string;
 interface HomeData {
