@@ -91,7 +91,7 @@ export default function AppliedJobsPage() {
               <i className="fa fa-briefcase text-6xl text-gray-400 mb-6"></i>
               <h3 className="text-xl font-semibold text-gray-700 mb-4">No Applications Yet</h3>
               <p className="text-gray-500 mb-6">
-                You haven't applied to any jobs yet. Start exploring opportunities to kickstart your career!
+                You haven&apos;t applied to any jobs yet. Start exploring opportunities to kickstart your career!
               </p>
               <Button asChild className="downloadButton">
                 <Link href="/jobs">Find Jobs</Link>

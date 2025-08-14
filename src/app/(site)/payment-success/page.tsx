@@ -262,9 +262,4 @@ export default function PaymentSuccess() {
   );
 }
 
-// Metadata for SEO
-export const metadata = {
-  title: 'Payment Successful - Overseas.ai',
-  description: 'Your payment has been processed successfully. Thank you for choosing Overseas.ai.',
-  robots: 'noindex, nofollow',
-};
+// Note: Metadata should be handled in layout.tsx for client components

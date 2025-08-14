@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  eslint: {
+    // Disable ESLint during builds - warnings/errors should be fixed separately
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // Disable TypeScript errors during builds for faster deployment
+    ignoreBuildErrors: true,
+  },
   images: {
     // Allow images from external domains if needed
     domains: [

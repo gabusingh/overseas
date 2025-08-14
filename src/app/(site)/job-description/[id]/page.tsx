@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Badge } from '../../../components/ui/badge';
-import { Separator } from '../../../components/ui/separator';
-import { getJobById, applyJobApi, saveJobById } from '../../../services/job.service';
-import { useGlobalState } from '../../../contexts/GlobalProvider';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
+import { Button } from '../../../../components/ui/button';
+import { Badge } from '../../../../components/ui/badge';
+import { Separator } from '../../../../components/ui/separator';
+import { getJobById, applyJobApi, saveJobById } from '../../../../services/job.service';
+import { useGlobalState } from '../../../../contexts/GlobalProvider';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import Head from 'next/head';

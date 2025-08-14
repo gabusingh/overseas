@@ -295,9 +295,4 @@ export default function PaymentFailed() {
   );
 }
 
-// Metadata for SEO
-export const metadata = {
-  title: 'Payment Failed - Overseas.ai',
-  description: 'Payment could not be processed. Try again or contact support for assistance.',
-  robots: 'noindex, nofollow',
-};
+// Note: Metadata should be handled in layout.tsx for client components
