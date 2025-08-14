@@ -262,4 +262,4 @@ export default function PaymentSuccess() {
   );
 }
 
-// Note: Metadata should be handled in layout.tsx for client components
+

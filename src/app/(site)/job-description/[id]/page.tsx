@@ -8,6 +8,7 @@ import { Badge } from '../../../../components/ui/badge';
 import { Separator } from '../../../../components/ui/separator';
 import { getJobById, applyJobApi, saveJobById } from '../../../../services/job.service';
 import { useGlobalState } from '../../../../contexts/GlobalProvider';
+import { getStoredToken } from '../../../../lib/auth';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import Head from 'next/head';
@@ -111,8 +112,9 @@ export default function JobDescriptionPage() {
       setLoading(true);
       const response = await getJobById(params.id as string);
       console.log('Job Details Response:', response);
-      setJobData(response?.data);
-      setIsWishListed(response?.data?.isWishListed || false);
+      // Cast the response to JobData type since the API response structure matches
+      setJobData(response?.data as JobData);
+      setIsWishListed((response?.data as JobData)?.isWishListed || false);
     } catch (error) {
       console.error('Error fetching job details:', error);
       toast.error('Failed to load job details. Please try again.');
@@ -122,7 +124,8 @@ export default function JobDescriptionPage() {
   };
 
   const handleApplyJob = async () => {
-    if (!globalState?.user?.user?.access_token) {
+    const accessToken = getStoredToken();
+    if (!accessToken) {
       toast.warning('Please login to apply for this job');
       router.push('/login');
       return;
@@ -135,7 +138,7 @@ export default function JobDescriptionPage() {
       const formData = new FormData();
       formData.append('jobId', jobData.id.toString());
       
-      const response = await applyJobApi(formData, globalState.user.user.access_token);
+      const response = await applyJobApi(formData, accessToken);
       
       if (response?.data?.success) {
         toast.success('Job application submitted successfully!');
@@ -144,11 +147,12 @@ export default function JobDescriptionPage() {
       } else {
         toast.error(response?.data?.message || 'Failed to submit application');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error applying for job:', error);
-      if (error?.response?.status === 422) {
+      const errorObj = error as { response?: { status?: number } };
+      if (errorObj?.response?.status === 422) {
         toast.error('You have already applied for this job');
-      } else if (error?.response?.status === 401) {
+      } else if (errorObj?.response?.status === 401) {
         toast.error('Please login again to apply');
         router.push('/login');
       } else {
@@ -160,7 +164,8 @@ export default function JobDescriptionPage() {
   };
 
   const handleSaveJob = async () => {
-    if (!globalState?.user?.user?.access_token) {
+    const accessToken = getStoredToken();
+    if (!accessToken) {
       toast.warning('Please login to save jobs');
       router.push('/login');
       return;
@@ -170,7 +175,7 @@ export default function JobDescriptionPage() {
 
     try {
       setSaving(true);
-      const response = await saveJobById(jobData.id, globalState.user.user.access_token);
+      const response = await saveJobById(jobData.id, accessToken);
       
       if (response?.data?.success) {
         setIsWishListed(!isWishListed);
