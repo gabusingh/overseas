@@ -6,7 +6,7 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { toast } from "sonner";
 import Link from "next/link";
-import { appliedJobList } from "../../../services/job.service";
+import { appliedJobList } from "../../services/job.service";
 
 interface AppliedJob {
   id: number;
