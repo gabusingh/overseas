@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="350" viewBox="0 0 200 350">
+      <rect width="200" height="350" fill="#343a40" rx="20"/>
+      <rect x="20" y="40" width="160" height="270" fill="#f8f9fa" rx="10"/>
+      <circle cx="100" cy="30" r="5" fill="#6c757d"/>
+      <rect x="80" y="320" width="40" height="20" fill="#6c757d" rx="10"/>
+      <text x="100" y="180" text-anchor="middle" font-family="Arial" font-size="12" fill="#6c757d">Mobile App</text>
+    </svg>

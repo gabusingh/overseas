@@ -15,9 +15,9 @@ interface LoginResponse {
 }
 
 
-export const loginUsingPassword = async (formData: FormData): Promise<LoginResponse> => {
+export const loginUsingPassword = async (params: { empPhone: string; password: string } | FormData): Promise<LoginResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "passsword-login", formData);
+    const response = await axios.post(BASE_URL + "person-login-using-password", params);
     return response;
   } catch (error) {
     console.error('Error fetching data:', error);
@@ -39,9 +39,9 @@ export const getSummarizedVideo = async (accessToken: string) => {
   }
 };
 
-export const loginUsingOtp = async (formData: FormData) => {
+export const loginUsingOtp = async (params: { empPhone: string } | FormData) => {
   try {
-    const response = await axios.post(BASE_URL + "otp-request", formData);
+    const response = await axios.post(BASE_URL + "person-login-using-otp", params);
     return response;
   } catch (error) {
     console.error('Error fetching data:', error);
@@ -49,9 +49,9 @@ export const loginUsingOtp = async (formData: FormData) => {
   }
 };
 
-export const verifyOtpForLogin = async (formData: FormData): Promise<LoginResponse> => {
+export const verifyOtpForLogin = async (params: { empPhone: string; otp: string } | FormData): Promise<LoginResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "otp-login", formData);
+    const response = await axios.post(BASE_URL + "person-login-using-otp", params);
     return response;
   } catch (error) {
     console.error('Error fetching data:', error);
@@ -207,6 +207,486 @@ export const getProfileStrength = async (accessToken: string) => {
     return response;
   } catch (error) {
     console.error('Error fetching data:', error);
+    throw error;
+  }
+};
+
+export const getUserDashboard = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "get-user-dashboard", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user dashboard:', error);
+    throw error;
+  }
+};
+
+export const getEmpData = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "get-emp-data", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching employee data:', error);
+    throw error;
+  }
+};
+
+export const getEmpDataForEdit = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "get-emp-data-for-edit", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching employee data for edit:', error);
+    throw error;
+  }
+};
+
+export const profileCompleteStep2 = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "profile-complete-step2", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error completing profile step 2:', error);
+    throw error;
+  }
+};
+
+export const profileCompleteStep3 = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "profile-complete-step3", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error completing profile step 3:', error);
+    throw error;
+  }
+};
+
+export const passportUpload = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "passport-upload", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error uploading passport:', error);
+    throw error;
+  }
+};
+
+export const passportView = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "passport-view", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching passport:', error);
+    throw error;
+  }
+};
+
+export const passportEdit = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "passport-edit", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error editing passport:', error);
+    throw error;
+  }
+};
+
+export const experienceList = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "experience-list", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching experience list:', error);
+    throw error;
+  }
+};
+
+export const viewExperience = async (id: number, accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + `view-experience/${id}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching experience:', error);
+    throw error;
+  }
+};
+
+export const addExperience = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "add-experience", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error adding experience:', error);
+    throw error;
+  }
+};
+
+export const pastExperienceList = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "past-experience-list", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching past experience list:', error);
+    throw error;
+  }
+};
+
+export const updatePastOccupation = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "update-past-occupation", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating past occupation:', error);
+    throw error;
+  }
+};
+
+export const storeLocation = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "store-location", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error storing location:', error);
+    throw error;
+  }
+};
+
+export const storeAppUseTime = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "store-app-use-time", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error storing app use time:', error);
+    throw error;
+  }
+};
+
+// Additional missing API functions from legacy code
+export const getNotification = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "user-all-notification", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    throw error;
+  }
+};
+
+export const addPassportApi = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "upload-passport", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error uploading passport:', error);
+    throw error;
+  }
+};
+
+export const addCvApi = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "upload-cv-by-user", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error uploading CV:', error);
+    throw error;
+  }
+};
+
+export const addCovidCertificateApi = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "upload-covid-by-user", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error uploading COVID certificate:', error);
+    throw error;
+  }
+};
+
+export const editPassportApi = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "passport-edit", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error editing passport:', error);
+    throw error;
+  }
+};
+
+export const getPassportDetails = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "view-passport", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error fetching passport details:', error);
+    throw error;
+  }
+};
+
+export const addDrivingLicense = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "upload-dl-by-user", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error uploading driving license:', error);
+    throw error;
+  }
+};
+
+export const addHighestEduCertificate = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "upload-edu-certificate-by-user", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error uploading education certificate:', error);
+    throw error;
+  }
+};
+
+export const addOtherDoc = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "upload-other-docs-by-user", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error uploading other documents:', error);
+    throw error;
+  }
+};
+
+export const submitLoanForm = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "need-migration-loan", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error submitting loan form:', error);
+    throw error;
+  }
+};
+
+export const getAllDocApi = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "get-all-docs-by-user", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error fetching all documents:', error);
+    throw error;
+  }
+};
+
+export const editDrivingLicense = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "edit-dl-by-user", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error editing driving license:', error);
+    throw error;
+  }
+};
+
+export const logOut = async (accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "logout-app", {}, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error logging out:', error);
+    throw error;
+  }
+};
+
+export const submitReference = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "add-registration-source", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error submitting reference:', error);
+    throw error;
+  }
+};
+
+export const checkServiceCode = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "check-service-status", {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error checking service code:', error);
+    throw error;
+  }
+};
+
+export const getOtpOnEmail = async (formData: FormData) => {
+  try {
+    const response = await axios.post(BASE_URL + "get-email-otp", formData);
+    return response;
+  } catch (error) {
+    console.error('Error getting OTP on email:', error);
+    throw error;
+  }
+};
+
+export const storeUserLocation = async (formData: FormData, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + "store-user-location", formData, {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error storing user location:', error);
+    throw error;
+  }
+};
+
+export const getUserDetails = async (accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + "user-dashboard-applied-datas", {
+      headers: {
+        'Content-Type': `multipart/form-data`,
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error fetching user details:', error);
     throw error;
   }
 };

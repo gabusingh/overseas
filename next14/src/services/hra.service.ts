@@ -2,6 +2,35 @@ import axios from 'axios';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';
 
+// Interface for company data
+interface Company {
+  id: number;
+  cmpName: string;
+  cmpLogoS3?: string;
+  cmpDescription?: string;
+  jobCount?: number;
+}
+
+interface CompanyListResponse {
+  cmpData: Company[];
+  message?: string;
+  success?: boolean;
+};
+
+// Function to get all companies list (from legacy getHraList)
+export const getAllCompanies = async (): Promise<CompanyListResponse> => {
+  try {
+    const response = await axios.get(BASE_URL + 'get-all-companies');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all companies:', error);
+    throw error;
+  }
+};
+
+// Alias for backward compatibility
+export const getHraList = getAllCompanies;
+
 export const getHraDashboardData = async (accessToken: string) => {
   try {
     const response = await axios.get(BASE_URL + 'hra-dashboard', {

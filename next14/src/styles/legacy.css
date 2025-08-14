@@ -1,0 +1,348 @@
+/* Legacy styles from the original App.css */
+* {
+  margin: 0px;
+  padding: 0px;
+}
+body {
+  overflow-x: hidden;
+}
+:root {
+  --navbar-height: 92px;
+  overflow-x: hidden;
+}
+.helveticaFont {
+  font-family: Helvetica;
+}
+/* navbar start */
+.textBlue {
+  color: #17487f;
+}
+.bgBlue {
+  background: #17487f;
+}
+.fontMono {
+  font-family: monospace;
+}
+.borderBottom {
+  border-bottom: 2px solid #17487f;
+}
+.vh50 {
+  height: 50vh;
+}
+/* navbar end */
+/* hero section start */
+.heading {
+  font-size: 50px;
+  font-weight: 700;
+  font-family: Helvetica;
+}
+.subHeading {
+  font-size: 40px;
+  font-weight: 600;
+  font-family: Helvetica;
+}
+/* hero section end */
+
+/* search component start */
+.searchComponent {
+  border-radius: 20px;
+}
+.searchComponent select {
+  border: none;
+  padding: 10px;
+}
+.firstSelect {
+  border-radius: 20px 0px 0px 20px;
+}
+.searchComponent select {
+  border: none;
+  padding: 15px 12px;
+}
+.searchComponent button {
+  border: none;
+  padding: 10px 30px;
+  background-color: #17487f;
+  color: white;
+  border-radius: 0px 20px 20px 0px;
+}
+/* search component end */
+
+.downloadButton {
+  background-color: #17487f;
+  color: white;
+  border: none;
+  font-weight: 600;
+  padding: 15px 35px;
+  border-radius: 25px;
+  border: 2px solid white;
+  transition: background-color 0.5s, color 0.5s, border-color 0.5s,
+    box-shadow 0.5s;
+}
+.downloadButton:hover {
+  border: none;
+  font-weight: 600;
+  padding: 15px 35px;
+  border-radius: 25px;
+  border: 2px solid #17487f;
+  box-shadow: 2px 2px 4px black;
+}
+.borderRadius {
+  border-radius: 25px;
+}
+.traingPartnerHeading {
+  font-size: 40px;
+  line-height: 60px;
+  font-weight: 500;
+  font-family: Helvetica;
+  letter-spacing: 2px;
+}
+.scroll-container {
+  overflow-x: hidden;
+  white-space: nowrap;
+}
+
+.scroll-content {
+  display: inline-block;
+  animation: scroll 70s linear infinite;
+}
+.notification-item {
+  border-radius: 40px;
+  background: white;
+  display: flex;
+  align-items: center;
+  margin-right: 20px; /* Adjust spacing between items */
+  padding: 10px;
+  min-width: 300px; /* Ensure each item has a minimum width */
+}
+
+.notification-item img {
+  height: 45px;
+  width: 45px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.notification-item p {
+  flex: 1; /* Allow the text to wrap within its container */
+  max-width: 200px; /* Limit width to prevent overflow */
+  font-weight: 500;
+  line-height: 18px;
+}
+@keyframes scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.custom-scrollbar {
+  height: 60vh;
+  overflow-y: auto;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.searchInputWidth {
+  width: 570px;
+}
+
+/* company end */
+/* responsive for mobile  */
+.contactUsHeight {
+  height: 100vh;
+}
+.customSliderHeight {
+  height: 100vh;
+}
+@media only screen and (max-width: 1200px) {
+  .contactUsHeight {
+    height: 130vh;
+  }
+}
+@media only screen and (max-width: 700px) {
+  .contactUsHeight {
+    height: 100%;
+  }
+  .filterDiv {
+    position: absolute;
+    z-index: 10000;
+    left: 0;
+    
+    overflow: auto;
+    top:0
+  }
+}
+@media only screen and (max-width: 600px) {
+  .heading {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: Helvetica;
+  }
+  .searchInputWidth {
+    width: 280px;
+  }
+
+  .scroll-content {
+    display: inline-block;
+    animation: scroll 5s linear infinite;
+  }
+
+  .font10 {
+    font-size: 10px;
+  }
+  .customSliderHeight {
+    height: 80vh;
+  }
+}
+.customVh50 {
+  height: 50vh;
+}
+.flagIcon {
+  height: 30px;
+  width: 30px;
+  border-radius: 15px;
+}
+.imgContainer img {
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+  margin: 0px 7px;
+  border: 2px solid #17487f;
+}
+.lightBlueBg {
+  background-color: #f0f7ff;
+}
+.borderLeft2 {
+  border-left: 2.5px solid #17487f;
+}
+.gola {
+  height: 40px;
+  width: 40px;
+  border-radius: 20px;
+  border: 2px solid #17487f;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: whitesmoke;
+}
+.borderBlue {
+  border: 1px solid #17487f;
+  border-radius: 5px 20px 20px 5px;
+}
+.borderRadiusLeft20 {
+  border-radius: 0px 20px 20px 0px;
+}
+.borderLeft {
+  border-left: 1px solid #17487f;
+}
+.customLabel label {
+  margin-bottom: 5px;
+  font-weight: 500;
+  margin-top: 10px;
+}
+.selectRegisterForm img {
+  height: 150px;
+}
+.dropDownItemHover:hover {
+  border-radius: 6px;
+  box-shadow: 2px 2px 10px black;
+}
+.filterDiv{
+  height: 100vh;
+}
+.filterDiv::-webkit-scrollbar {
+  display: none;
+}
+.filterDiv-height {
+  height: 100vh;
+  overflow: auto;
+}
+
+.filterDiv-height::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filterDiv-height::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.filterDiv-height::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.filterDiv-height::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+.textDark {
+  color: black;
+}
+
+.custom-myProfile-scrollbar {
+  height: 80vh;
+  overflow-y: auto;
+}
+
+.custom-myProfile-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-myProfile-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.custom-myProfile-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.invalid-feedback{
+  margin-top: -10px;
+  margin-left: 10px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.marginNavTop {
+  margin-top: 180px;
+}
+@media only screen and (max-width:600px){
+  .marginNavTop {
+    margin-top: 120px;
+  }
+}
+.vh50{
+  height: 50vh;
+}
+.termsCondition h3{
+  color: #17487F;
+  font-weight: 600;
+  font-size: 30px;
+}
+.termsCondition p {
+  color: gray;
+  font-weight: 500; 
+}

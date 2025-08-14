@@ -4,7 +4,7 @@ const BASE_URL = 'https://backend.overseas.ai/api/';
 
 export const getAllCourses = async () => {
   try {
-    const response = await axios.get(BASE_URL + 'courses');
+    const response = await axios.get(BASE_URL + 'list-all-course');
     return response.data;
   } catch (error) {
     console.error('Error fetching courses:', error);
@@ -14,82 +14,106 @@ export const getAllCourses = async () => {
 
 export const getCourseById = async (courseId: number) => {
   try {
-    const response = await axios.get(BASE_URL + `courses/${courseId}`);
+    const response = await axios.get(BASE_URL + `get-course-details-by-id/${courseId}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching course:', error);
+    console.error('Error fetching course details:', error);
     throw error;
   }
 };
 
-export const createCourse = async (formData: FormData, accessToken: string) => {
+export const applyCourse = async (courseId: number, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + 'create-course', formData, {
+    const response = await axios.get(BASE_URL + `apply-course-by-user/${courseId}`, {
       headers: {
-        'Content-Type': 'multipart/form-data',
         Authorization: `Bearer ${accessToken}`
       }
     });
-    return response;
+    return response.data;
   } catch (error) {
-    console.error('Error creating course:', error);
+    console.error('Error applying for course:', error);
     throw error;
   }
 };
 
-export const updateCourse = async (courseId: number, formData: FormData, accessToken: string) => {
+export const getAppliedCourses = async (accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + `edit-course/${courseId}`, formData, {
+    const response = await axios.get(BASE_URL + 'list-applied-courses', {
       headers: {
-        'Content-Type': 'multipart/form-data',
         Authorization: `Bearer ${accessToken}`
       }
     });
-    return response;
+    return response.data;
   } catch (error) {
-    console.error('Error updating course:', error);
+    console.error('Error fetching applied courses:', error);
     throw error;
   }
 };
 
-export const getInstitutesCourses = async (accessToken: string) => {
+export const getCoursesByInstitute = async (instituteId: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'institute-courses', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    const response = await axios.get(BASE_URL + `get-courses-by-institute?instituteId=${instituteId}`);
+    return response.data;
   } catch (error) {
-    console.error('Error fetching institute courses:', error);
+    console.error('Error fetching courses by institute:', error);
     throw error;
   }
 };
 
-export const getCourseEnrollments = async (courseId: number, accessToken: string) => {
+export const filterCourses = async (filters: any) => {
   try {
-    const response = await axios.get(BASE_URL + `course-enrollments/${courseId}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    const response = await axios.post(BASE_URL + 'filter-courses', filters);
+    return response.data;
   } catch (error) {
-    console.error('Error fetching course enrollments:', error);
+    console.error('Error filtering courses:', error);
     throw error;
   }
 };
 
-export const enrollInCourse = async (courseId: number, accessToken: string) => {
+export const rateAndReviewInstitute = async (formData: {
+  instituteId: number;
+  rating: number;
+  review: string;
+}, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + `enroll-course/${courseId}`, {}, {
+    const response = await axios.post(BASE_URL + 'rate-and-review-institute', formData, {
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`
       }
     });
-    return response;
+    return response.data;
   } catch (error) {
-    console.error('Error enrolling in course:', error);
+    console.error('Error submitting rating and review:', error);
+    throw error;
+  }
+};
+
+export const getInstituteReviews = async (instituteId: number) => {
+  try {
+    const response = await axios.get(BASE_URL + `get-rate-review-institute?instituteId=${instituteId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching institute reviews:', error);
+    throw error;
+  }
+};
+
+export const editRateAndReviewInstitute = async (formData: {
+  ratingId: number;
+  rating: number;
+  review: string;
+}, accessToken: string) => {
+  try {
+    const response = await axios.post(BASE_URL + 'edit-rate-and-review-institute', formData, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error editing rating and review:', error);
     throw error;
   }
 };
