@@ -4,7 +4,7 @@ const BASE_URL = 'https://backend.overseas.ai/api/';
 
 export const getNotifications = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + 'get-notifications', {
+    const response = await axios.get(BASE_URL + 'user-all-notification', {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }

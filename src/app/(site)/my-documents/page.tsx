@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
+import { getAllDocApi, addPassportApi, addCvApi, addHighestEduCertificate, addDrivingLicense, addCovidCertificateApi, addOtherDoc } from "../../../services/user.service";
 
 interface Document {
   id: string;
@@ -58,55 +59,32 @@ export default function MyDocumentsPage() {
         return;
       }
 
-      // Mock data - replace with actual API call
-      const mockDocuments: Document[] = [
-        {
-          id: "1",
-          name: "Passport.pdf",
-          type: "pdf",
-          category: "identity",
-          uploadDate: "2024-12-10",
-          fileUrl: "/documents/passport.pdf",
-          fileSize: "2.1 MB",
-          status: "approved",
-          expiryDate: "2029-06-15"
-        },
-        {
-          id: "2",
-          name: "Degree_Certificate.pdf",
-          type: "pdf",
-          category: "education",
-          uploadDate: "2024-12-09",
-          fileUrl: "/documents/degree.pdf",
-          fileSize: "1.8 MB",
-          status: "pending"
-        },
-        {
-          id: "3",
-          name: "Experience_Letter.pdf",
-          type: "pdf",
-          category: "experience",
-          uploadDate: "2024-12-08",
-          fileUrl: "/documents/experience.pdf",
-          fileSize: "900 KB",
-          status: "approved"
-        },
-        {
-          id: "4",
-          name: "Medical_Certificate.pdf",
-          type: "pdf",
-          category: "medical",
-          uploadDate: "2024-12-07",
-          fileUrl: "/documents/medical.pdf",
-          fileSize: "1.2 MB",
-          status: "rejected"
-        }
-      ];
-
-      setDocuments(mockDocuments);
+      // Fetch real documents from API
+      const response = await getAllDocApi(token);
+      
+      if (response?.data) {
+        // Transform API response to match our Document interface
+        const docs: Document[] = (response.data || []).map((doc: any) => ({
+          id: doc.id?.toString() || Math.random().toString(),
+          name: doc.file_name || doc.document_name || doc.name || 'Unknown Document',
+          type: doc.file_type || doc.document_type || 'pdf',
+          category: doc.category || doc.document_category || 'other',
+          uploadDate: doc.created_at ? doc.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+          fileUrl: doc.file_url || doc.document_url || '#',
+          fileSize: doc.file_size || 'Unknown',
+          status: (doc.status === 'verified' || doc.status === 'approved') ? 'approved' : 
+                 (doc.status === 'rejected' || doc.status === 'declined') ? 'rejected' : 'pending',
+          expiryDate: doc.expiry_date
+        }));
+        setDocuments(docs);
+      } else {
+        // If no documents or API returns empty, set empty array
+        setDocuments([]);
+      }
     } catch (error) {
       console.error("Error fetching documents:", error);
-      toast.error("Failed to load documents");
+      // On error, still set empty array instead of showing error for better UX
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -133,38 +111,99 @@ export default function MyDocumentsPage() {
       return;
     }
 
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      toast.error("Please log in to upload documents");
+      router.push("/login");
+      return;
+    }
+
     const uploadId = `upload_${Date.now()}`;
     setUploadProgress(prev => ({ ...prev, [uploadId]: 0 }));
 
     try {
-      // Simulate upload progress
-      for (let progress = 0; progress <= 100; progress += 10) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        setUploadProgress(prev => ({ ...prev, [uploadId]: progress }));
+      // Create FormData for API call
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('document_category', category);
+      formData.append('document_name', file.name);
+      
+      // Show progress
+      setUploadProgress(prev => ({ ...prev, [uploadId]: 25 }));
+
+      let uploadResponse;
+      
+      // Call appropriate API based on document category
+      switch (category) {
+        case 'identity':
+          // For identity documents, use passport API as primary
+          formData.append('passport_file', file);
+          uploadResponse = await addPassportApi(formData, token);
+          break;
+        case 'education':
+          // For educational documents
+          formData.append('highest_edu_file', file);
+          uploadResponse = await addHighestEduCertificate(formData, token);
+          break;
+        case 'experience':
+          // For experience documents, use CV API
+          formData.append('cv_file', file);
+          uploadResponse = await addCvApi(formData, token);
+          break;
+        case 'certificates':
+          // For certificates, use driving license API or other docs
+          if (file.name.toLowerCase().includes('driving') || file.name.toLowerCase().includes('license')) {
+            formData.append('dl_file', file);
+            uploadResponse = await addDrivingLicense(formData, token);
+          } else {
+            formData.append('other_docs', file);
+            uploadResponse = await addOtherDoc(formData, token);
+          }
+          break;
+        case 'medical':
+          // For medical documents, use COVID certificate API or other docs
+          if (file.name.toLowerCase().includes('covid') || file.name.toLowerCase().includes('vaccination')) {
+            formData.append('covid_file', file);
+            uploadResponse = await addCovidCertificateApi(formData, token);
+          } else {
+            formData.append('other_docs', file);
+            uploadResponse = await addOtherDoc(formData, token);
+          }
+          break;
+        default:
+          // For other documents
+          formData.append('other_docs', file);
+          uploadResponse = await addOtherDoc(formData, token);
+          break;
       }
 
-      // Mock successful upload
-      const newDocument: Document = {
-        id: `doc_${Date.now()}`,
-        name: file.name,
-        type: file.type.split('/')[1],
-        category: category,
-        uploadDate: new Date().toISOString().split('T')[0],
-        fileUrl: URL.createObjectURL(file),
-        fileSize: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-        status: "pending"
-      };
+      setUploadProgress(prev => ({ ...prev, [uploadId]: 75 }));
 
-      setDocuments(prev => [...prev, newDocument]);
-      toast.success("Document uploaded successfully!");
-    } catch (error) {
+      // Check if upload was successful
+      if (uploadResponse && (uploadResponse.status === 200 || uploadResponse.data?.success)) {
+        setUploadProgress(prev => ({ ...prev, [uploadId]: 100 }));
+        
+        // Refresh documents list to show newly uploaded document
+        await fetchDocuments();
+        
+        toast.success("Document uploaded successfully!");
+      } else {
+        throw new Error("Upload failed");
+      }
+    } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload document");
+      toast.error(error.response?.data?.message || "Failed to upload document. Please try again.");
     } finally {
-      setUploadProgress(prev => {
-        const { [uploadId]: _, ...rest } = prev;
-        return rest;
-      });
+      // Clear progress after a short delay
+      setTimeout(() => {
+        setUploadProgress(prev => {
+          const { [uploadId]: _, ...rest } = prev;
+          return rest;
+        });
+      }, 1000);
+      
+      // Reset the file input
+      event.target.value = '';
     }
   };
 

@@ -89,6 +89,12 @@ interface JobData {
   jobLocation?: string;
   jobType?: string;
   jobCategory?: string;
+  skills?: Array<{
+    id: number;
+    skill: string;
+  }>;
+  jobAccommodation?: string;
+  jobFood?: string;
 }
 
 export default function JobDescriptionPage() {
@@ -112,52 +118,111 @@ export default function JobDescriptionPage() {
       setLoading(true);
       const response = await getJobById(params.id as string);
       console.log('Job Details Response:', response);
-      // Cast the response to JobData type since the API response structure matches
-      setJobData(response?.data as JobData);
-      setIsWishListed((response?.data as JobData)?.isWishListed || false);
+      
+      // Extract job data from different possible response structures
+      let jobResponse = null;
+      if (response?.data?.jobs) {
+        jobResponse = response.data.jobs;
+      } else if (response?.jobs) {
+        jobResponse = response.jobs;
+      } else if (response?.data) {
+        jobResponse = response.data;
+      }
+      
+      if (jobResponse) {
+        // Map the API response to our JobData interface
+        const mappedJobData: JobData = {
+          id: jobResponse.id,
+          jobID: jobResponse.jobID,
+          jobTitle: jobResponse.jobTitle,
+          jobDescription: jobResponse.jobDescription || '',
+          jobWages: jobResponse.jobWages || 0,
+          jobWagesCurrencyType: jobResponse.jobWagesCurrencyType || '',
+          jobLocationCountry: jobResponse.jobLocationCountry || { id: 0, name: '', countryFlag: '' },
+          occupation: {
+            id: parseInt(jobResponse.jobOccupation_id) || 0,
+            title: jobResponse.jobOccupation || '',
+            name: jobResponse.jobOccupation || ''
+          },
+          cmpName: jobResponse.cmpName || jobResponse.companyName || '',
+          companyName: jobResponse.companyName || jobResponse.cmpName || '',
+          jobVacancyNo: parseInt(jobResponse.jobVacancyNo) || 0,
+          jobAgeLimit: jobResponse.jobAgeLimit || '',
+          passport_type: jobResponse.passportType || '',
+          passportType: jobResponse.passportType || '',
+          contract_period: jobResponse.contract_period || '',
+          jobExpDuration: jobResponse.jobExpDuration || '',
+          jobExpTypeReq: jobResponse.jobExpTypeReq || '',
+          jobMode: jobResponse.jobMode || '',
+          jobWorkingDay: jobResponse.jobWorkingDay || '',
+          jobWorkingHour: jobResponse.jobWorkingHour || '',
+          jobOvertime: jobResponse.jobOvertime || '',
+          salary_negotiable: jobResponse.salary_negotiable || false,
+          jobDeadline: jobResponse.jobDeadline || '',
+          jobPhoto: jobResponse.jobPhoto || '',
+          totalAppliedCandidates: jobResponse.totalAppliedCandidates || 0,
+          appliedStatus: jobResponse.appliedStatus || false,
+          required_documents: jobResponse.required_documents || [],
+          jobBenefits: jobResponse.jobBenefits || [],
+          jobPerks: jobResponse.jobPerks || [],
+          company: jobResponse.company || null,
+          isWishListed: jobResponse.isWishListed || false,
+          jobPublishedDate: jobResponse.jobPublishedDate || jobResponse.created_at || '',
+          jobLocation: jobResponse.jobLocation || '',
+          jobType: jobResponse.jobType || '',
+          jobCategory: jobResponse.jobCategory || '',
+          skills: jobResponse.skills || [],
+          jobAccommodation: jobResponse.jobAccommodation || '',
+          jobFood: jobResponse.jobFood || ''
+        };
+        
+        setJobData(mappedJobData);
+        setIsWishListed(mappedJobData.isWishListed);
+      } else {
+        throw new Error('Job not found');
+      }
     } catch (error) {
       console.error('Error fetching job details:', error);
       toast.error('Failed to load job details. Please try again.');
+      router.push('/jobs');
     } finally {
       setLoading(false);
     }
   };
 
   const handleApplyJob = async () => {
-    const accessToken = getStoredToken();
-    if (!accessToken) {
-      toast.warning('Please login to apply for this job');
-      router.push('/login');
+    // Check authentication exactly like the old code using globalState
+    if (!globalState?.user) {
+      toast.warning("Please login to apply");
+      setTimeout(() => {
+        router.push("/login");
+      }, 1000);
       return;
     }
 
     if (!jobData) return;
 
+    let payload = {
+      id: jobData.id,
+      "apply-job": "",
+    };
+    
+    setApplying(true);
+    
     try {
-      setApplying(true);
-      const formData = new FormData();
-      formData.append('jobId', jobData.id.toString());
-      
-      const response = await applyJobApi(formData, accessToken);
-      
-      if (response?.data?.success) {
-        toast.success('Job application submitted successfully!');
+      let response = await applyJobApi(
+        payload,
+        globalState?.user?.access_token
+      );
+      if (response?.data?.msg == "Job Applied Successfully") {
+        toast.success(response?.data?.msg);
         // Update applied status
         setJobData(prev => prev ? {...prev, appliedStatus: true} : prev);
       } else {
-        toast.error(response?.data?.message || 'Failed to submit application');
+        toast.error(response?.data?.error || "Something went wrong");
       }
-    } catch (error: unknown) {
-      console.error('Error applying for job:', error);
-      const errorObj = error as { response?: { status?: number } };
-      if (errorObj?.response?.status === 422) {
-        toast.error('You have already applied for this job');
-      } else if (errorObj?.response?.status === 401) {
-        toast.error('Please login again to apply');
-        router.push('/login');
-      } else {
-        toast.error('Failed to submit application. Please try again.');
-      }
+    } catch (error) {
+      toast.error("Internal Server Error");
     } finally {
       setApplying(false);
     }
@@ -385,6 +450,46 @@ export default function JobDescriptionPage() {
                       </p>
                     </div>
                   </div>
+                  
+                  {/* Skills Section */}
+                  {jobData.skills && jobData.skills.length > 0 && (
+                    <div className="mb-8">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Star className="w-5 h-5 text-yellow-600" />
+                        Required Skills
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {jobData.skills.map((skill, index) => (
+                          <Badge key={index} variant="secondary" className="text-sm">
+                            {skill.skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Benefits Section */}
+                  {(jobData.jobAccommodation === 'Yes' || jobData.jobFood === 'Yes') && (
+                    <div className="mb-8">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Star className="w-5 h-5 text-green-600" />
+                        Additional Benefits
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {jobData.jobAccommodation === 'Yes' && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            <Building className="w-3 h-3 mr-1" />
+                            Accommodation Provided
+                          </Badge>
+                        )}
+                        {jobData.jobFood === 'Yes' && (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            🍽️ Food Provided
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Additional Job Information */}
                   {(jobData.jobVacancyNo || jobData.contract_period || jobData.jobMode || jobData.jobWorkingDay || jobData.jobWorkingHour || jobData.jobOvertime) && (

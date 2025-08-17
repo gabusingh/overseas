@@ -342,28 +342,6 @@ export default function SearchResultsPage() {
             </div>
           )}
 
-          {/* App Promotion Sidebar - Desktop Only */}
-          <div className="hidden lg:block fixed right-4 top-1/2 transform -translate-y-1/2 w-64">
-            <Card className="p-4">
-              <img 
-                src="/images/fullMobileNew.png" 
-                alt="Mobile App" 
-                className="w-full mb-4"
-              />
-              <div className="flex items-center gap-2">
-                <img 
-                  src="/images/appQR.png" 
-                  alt="QR Code" 
-                  className="w-16 h-16"
-                />
-                <img 
-                  src="https://admin.overseas.ai/newfrontend/image/google-play.png" 
-                  alt="Google Play" 
-                  className="flex-1 h-12 object-contain"
-                />
-              </div>
-            </Card>
-          </div>
         </div>
       </div>
     </div>

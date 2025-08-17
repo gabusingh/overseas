@@ -38,16 +38,7 @@ function HraJobCard({ value, slider }: HraJobCardProps) {
   const router = useRouter();
 
   const navigateToJobDetails = () => {
-    const countrySlug = value?.jobLocationCountry?.name
-      ?.trim()
-      .replace(/\s+/g, "-")
-      .replace(/\//g, "-");
-    const jobSlug = value?.jobTitle
-      ?.trim()
-      .replace(/\s+/g, "-")
-      .replace(/\//g, "-");
-    
-    router.push(`/job/${countrySlug}/${jobSlug}/${value?.id}`);
+    router.push(`/job-description/${value?.id}`);
   };
 
   return (

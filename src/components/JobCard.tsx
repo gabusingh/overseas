@@ -19,7 +19,9 @@ import {
   AlertCircle
 } from "lucide-react";
 import Image from "next/image";
-import { saveJobById, removeFromSaved } from "@/services/job.service";
+import { saveJobById, removeSavedJob, applyJobApi } from "@/services/job.service";
+import { useGlobalState } from "@/contexts/GlobalProvider";
+
 
 interface JobCardProps {
   value: {
@@ -65,6 +67,7 @@ export default function JobCard({
   compact = false 
 }: JobCardProps) {
   const router = useRouter();
+  const { globalState } = useGlobalState();
   const [isSaved, setIsSaved] = useState(value.savedByUser || false);
   const [isSaving, setIsSaving] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
@@ -84,15 +87,16 @@ export default function JobCard({
     setIsSaving(true);
     try {
       if (isSaved) {
-        await removeFromSaved(value.id.toString(), userToken);
+        await removeSavedJob(value.id, userToken);
         setIsSaved(false);
         toast.success("Job removed from saved list");
       } else {
-        await saveJobById(value.id.toString(), userToken);
+        await saveJobById(value.id, userToken);
         setIsSaved(true);
         toast.success("Job saved successfully");
       }
     } catch (error) {
+      console.error('Save job error:', error);
       toast.error("Failed to save job");
     } finally {
       setIsSaving(false);
@@ -131,9 +135,8 @@ export default function JobCard({
   const handleApplyJob = async (event: React.MouseEvent) => {
     event.stopPropagation();
     
-    // Check if user is logged in
-    const userToken = localStorage.getItem("access_token");
-    if (!userToken) {
+    // Check authentication exactly like the old code using globalState
+    if (!globalState?.user) {
       toast.warning("Please login to apply");
       setTimeout(() => {
         router.push("/login");
@@ -141,28 +144,22 @@ export default function JobCard({
       return;
     }
 
+    let payload = {
+      id: value?.id,
+      "apply-job": "",
+    };
+    
     setIsApplying(true);
+    
     try {
-      const response = await fetch("/api/jobs/apply", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${userToken}`,
-        },
-        body: JSON.stringify({
-          id: value.id,
-          "apply-job": "",
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.msg === "Job Applied Successfully") {
-        toast.success(data.msg);
-      } else if (data.error === "You have already applied for Job.") {
-        toast.info("You have already applied for Job.");
+      let response = await applyJobApi(
+        payload,
+        globalState?.user?.access_token
+      );
+      if (response?.data?.msg == "Job Applied Successfully") {
+        toast.success(response?.data?.msg);
       } else {
-        toast.error("Failed to apply for job");
+        toast.error("Something went wrong");
       }
     } catch (error) {
       toast.error("Internal Server Error");
@@ -172,15 +169,11 @@ export default function JobCard({
   };
 
   const handleCardClick = () => {
-    const jobUrl = `/job/${value?.jobLocationCountry?.name
-      ?.trim()
-      .replace(/\s+/g, "-")
-      .replace(/\//g, "-")}/${value?.jobTitle
-      ?.trim()
-      .replace(/\s+/g, "-")
-      .replace(/\//g, "-")}/${value?.id}`;
-    
-    router.push(jobUrl);
+    router.push(`/job-description/${value?.id}`);
+  };
+
+  const handleViewDetails = () => {
+    router.push(`/job-description/${value?.id}`);
   };
 
   const getApplicationStatusBadge = () => {
@@ -208,10 +201,11 @@ export default function JobCard({
   };
 
   return (
-    <div className="col-12 p-0 p-md-2 cursor-pointer" onClick={handleCardClick}>
-      <Card className={`mx-2 my-3 shadow hover:shadow-lg transition-all duration-300 relative ${
+    <div className="col-12 p-0 p-md-2">
+      <Card className={`mx-2 my-3 shadow hover:shadow-lg transition-all duration-300 relative cursor-pointer ${
         value.isFeatured ? 'border-2 border-yellow-400' : ''
-      } ${value.isUrgent ? 'border-l-4 border-l-red-500' : ''}`}>
+      } ${value.isUrgent ? 'border-l-4 border-l-red-500' : ''}`}
+        onClick={handleCardClick}>
         
         {/* Status Badges */}
         <div className="absolute top-2 right-2 flex gap-2 z-10">
@@ -409,10 +403,14 @@ export default function JobCard({
               )}
             </div>
             
+            
             {/* Action Buttons */}
             <div className="flex justify-between items-center">
               <Button 
-                onClick={handleApplyJob}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleApplyJob(e);
+                }}
                 disabled={isApplying || value.applicationStatus === 'applied'}
                 className={`px-6 transition-all ${
                   value.applicationStatus === 'applied'
@@ -427,7 +425,13 @@ export default function JobCard({
               </Button>
               
               <div className="flex items-center gap-3">
-                <p className="text-[#17487f] cursor-pointer hover:underline text-sm font-medium">
+                <p 
+                  className="text-[#17487f] cursor-pointer hover:underline text-sm font-medium"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewDetails();
+                  }}
+                >
                   View Details
                 </p>
                 {value.applicationStatus && value.applicationStatus !== 'not_applied' && (

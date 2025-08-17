@@ -26,6 +26,9 @@ interface AppliedJobCardProps {
     jobDeadline: string;
     occupation: string;
     contractPeriod?: string;
+    interviewStatus?: number; // Legacy interview status (0-5)
+    interviewDate?: string;
+    interviewPlace?: string;
   };
 }
 
@@ -49,16 +52,30 @@ export default function AppliedJobCard({ job }: AppliedJobCardProps) {
     }
   };
 
-  const handleViewDetails = () => {
-    const jobUrl = `/job/${job?.jobLocationCountry?.name
-      ?.trim()
-      .replace(/\s+/g, "-")
-      .replace(/\//g, "-")}/${job?.jobTitle
-      ?.trim()
-      .replace(/\s+/g, "-")
-      .replace(/\//g, "-")}/${job?.id}`;
+  // Legacy interview status messaging (from old system)
+  const getInterviewStatusMessage = (status?: number) => {
+    if (status === undefined) return null;
     
-    router.push(jobUrl);
+    switch (status) {
+      case 0:
+        return "Application rejected";
+      case 1:
+        return "Application in progress";
+      case 2:
+        return "Medical and pcc uploaded";
+      case 3:
+        return "Application sent to HR";
+      case 4:
+        return "VISA and passport released";
+      case 5:
+        return "Placed";
+      default:
+        return null;
+    }
+  };
+
+  const handleViewDetails = () => {
+    router.push(`/job-description/${job?.id}`);
   };
 
   return (
@@ -143,6 +160,44 @@ export default function AppliedJobCard({ job }: AppliedJobCardProps) {
               {job.applicationStatus === "selected" && "🎉 Congratulations! You've been selected"}
               {job.applicationStatus === "rejected" && "Application was not successful this time"}
             </div>
+
+            {/* Interview Status (Legacy System) */}
+            {job.interviewStatus !== undefined && (
+              <div className="mb-3">
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs px-2 py-1 ${
+                    job.interviewStatus === 0 ? 'bg-red-50 text-red-700 border-red-200' :
+                    job.interviewStatus === 5 ? 'bg-green-50 text-green-700 border-green-200' :
+                    'bg-blue-50 text-blue-700 border-blue-200'
+                  }`}
+                >
+                  {getInterviewStatusMessage(job.interviewStatus)}
+                </Badge>
+              </div>
+            )}
+
+            {/* Interview Details */}
+            {(job.interviewDate || job.interviewPlace) && (
+              <div className="bg-blue-50 p-3 rounded-lg mb-3">
+                <h4 className="text-sm font-semibold text-blue-800 mb-2">
+                  <i className="fa fa-calendar mr-2"></i>
+                  Interview Details
+                </h4>
+                {job.interviewDate && (
+                  <p className="text-xs text-blue-700 mb-1">
+                    <Calendar className="w-3 h-3 inline mr-1" />
+                    Date: {job.interviewDate}
+                  </p>
+                )}
+                {job.interviewPlace && (
+                  <p className="text-xs text-blue-700">
+                    <MapPin className="w-3 h-3 inline mr-1" />
+                    Location: {job.interviewPlace}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Job Image */}
@@ -170,23 +225,80 @@ export default function AppliedJobCard({ job }: AppliedJobCardProps) {
             View Job Details
           </Button>
           
+          {/* Status-specific action buttons */}
           {job.applicationStatus === "selected" && (
-            <Button 
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              Download Offer Letter
-            </Button>
+            <>
+              <Button 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <i className="fa fa-download mr-1"></i>
+                Download Offer Letter
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="border-green-300 text-green-700 hover:bg-green-50"
+              >
+                <i className="fa fa-file-text mr-1"></i>
+                View Contract
+              </Button>
+            </>
           )}
           
           {job.applicationStatus === "shortlisted" && (
+            <>
+              <Button 
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <i className="fa fa-video mr-1"></i>
+                Prepare for Interview
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                <i className="fa fa-calendar mr-1"></i>
+                View Schedule
+              </Button>
+            </>
+          )}
+          
+          {job.applicationStatus === "interviewed" && (
             <Button 
+              variant="outline"
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="border-purple-300 text-purple-700 hover:bg-purple-50"
             >
-              Prepare for Interview
+              <i className="fa fa-clock mr-1"></i>
+              Awaiting Results
             </Button>
           )}
+          
+          {/* Document upload button for certain stages */}
+          {(job.interviewStatus === 2 || job.applicationStatus === "shortlisted") && (
+            <Button 
+              variant="outline"
+              size="sm"
+              className="border-orange-300 text-orange-700 hover:bg-orange-50"
+              onClick={() => router.push('/my-documents')}
+            >
+              <i className="fa fa-upload mr-1"></i>
+              Upload Documents
+            </Button>
+          )}
+          
+          {/* View application timeline */}
+          <Button 
+            variant="ghost"
+            size="sm"
+            className="text-gray-600 hover:text-gray-800"
+          >
+            <i className="fa fa-timeline mr-1"></i>
+            View Timeline
+          </Button>
         </div>
       </CardContent>
     </Card>

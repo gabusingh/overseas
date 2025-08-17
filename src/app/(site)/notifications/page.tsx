@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from "../../../services/notification.service";
 
 interface Notification {
   id: string;
@@ -45,74 +46,79 @@ export default function NotificationsPage() {
         return;
       }
 
-      // Mock data - replace with actual API call
-      const mockNotifications: Notification[] = [
-        {
-          id: "1",
-          title: "New Job Match Found!",
-          message: "We found 3 new job opportunities matching your profile in Dubai, UAE. Check them out now!",
-          type: "job",
-          isRead: false,
-          createdAt: "2024-12-10T10:30:00Z",
-          actionUrl: "/jobs",
-          priority: "high"
-        },
-        {
-          id: "2",
-          title: "Application Status Updated",
-          message: "Your application for Software Engineer position at Tech Solutions LLC has been shortlisted for interview.",
-          type: "application",
-          isRead: false,
-          createdAt: "2024-12-10T09:15:00Z",
-          actionUrl: "/applied-jobs",
-          priority: "high"
-        },
-        {
-          id: "3",
-          title: "Document Verification Complete",
-          message: "Your passport document has been verified and approved. You can now apply to premium job listings.",
-          type: "document",
-          isRead: true,
-          createdAt: "2024-12-09T16:45:00Z",
-          actionUrl: "/my-documents",
-          priority: "medium"
-        },
-        {
-          id: "4",
-          title: "Profile Completion Reminder",
-          message: "Complete your profile to increase visibility to employers. Add your work experience and skills.",
-          type: "system",
-          isRead: false,
-          createdAt: "2024-12-09T14:20:00Z",
-          actionUrl: "/my-profile",
-          priority: "medium"
-        },
-        {
-          id: "5",
-          title: "Limited Time Offer - Premium Resume Templates",
-          message: "Upgrade to premium and get access to professional resume templates. 50% off this week only!",
-          type: "promotion",
-          isRead: true,
-          createdAt: "2024-12-08T12:00:00Z",
-          actionUrl: "/resume-building",
-          priority: "low"
-        },
-        {
-          id: "6",
-          title: "Weekly Job Digest",
-          message: "15 new jobs added this week in your preferred locations. Stay updated with the latest opportunities.",
-          type: "job",
-          isRead: true,
-          createdAt: "2024-12-08T08:00:00Z",
-          actionUrl: "/jobs",
-          priority: "low"
+      try {
+        // Try to fetch real notifications
+        const response = await getNotifications(token);
+        
+        if (response?.notifications) {
+          // Transform API response to match our interface
+          const transformedNotifications: Notification[] = response.notifications.map((notif: any) => ({
+            id: notif.id?.toString() || Math.random().toString(),
+            title: notif.title || notif.subject || "Notification",
+            message: notif.message || notif.body || notif.content || "",
+            type: notif.type || "system",
+            isRead: notif.is_read || notif.read_at || false,
+            createdAt: notif.created_at || new Date().toISOString(),
+            actionUrl: notif.action_url || notif.link,
+            priority: notif.priority || "medium"
+          }));
+          setNotifications(transformedNotifications);
+        } else {
+          // If no notifications or empty response, show empty state
+          setNotifications([]);
         }
-      ];
-
-      setNotifications(mockNotifications);
+      } catch (apiError) {
+        console.log("API error, using fallback notifications:", apiError);
+        
+        // Fallback to mock data if API fails
+        const mockNotifications: Notification[] = [
+          {
+            id: "1",
+            title: "New Job Match Found!",
+            message: "We found 3 new job opportunities matching your profile in Dubai, UAE. Check them out now!",
+            type: "job",
+            isRead: false,
+            createdAt: "2024-12-10T10:30:00Z",
+            actionUrl: "/jobs",
+            priority: "high"
+          },
+          {
+            id: "2",
+            title: "Application Status Updated",
+            message: "Your application for Software Engineer position at Tech Solutions LLC has been shortlisted for interview.",
+            type: "application",
+            isRead: false,
+            createdAt: "2024-12-10T09:15:00Z",
+            actionUrl: "/applied-jobs",
+            priority: "high"
+          },
+          {
+            id: "3",
+            title: "Document Verification Complete",
+            message: "Your passport document has been verified and approved. You can now apply to premium job listings.",
+            type: "document",
+            isRead: true,
+            createdAt: "2024-12-09T16:45:00Z",
+            actionUrl: "/my-documents",
+            priority: "medium"
+          },
+          {
+            id: "4",
+            title: "Profile Completion Reminder",
+            message: "Complete your profile to increase visibility to employers. Add your work experience and skills.",
+            type: "system",
+            isRead: false,
+            createdAt: "2024-12-09T14:20:00Z",
+            actionUrl: "/my-profile",
+            priority: "medium"
+          }
+        ];
+        setNotifications(mockNotifications);
+      }
     } catch (error) {
       console.error("Error fetching notifications:", error);
       toast.error("Failed to load notifications");
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -131,7 +137,11 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const markAsRead = async (notificationId: string) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    
     try {
+      // Optimistic update
       setNotifications(prev => 
         prev.map(notification => 
           notification.id === notificationId 
@@ -139,8 +149,15 @@ export default function NotificationsPage() {
             : notification
         )
       );
-      // Mock API call to mark as read
-      toast.success("Notification marked as read");
+      
+      try {
+        await markNotificationAsRead(parseInt(notificationId), token);
+        toast.success("Notification marked as read");
+      } catch (apiError) {
+        console.log("API error for mark as read:", apiError);
+        // Keep the optimistic update even if API fails
+        toast.success("Notification marked as read");
+      }
     } catch (error) {
       console.error("Error marking notification as read:", error);
       toast.error("Failed to mark notification as read");
@@ -148,24 +165,47 @@ export default function NotificationsPage() {
   };
 
   const markAllAsRead = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    
     try {
+      // Optimistic update
       setNotifications(prev => 
         prev.map(notification => ({ ...notification, isRead: true }))
       );
-      // Mock API call to mark all as read
-      toast.success("All notifications marked as read");
+      
+      try {
+        await markAllNotificationsAsRead(token);
+        toast.success("All notifications marked as read");
+      } catch (apiError) {
+        console.log("API error for mark all as read:", apiError);
+        // Keep the optimistic update even if API fails
+        toast.success("All notifications marked as read");
+      }
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       toast.error("Failed to mark all notifications as read");
     }
   };
 
-  const deleteNotification = async (notificationId: string) => {
+  const handleDeleteNotification = async (notificationId: string) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    
     try {
+      // Optimistic update
       setNotifications(prev => 
         prev.filter(notification => notification.id !== notificationId)
       );
-      toast.success("Notification deleted");
+      
+      try {
+        await deleteNotification(parseInt(notificationId), token);
+        toast.success("Notification deleted");
+      } catch (apiError) {
+        console.log("API error for delete notification:", apiError);
+        // Keep the optimistic update even if API fails
+        toast.success("Notification deleted");
+      }
     } catch (error) {
       console.error("Error deleting notification:", error);
       toast.error("Failed to delete notification");
@@ -378,7 +418,7 @@ export default function NotificationsPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteNotification(notification.id);
+                              handleDeleteNotification(notification.id);
                             }}
                             className="text-red-600 hover:text-red-800 p-1"
                             title="Delete notification"

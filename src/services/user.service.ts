@@ -17,7 +17,7 @@ interface LoginResponse {
 
 export const loginUsingPassword = async (params: { empPhone: string; password: string } | FormData): Promise<LoginResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "person-login-using-password", params);
+    const response = await axios.post(BASE_URL + "passsword-login", params);
     return response;
   } catch (error) {
     console.error('Error fetching data:', error);
@@ -41,7 +41,7 @@ export const getSummarizedVideo = async (accessToken: string) => {
 
 export const loginUsingOtp = async (params: { empPhone: string } | FormData) => {
   try {
-    const response = await axios.post(BASE_URL + "person-login-using-otp", params);
+    const response = await axios.post(BASE_URL + "otp-request", params);
     return response;
   } catch (error) {
     console.error('Error fetching data:', error);
@@ -51,7 +51,7 @@ export const loginUsingOtp = async (params: { empPhone: string } | FormData) => 
 
 export const verifyOtpForLogin = async (params: { empPhone: string; otp: string } | FormData): Promise<LoginResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "person-login-using-otp", params);
+    const response = await axios.post(BASE_URL + "otp-login", params);
     return response;
   } catch (error) {
     console.error('Error fetching data:', error);
@@ -213,7 +213,7 @@ export const getProfileStrength = async (accessToken: string) => {
 
 export const getUserDashboard = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "get-user-dashboard", {
+    const response = await axios.get(BASE_URL + "user-dashboard-applied-datas", {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }

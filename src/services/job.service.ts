@@ -13,13 +13,60 @@ interface Job {
   company?: string;
 }
 
+export interface JobDetail {
+  id: number;
+  jobOccupation_id: string;
+  jobID: string;
+  jobCreatedBy: string;
+  jobTitle: string;
+  cmpNameACT?: string;
+  jobVacancyNo: string;
+  jobOccupation: string;
+  jobOccupation_hi: string;
+  jobOccupation_bn: string;
+  jobMode: string;
+  jobInterviewDate?: string;
+  jobInterviewPlace?: string;
+  jobWorkingDay: string;
+  jobWages?: number;
+  jobWagesCurrencyType?: string;
+  jobLocationCountry?: {
+    name: string;
+    countryFlag: string;
+  };
+  jobPhoto?: string;
+  jobDeadline?: string;
+  jobExpTypeReq?: string;
+  jobAgeLimit?: string;
+  passportType?: string;
+  jobDescription?: string;
+  jobAccommodation?: string;
+  jobFood?: string;
+  jobOvertime?: string;
+  jobWorkingHour?: string;
+  companyName?: string;
+  cmpName?: string;
+  skills?: Array<{
+    id: number;
+    skill: string;
+  }>;
+  created_at?: string;
+  appliedStatus?: boolean;
+  isWishListed?: boolean;
+  totalAppliedCandidates?: number;
+  contract_period?: string;
+  required_documents?: string[];
+  jobPublishedDate?: string;
+  salary_negotiable?: boolean;
+}
+
 interface JobListResponse {
   jobs?: Job[];
   data?: Job[];
 }
 
 interface JobDetailResponse {
-  data: Job;
+  jobs: JobDetail;
 }
 
 
@@ -148,8 +195,18 @@ export const getJobById = async (id: string | number): Promise<JobDetailResponse
 
 
 
-export const applyJobApi = async (formData: FormData, accessToken: string) => {
+export const applyJobApi = async (payload: any, accessToken: string) => {
   try {
+    // Convert payload to FormData if it's not already
+    let formData: FormData;
+    if (payload instanceof FormData) {
+      formData = payload;
+    } else {
+      formData = new FormData();
+      formData.append('id', payload.id);
+      formData.append('apply-job', payload['apply-job'] || '');
+    }
+    
     const response = await axios.post(BASE_URL + `apply-job-r`, formData, {
       headers: {
         Authorization: `Bearer ${accessToken}`
@@ -157,7 +214,7 @@ export const applyJobApi = async (formData: FormData, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error('Error applying for job:', error);
     throw error;
   }
 };
@@ -234,7 +291,7 @@ export const saveJobById = async (jobId: number, accessToken: string) => {
 
 export const userSavedJobsList = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + `user-saved-jobs-list`, {
+    const response = await axios.get(BASE_URL + `user-saved-job-list`, {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
@@ -312,7 +369,7 @@ export const getAppliedJobs = async (accessToken: string) => {
 
 export const getSavedJobs = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + 'user-saved-jobs-list', {
+    const response = await axios.get(BASE_URL + 'user-saved-job-list', {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }

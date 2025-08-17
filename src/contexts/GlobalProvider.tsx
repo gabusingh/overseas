@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getStoredUser, isAuthenticated } from '../lib/auth';
+import { getStoredUser, isAuthenticated, getStoredToken } from '../lib/auth';
 
 interface User {
   id: number;
@@ -8,10 +8,11 @@ interface User {
   email: string;
   phone: string;
   name?: string;
+  access_token?: string;
 }
 
 interface GlobalState {
-  user: { user: User } | null;
+  user: User | null;
   profileStrength: number | null;
   notifications: unknown[] | null;
   regSource: string | null;
@@ -37,8 +38,12 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (isAuthenticated()) {
         const user = getStoredUser();
-        if (user) {
-          setGlobalState(prev => ({ ...prev, user: { user } }));
+        const accessToken = getStoredToken();
+        if (user && accessToken) {
+          setGlobalState(prev => ({ 
+            ...prev, 
+            user: { ...user, access_token: accessToken }
+          }));
         }
       }
     } catch (error) {

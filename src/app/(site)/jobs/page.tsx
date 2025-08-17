@@ -5,12 +5,13 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import Link from "next/link";
 import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart } from "lucide-react";
-import { getJobList, saveJobById, getOccupations } from "../../../services/job.service";
+import { getJobList, saveJobById, getOccupations, applyJobApi } from "../../../services/job.service";
 import { getCountriesForJobs } from "../../../services/info.service";
 import JobFilter from "../../../components/JobFilter";
 import SearchComponent from "../../../components/SearchComponent";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useGlobalState } from "../../../contexts/GlobalProvider";
 
 interface Job {
   id: number;
@@ -57,7 +58,39 @@ export default function JobsPage() {
   
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { globalState } = useGlobalState();
   const jobsPerPage = 10;
+
+  // Apply job function - matching old system exactly
+  const handleApplyJob = async (jobId: number) => {
+    // Check authentication exactly like the old code using globalState
+    if (!globalState?.user) {
+      toast.warning("Please login to apply");
+      setTimeout(() => {
+        router.push("/login");
+      }, 1000);
+      return;
+    }
+
+    let payload = {
+      id: jobId,
+      "apply-job": "",
+    };
+    
+    try {
+      let response = await applyJobApi(
+        payload,
+        globalState?.user?.access_token
+      );
+      if (response?.data?.msg == "Job Applied Successfully") {
+        toast.success(response?.data?.msg);
+      } else {
+        toast.error("Something went wrong");
+      }
+    } catch (error) {
+      toast.error("Internal Server Error");
+    }
+  };
 
   // Save job function
   const handleSaveJob = async (jobId: string | number | undefined) => {
@@ -470,6 +503,7 @@ export default function JobsPage() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            router.push(`/job-description/${job.id}`);
                           }}
                         >
                           View Details
@@ -477,10 +511,10 @@ export default function JobsPage() {
                         <Button 
                           size="sm" 
                           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 h-8 text-xs font-medium"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            toast.success("Application submitted successfully!");
+                            await handleApplyJob(job.id);
                           }}
                         >
                           Apply Now
