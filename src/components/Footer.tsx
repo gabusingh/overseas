@@ -157,9 +157,9 @@ function Footer() {
           <div className="flex flex-col gap-3">
             <Image
               src="/images/overseas.ainewlogo.png"
-              width={80}
-              height={32}
-              className="h-8 w-auto mb-1"
+              width={100}
+              height={100}
+              className="w-auto mb-1"
               alt="Overseas.ai Logo"
               unoptimized
             />
