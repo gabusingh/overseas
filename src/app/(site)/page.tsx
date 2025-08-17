@@ -1,14 +1,36 @@
 "use client";
-import React, { useEffect, useState, Suspense, useCallback } from "react";
-import Head from 'next/head';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, useCallback } from "react";
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { getOccupations, getCountriesForJobs, getNewsFeedData, getSuccessNotification } from '../../services/info.service';
 import { getInstitutes } from '../../services/institute.service';
 import { getAllCompanies } from '../../services/hra.service';
 import { toast } from 'sonner';
-import HeroSection from '../../components/HeroSection';
-import TopCountriesHiring from '../../components/TopCountriesHiring';
-import FindJobsByDepartment from '../../components/FindJobsByDepartment';
+
+// Lazy load heavy components
+const HeroSection = dynamic(() => import('../../components/HeroSection'), {
+  ssr: true, // Keep SSR for hero section as it's above the fold
+  loading: () => (
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center animate-pulse">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="text-center">
+          <div className="h-16 bg-blue-200 rounded-lg mb-4 mx-auto w-3/4"></div>
+          <div className="h-8 bg-blue-100 rounded-lg mb-8 mx-auto w-1/2"></div>
+          <div className="h-20 bg-white rounded-lg mx-auto max-w-2xl"></div>
+        </div>
+      </div>
+    </div>
+  )
+});
+const TopCountriesHiring = dynamic(() => import('../../components/TopCountriesHiring'), {
+  ssr: false,
+  loading: () => <div className="h-96 bg-gradient-to-br from-blue-50 via-white to-indigo-50 animate-pulse rounded-lg"></div>
+});
+
+const FindJobsByDepartment = dynamic(() => import('../../components/FindJobsByDepartment'), {
+  ssr: false,
+  loading: () => <div className="h-96 bg-gradient-to-br from-blue-50 via-white to-indigo-50 animate-pulse rounded-lg"></div>
+});
 
 interface Department {
   id: number;
@@ -71,24 +93,61 @@ export default function Home() {
   const [companyList, setCompanyList] = useState<Company[]>([]);
   const [instituteList, setInstituteList] = useState<Institute[]>([]);
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
-  const [successStories, setSuccessStories] = useState<any[]>([]);
+  const [successStories, setSuccessStories] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
 
-  // Fetch all data
-  const fetchData = useCallback(async () => {
+  // Cache key for localStorage
+  const CACHE_KEY = 'overseas_home_data';
+  const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
+  // Check cache first
+  const getCachedData = useCallback(() => {
     try {
-      const [occupationsRes, countriesRes, companiesRes, institutesRes, newsRes, successRes] = await Promise.all([
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          return data;
+        }
+      }
+    } catch (error) {
+      console.warn('Cache read error:', error);
+    }
+    return null;
+  }, []);
+
+  // Cache data to localStorage
+  const setCachedData = useCallback((data: unknown) => {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.warn('Cache write error:', error);
+    }
+  }, []);
+
+  // Fetch critical data first (Hero section needs)
+  const fetchCriticalData = useCallback(async () => {
+    try {
+      const cachedData = getCachedData();
+      if (cachedData && typeof cachedData === 'object') {
+        // Use cached data immediately
+        setDepartmentList((cachedData as any).occupations || []);
+        setCountryList((cachedData as any).countries || []);
+        setLoading(false);
+        toast.success('Loaded from cache!');
+        return;
+      }
+
+      // Fetch only critical data for initial render
+      const [occupationsRes, countriesRes] = await Promise.all([
         getOccupations(),
-        getCountriesForJobs(),
-        getAllCompanies(),
-        getInstitutes(),
-        getNewsFeedData(),
-        getSuccessNotification()
+        getCountriesForJobs()
       ]);
 
-      // Set occupations/departments
       const occupations = occupationsRes?.data?.map((item: any) => ({
         id: item.id,
         title: item.title || item.name || item.occupation,
@@ -97,31 +156,57 @@ export default function Home() {
         value: item.id,
         img: `/images/institute.png`,
       })) || [];
+      
       setDepartmentList(occupations);
-
-      // Set countries
       setCountryList(countriesRes?.data || []);
+      setLoading(false);
 
-      // Set companies
-      setCompanyList(companiesRes?.cmpData || []);
-
-      // Set institutes
-      setInstituteList(institutesRes?.data || []);
-
-      // Set news
-      setNewsList(newsRes?.data?.newsData?.slice(0, 6) || []);
-
-      // Set success stories
-      setSuccessStories(successRes?.notifications?.slice(0, 8) || []);
-
-      toast.success('Home page loaded successfully!');
+      // Cache the critical data
+      setCachedData({ occupations, countries: countriesRes?.data || [] });
+      
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Some features may not work properly. Please refresh.');
-    } finally {
+      console.error('Error loading critical data:', error);
+      toast.error('Failed to load essential data. Please refresh.');
       setLoading(false);
     }
+  }, [getCachedData, setCachedData]);
+
+  // Fetch non-critical data in background
+  const fetchSecondaryData = useCallback(async () => {
+    try {
+      // Stagger secondary data loading
+      setTimeout(async () => {
+        const [companiesRes, institutesRes] = await Promise.all([
+          getAllCompanies(),
+          getInstitutes()
+        ]);
+        
+        setCompanyList(companiesRes?.cmpData || []);
+        setInstituteList(institutesRes?.data || []);
+      }, 100);
+
+      // Load news and success stories even later
+      setTimeout(async () => {
+        const [newsRes, successRes] = await Promise.all([
+          getNewsFeedData(),
+          getSuccessNotification()
+        ]);
+        
+        setNewsList(newsRes?.data?.newsData?.slice(0, 6) || []);
+        setSuccessStories(successRes?.notifications?.slice(0, 8) || []);
+      }, 500);
+      
+    } catch (error) {
+      console.error('Error loading secondary data:', error);
+      // Don't show error toast for non-critical data
+    }
   }, []);
+
+  // Main fetch function that orchestrates progressive loading
+  const fetchData = useCallback(async () => {
+    await fetchCriticalData();
+    fetchSecondaryData();
+  }, [fetchCriticalData, fetchSecondaryData]);
 
 
   useEffect(() => {
@@ -155,13 +240,25 @@ export default function Home() {
             {companyList.slice(0, 8).map((company) => (
               <div key={company.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300 cursor-pointer group">
                 <div className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center relative">
                     {company.cmpLogoS3 && company.cmpLogoS3 !== "placeholder/logo.png" ? (
-                      <img 
-                        src={company.cmpLogoS3}
-                        alt={company.cmpName}
-                        className="w-12 h-12 object-contain"
-                      />
+                      <>
+                        <Image 
+                          src={company.cmpLogoS3}
+                          alt={company.cmpName}
+                          width={48}
+                          height={48}
+                          className="object-contain"
+                          loading="lazy"
+                          placeholder="blur"
+                          blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+Cjwvc3ZnPgo="
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        <i className="fa fa-building text-2xl text-gray-400 hidden"></i>
+                      </>
                     ) : (
                       <i className="fa fa-building text-2xl text-gray-400"></i>
                     )}

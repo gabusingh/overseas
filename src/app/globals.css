@@ -1,9 +1,9 @@
-/* Import legacy styles for backward compatibility */
-@import "../styles/legacy.css";
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Import legacy styles for backward compatibility - moved after Tailwind to prevent override conflicts */
+@import "../styles/legacy.css";
 
 :root {
   --radius: 0.625rem;
