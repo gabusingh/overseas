@@ -6,8 +6,8 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { toast } from "sonner";
 import Link from "next/link";
-import { getUserDashboard, getProfileStrength, experienceList, passportView } from "../../../services/user.service";
-import { appliedJobList, userSavedJobsList } from "../../../services/job.service";
+import { getUserDashboard, getProfileStrength, experienceList, passportView, getUserDetails } from "../../../services/user.service";
+import { getAppliedJobs, getSavedJobs } from "../../../services/job.service";
 import { getNotifications } from "../../../services/notification.service";
 
 interface User {
@@ -277,7 +277,7 @@ export default function MyProfilePage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <Button asChild className="w-full justify-start bg-blue-600 hover:bg-blue-700">
-                      <Link href="/applied-jobs">📝 View Applied Jobs</Link>
+                      <Link href="/job-applied">📝 View Applied Jobs</Link>
                     </Button>
                     <Button asChild variant="outline" className="w-full justify-start">
                       <Link href="/saved-jobs">💾 Saved Jobs</Link>

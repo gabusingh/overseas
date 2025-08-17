@@ -12,7 +12,10 @@ interface User {
 }
 
 interface GlobalState {
-  user: User | null;
+  user: {
+    user: User;
+    access_token: string;
+  } | null;
   profileStrength: number | null;
   notifications: unknown[] | null;
   regSource: string | null;
@@ -40,10 +43,34 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
         const user = getStoredUser();
         const accessToken = getStoredToken();
         if (user && accessToken) {
+          // Structure to match old codebase expectations
           setGlobalState(prev => ({ 
             ...prev, 
-            user: { ...user, access_token: accessToken }
+            user: {
+              user: user,
+              access_token: accessToken
+            }
           }));
+        }
+      } else {
+        // Check for legacy loggedUser format
+        const legacyUser = localStorage.getItem('loggedUser');
+        if (legacyUser) {
+          try {
+            const parsedUser = JSON.parse(legacyUser);
+            if (parsedUser.access_token) {
+              // For compatibility with old format, ensure correct structure
+              setGlobalState(prev => ({ 
+                ...prev, 
+                user: {
+                  user: parsedUser.user || parsedUser,
+                  access_token: parsedUser.access_token
+                }
+              }));
+            }
+          } catch (e) {
+            console.warn('Error parsing legacy user data:', e);
+          }
         }
       }
     } catch (error) {

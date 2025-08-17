@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { apiRequest } from '../utils/axiosConfig';
+import { handleApiError } from '../utils/errorHandler';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';
 
@@ -241,36 +243,70 @@ export const getEmpData = async (accessToken: string) => {
 
 export const getEmpDataForEdit = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "get-emp-data-for-edit", {
+    // Use local Next.js API route which handles external API fallback
+    const response = await fetch('/api/get-emp-data-for-edit', {
+      method: 'GET',
       headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching employee data for edit:', error);
-    throw error;
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error: any) {
+    console.warn('Employee data not found for editing (this is normal for new users):', error.message);
+    // Return empty data structure to allow form functionality on any error
+    return {
+      empName: '',
+      empDob: '',
+      empGender: '',
+      empWhatsapp: '',
+      empMS: '',
+      empEmail: '',
+      empEdu: '',
+      empTechEdu: '',
+      empPassportQ: '',
+      empSkill: '',
+      empOccuId: '',
+      empInternationMigrationExp: '',
+      empDailyWage: '',
+      empExpectedMonthlyIncome: '',
+      empRelocationIntQ: '',
+      empState: '',
+      empDistrict: '',
+      empPin: '',
+      empRefName: '',
+      empRefPhone: '',
+      empRefDistance: ''
+    };
   }
 };
 
 export const profileCompleteStep2 = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "profile-complete-step2", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    const response = await apiRequest.post(
+      "user-profile-complete-step2", 
+      formData, 
+      accessToken, 
+      'multipart/form-data'
+    );
+    return response?.data || {};
   } catch (error) {
     console.error('Error completing profile step 2:', error);
+    // Re-throw the enhanced error from our interceptors
     throw error;
   }
 };
 
 export const profileCompleteStep3 = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "profile-complete-step3", formData, {
+    const response = await axios.post(BASE_URL + "user-profile-complete-step3", formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         Authorization: `Bearer ${accessToken}`
@@ -690,3 +726,8 @@ export const getUserDetails = async (accessToken: string) => {
     throw error;
   }
 };
+
+// Legacy compatibility aliases
+// These maintain compatibility with old codebase function names
+export { profileCompleteStep2 as registerUserStep1Legacy };
+export { profileCompleteStep3 as registerUserStep2Legacy };

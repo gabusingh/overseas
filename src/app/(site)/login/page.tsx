@@ -15,10 +15,20 @@ import {
   loginUsingOtp,
   verifyOtpForLogin,
 } from "@/services/user.service";
+import { useGlobalState } from "@/contexts/GlobalProvider";
+import { isAuthenticated } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setUserData } = useGlobalState();
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect if user is already logged in
+  React.useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace('/');
+    }
+  }, [router]);
   const [isOtpLogin, setIsOtpLogin] = useState(false);
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
@@ -45,8 +55,10 @@ export default function LoginPage() {
       } else {
         toast.error("Failed to send OTP");
       }
-    } catch {
-      toast.error("Failed to send OTP");
+    } catch (error: any) {
+      console.error('OTP error:', error);
+      const errorMessage = error?.response?.data?.error || "Failed to send OTP";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -80,8 +92,22 @@ export default function LoginPage() {
       }
 
       if (response?.data?.access_token) {
-        localStorage.setItem("loggedUser", JSON.stringify(response.data));
+        // Store user data properly for auth compatibility
+        const userData = {
+          id: response.data.user.id,
+          type: response.data.user.type,
+          email: response.data.user.email,
+          phone: response.data.user.phone,
+          name: (response.data.user as any).name || (response.data.user as any).empName || ''
+        };
+        localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("access_token", response.data.access_token);
+        // Legacy compatibility
+        localStorage.setItem("loggedUser", JSON.stringify(response.data));
+        
+        // Refresh global state
+        await setUserData();
+        
         toast.success("User logged in successfully");
 
         setTimeout(() => {
@@ -101,10 +127,12 @@ export default function LoginPage() {
           }
         }, 1000);
       } else {
-        toast.error(response?.data?.error || "Invalid credentials");
+        toast.error((response?.data as any)?.error || "Invalid credentials");
       }
-    } catch {
-      toast.error("Internal Server Error");
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || "Login failed";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

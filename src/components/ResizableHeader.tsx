@@ -63,6 +63,8 @@ function ResizableHeader() {
               height={40}
               alt="Overseas.ai"
               className="h-[40px] w-auto"
+              priority
+              style={{ width: 'auto', height: '40px' }}
               unoptimized
             />
           </Link>
@@ -184,6 +186,7 @@ function ResizableHeader() {
                 height={30}
                 alt="Overseas.ai"
                 className="h-8 w-auto"
+                style={{ width: 'auto', height: '32px' }}
                 unoptimized
               />
             </Link>

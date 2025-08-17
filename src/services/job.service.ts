@@ -183,7 +183,7 @@ export const getJobByCountry = async (id: number) => {
   }
 };
 
-export const getJobById = async (id: string | number): Promise<JobDetailResponse> => {
+export const getJobById = async (id: string | number): Promise<any> => {
   try {
     const response = await axios.get(BASE_URL + 'getJobs/' + id);
     return response;

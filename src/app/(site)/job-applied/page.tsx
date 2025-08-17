@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { Input } from '../../../components/ui/input';
-import { AppliedJobCard } from '../../../components/AppliedJobCard';
+// import { AppliedJobCard } from '../../../components/AppliedJobCard';
 import { getAppliedJobs } from '../../../services/job.service';
 import { useGlobalState } from '../../../contexts/GlobalProvider';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import AppliedJobsDebug from '../../../components/AppliedJobsDebug';
 
 interface AppliedJob {
   id: number;
@@ -47,41 +48,97 @@ export default function JobAppliedPage() {
   }, [appliedJobs, searchTerm, statusFilter]);
 
   const fetchAppliedJobs = async () => {
+    console.log('=== fetchAppliedJobs started ===');
+    console.log('globalState:', globalState);
+    console.log('globalState?.user:', globalState?.user);
+    
     try {
       setLoading(true);
-      const response = await getAppliedJobs(globalState?.user?.user?.access_token);
-      setAppliedJobs(response?.data || []);
-    } catch (error) {
+      
+      // Get token from global state (should now work correctly)
+      const tokenToUse = globalState?.user?.access_token || '';
+      
+      console.log('Using token:', tokenToUse ? `${tokenToUse.substring(0, 10)}...` : 'No token available');
+      
+      if (!tokenToUse) {
+        console.error('No token available, setting empty array');
+        setAppliedJobs([]);
+        toast.error('Authentication token not found. Please login again.');
+        return;
+      }
+      
+      console.log('About to call getAppliedJobs API...');
+      const response = await getAppliedJobs(tokenToUse);
+      console.log('getAppliedJobs response received');
+      
+      // Debug the response structure
+      console.log('API Response:', response);
+      console.log('Response.data:', response?.data);
+      console.log('Response.data.jobs:', response?.data?.jobs);
+      
+      // Match the old codebase exactly: response?.data?.jobs
+      const jobsData = response?.data?.jobs || [];
+      console.log('Jobs data extracted:', jobsData);
+      console.log('Jobs data type:', typeof jobsData);
+      console.log('Jobs data is array:', Array.isArray(jobsData));
+      console.log('Jobs data length:', jobsData?.length);
+      
+      // Ensure it's always an array
+      const safeJobsData = Array.isArray(jobsData) ? jobsData : [];
+      console.log('Safe jobs data:', safeJobsData);
+      
+      setAppliedJobs(safeJobsData);
+      console.log('Applied jobs state updated successfully');
+      
+    } catch (error: any) {
       console.error('Error fetching applied jobs:', error);
+      console.error('Error details:', {
+        message: error?.message || 'Unknown error',
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
+      
+      // Always set empty array on error
+      setAppliedJobs([]);
       toast.error('Failed to load applied jobs');
     } finally {
       setLoading(false);
+      console.log('=== fetchAppliedJobs completed ===');
     }
   };
 
   const filterJobs = () => {
-    let filtered = appliedJobs;
+    // Ensure appliedJobs is an array
+    if (!Array.isArray(appliedJobs)) {
+      console.error('appliedJobs is not an array:', appliedJobs);
+      setFilteredJobs([]);
+      return;
+    }
+
+    let filtered = [...appliedJobs]; // Create a copy
 
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(job =>
-        job.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.jobLocationCountry.name.toLowerCase().includes(searchTerm.toLowerCase())
+        job?.jobTitle?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+        job?.companyName?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+        job?.jobLocationCountry?.name?.toLowerCase()?.includes(searchTerm.toLowerCase())
       );
     }
 
     // Filter by status
     if (statusFilter !== 'all') {
       filtered = filtered.filter(job =>
-        job.applicationStatus.toLowerCase() === statusFilter.toLowerCase()
+        job?.applicationStatus?.toLowerCase() === statusFilter.toLowerCase()
       );
     }
 
+    console.log('Filtered jobs:', filtered);
     setFilteredJobs(filtered);
   };
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-100 text-gray-800';
     switch (status.toLowerCase()) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
@@ -126,6 +183,9 @@ export default function JobAppliedPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Debug Component - Remove in production */}
+      <AppliedJobsDebug />
+      
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
@@ -189,7 +249,7 @@ export default function JobAppliedPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {filteredJobs.map((job) => (
+          {Array.isArray(filteredJobs) && filteredJobs.length > 0 && filteredJobs.map((job) => (
             <Card key={job.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
@@ -233,7 +293,7 @@ export default function JobAppliedPage() {
                       <Link href={`/job-description/${job.id}`}>
                         <Button size="sm" variant="outline">View Job</Button>
                       </Link>
-                      {job.applicationStatus.toLowerCase() === 'interview' && (
+                      {job.applicationStatus && job.applicationStatus.toLowerCase() === 'interview' && (
                         <Button size="sm">View Details</Button>
                       )}
                     </div>

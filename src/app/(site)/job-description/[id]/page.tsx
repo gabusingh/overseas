@@ -12,6 +12,7 @@ import { getStoredToken } from '../../../../lib/auth';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import Head from 'next/head';
+import ProfileCompletionModal from '../../../../components/ProfileCompletionModal';
 import { 
   MapPin, 
   Calendar, 
@@ -106,6 +107,7 @@ export default function JobDescriptionPage() {
   const [applying, setApplying] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isWishListed, setIsWishListed] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -117,7 +119,6 @@ export default function JobDescriptionPage() {
     try {
       setLoading(true);
       const response = await getJobById(params.id as string);
-      console.log('Job Details Response:', response);
       
       // Extract job data from different possible response structures
       let jobResponse = null;
@@ -218,11 +219,21 @@ export default function JobDescriptionPage() {
         toast.success(response?.data?.msg);
         // Update applied status
         setJobData(prev => prev ? {...prev, appliedStatus: true} : prev);
+      } else if (response?.data?.error === "You did not fill mandatory fields.") {
+        // Show profile completion modal instead of redirecting
+        setShowProfileModal(true);
       } else {
         toast.error(response?.data?.error || "Something went wrong");
       }
-    } catch (error) {
-      toast.error("Internal Server Error");
+    } catch (error: any) {
+      console.error('Apply job error:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || "Internal Server Error";
+      if (errorMessage === "You did not fill mandatory fields.") {
+        // Show profile completion modal instead of redirecting
+        setShowProfileModal(true);
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setApplying(false);
     }
@@ -684,6 +695,21 @@ export default function JobDescriptionPage() {
           </div>
         </div>
       </div>
+      
+      {/* Profile Completion Modal */}
+      {showProfileModal && jobData && (
+        <ProfileCompletionModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          jobId={jobData.id}
+          onSuccess={() => {
+            setShowProfileModal(false);
+            // Update applied status
+            setJobData(prev => prev ? {...prev, appliedStatus: true} : prev);
+            toast.success('Profile updated and job application submitted successfully!');
+          }}
+        />
+      )}
     </>
   );
 }

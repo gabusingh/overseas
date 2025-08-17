@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuTrigger, NavigationMenuContent } from "../../components/ui/navigation-menu";
 
@@ -37,7 +38,15 @@ export default function Header() {
       <header className="w-full bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <img src="/images/brandlogo.gif" alt="Overseas.ai" className="h-10 w-auto mr-2" />
+            <Image 
+              src="/images/brandlogo.gif" 
+              alt="Overseas.ai" 
+              width={40}
+              height={40}
+              className="h-10 w-auto mr-2" 
+              priority
+              style={{ width: 'auto', height: '40px' }}
+            />
             <span className="font-bold text-xl text-blue-600">Overseas.ai</span>
           </Link>
           

@@ -9,6 +9,7 @@ import { getJobList, saveJobById, getOccupations, applyJobApi } from "../../../s
 import { getCountriesForJobs } from "../../../services/info.service";
 import JobFilter from "../../../components/JobFilter";
 import SearchComponent from "../../../components/SearchComponent";
+import ProfileCompletionModal from "../../../components/ProfileCompletionModal";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGlobalState } from "../../../contexts/GlobalProvider";
@@ -40,6 +41,8 @@ export default function JobsPage() {
   const [savedJobs, setSavedJobs] = useState<(string | number)[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState(0);
   const [totalJobs, setTotalJobs] = useState(0);
   const [sortBy, setSortBy] = useState('latest');
@@ -61,7 +64,7 @@ export default function JobsPage() {
   const { globalState } = useGlobalState();
   const jobsPerPage = 10;
 
-  // Apply job function - matching old system exactly
+  // Apply job function with profile completion modal
   const handleApplyJob = async (jobId: number) => {
     // Check authentication exactly like the old code using globalState
     if (!globalState?.user) {
@@ -84,11 +87,23 @@ export default function JobsPage() {
       );
       if (response?.data?.msg == "Job Applied Successfully") {
         toast.success(response?.data?.msg);
+      } else if (response?.data?.error === "You did not fill mandatory fields.") {
+        // Show profile completion modal instead of redirecting
+        setSelectedJobId(jobId);
+        setShowProfileModal(true);
       } else {
-        toast.error("Something went wrong");
+        toast.error(response?.data?.error || "Something went wrong");
       }
-    } catch (error) {
-      toast.error("Internal Server Error");
+    } catch (error: any) {
+      console.error('Apply job error:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || "Internal Server Error";
+      if (errorMessage === "You did not fill mandatory fields.") {
+        // Show profile completion modal instead of redirecting
+        setSelectedJobId(jobId);
+        setShowProfileModal(true);
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 
@@ -637,6 +652,23 @@ export default function JobsPage() {
           </div>
         </div>
       </div>
+      
+      {/* Profile Completion Modal */}
+      {showProfileModal && selectedJobId && (
+        <ProfileCompletionModal
+          isOpen={showProfileModal}
+          onClose={() => {
+            setShowProfileModal(false);
+            setSelectedJobId(null);
+          }}
+          jobId={selectedJobId}
+          onSuccess={() => {
+            setShowProfileModal(false);
+            setSelectedJobId(null);
+            toast.success('Profile updated and job application submitted successfully!');
+          }}
+        />
+      )}
     </div>
   );
 }
