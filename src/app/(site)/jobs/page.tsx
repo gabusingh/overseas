@@ -523,7 +523,6 @@ export default function JobsPage() {
                         >
                           View Details
                         </Button>
-                        <a href="job-details/${job.id}" title="">
                         <Button 
                           size="sm" 
                           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 h-8 text-xs font-medium"
@@ -535,7 +534,7 @@ export default function JobsPage() {
                           }}
                         >
                           Apply Now
-                        </Button></a>
+                        </Button>
                       </div>
                     </div>
                   </div>
