@@ -778,12 +778,12 @@ We are committed to creating a workplace where everyone can thrive, grow, and ma
                             </span>
                           </div>
                         </div>
-                        <button
+                        <a href="job-details/${job.id}" title=""> <button
                           onClick={() => router.push(`/job-details/${job.id}`)}
                           className="ml-6 bg-[#17487f] text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                         >
                           Apply Now
-                        </button>
+                        </button></a>
                       </div>
                     </div>
                   ))}
