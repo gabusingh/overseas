@@ -150,97 +150,103 @@ function Footer() {
   }, []);
 
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Company Info */}
-          <div className="lg:col-span-2">
+    <footer className="bg-white border-t border-gray-200 text-gray-700 text-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Logo & About */}
+          <div className="flex flex-col gap-3">
             <Image
-              src="/images/brandlogo.gif"
-              width={160}
-              height={40}
-              className="h-10 w-auto mb-4"
+              src="/images/overseas.ainewlogo.png"
+              width={80}
+              height={32}
+              className="h-8 w-auto mb-1"
               alt="Overseas.ai Logo"
               unoptimized
             />
-            <p className="text-gray-400 text-sm leading-relaxed mb-6">
-              Find your next international job opportunity with Overseas.ai. 
+            <p className="text-gray-500 text-xs leading-relaxed pr-2">
+              Find your next international job opportunity with <span className="font-semibold text-indigo-700">Overseas.ai</span>.<br/>
               Connect with employers worldwide and start your global career today.
             </p>
-            <div className="flex space-x-4">
-              {socialLinks?.map((social, i) => (
-                <a 
-                  key={i} 
-                  href={social?.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <i className={`${social?.icon} text-xl`}></i>
+            <div className="flex gap-2 mt-1">
+              {socialLinks?.map((social, i) => {
+                const iconClass = social.icon.includes('whatsapp') || social.icon.includes('facebook') || social.icon.includes('linkedin') || social.icon.includes('instagram') || social.icon.includes('youtube')
+                  ? `fab fa-${social.icon.split('fa-')[1]}`
+                  : `fas fa-${social.icon.split('fa-')[1]}`;
+                return (
+                  <a
+                    key={i}
+                    href={social?.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full bg-gray-100 hover:bg-indigo-50 border border-gray-200 p-1.5 text-indigo-600 hover:text-indigo-900 transition-colors"
+                    aria-label={social?.icon.replace('fa fa-', '')}
+                  >
+                    <i className={`${iconClass} text-base`}></i>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Job Seekers */}
+          <div>
+            <h3 className="text-gray-900 font-semibold mb-3 text-xs uppercase tracking-wider">Job Seekers</h3>
+            <ul className="space-y-1">
+              <li><Link href="/" className="hover:text-indigo-700">Home</Link></li>
+              <li><Link href="/jobs" className="hover:text-indigo-700">Browse Jobs</Link></li>
+              <li><Link href="/candidate-register" className="hover:text-indigo-700">Register</Link></li>
+              <li><Link href="/applied-jobs" className="hover:text-indigo-700">Applied Jobs</Link></li>
+              <li><Link href="/resume-building" className="hover:text-indigo-700">Resume Services</Link></li>
+            </ul>
+          </div>
+
+          {/* Employers */}
+          <div>
+            <h3 className="text-gray-900 font-semibold mb-3 text-xs uppercase tracking-wider">Employers</h3>
+            <ul className="space-y-1">
+              <li><Link href="/create-jobs" className="hover:text-indigo-700">Post a Job</Link></li>
+              <li><Link href="/hra-dashboard" className="hover:text-indigo-700">Employer Dashboard</Link></li>
+              <li><Link href="/companies" className="hover:text-indigo-700">Browse Companies</Link></li>
+              <li><Link href="/pricing" className="hover:text-indigo-700">Pricing</Link></li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="text-gray-900 font-semibold mb-3 text-xs uppercase tracking-wider">Contact</h3>
+            <ul className="space-y-1 mb-3">
+              <li>
+                <a href="tel:18008904788" className="flex items-center hover:text-indigo-700">
+                  <i className="fas fa-phone mr-2"></i> 1800 890 4788
                 </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h3 className="text-white font-semibold mb-4">Quick Links</h3>
-            <div className="space-y-2">
-              {quickLinks.slice(0, 6).map((link, i) => (
-                <Link 
-                  key={i}
-                  href={link.link}
-                  className="block text-gray-400 hover:text-white text-sm transition-colors"
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Contact & App */}
-          <div>
-            <h3 className="text-white font-semibold mb-4">Get in Touch</h3>
-            <div className="space-y-3 mb-6">
-              <a
-                href="tel:18008904788"
-                className="flex items-center text-gray-400 hover:text-white text-sm transition-colors"
-              >
-                <i className="fa fa-phone mr-2"></i>
-                1800 890 4788
-              </a>
-              <a
-                href="mailto:contact@overseas.ai"
-                className="flex items-center text-gray-400 hover:text-white text-sm transition-colors"
-              >
-                <i className="fa fa-envelope mr-2"></i>
-                contact@overseas.ai
-              </a>
-            </div>
-            
-            <a 
-              href="https://play.google.com/store/apps/details?id=ai.overseas" 
-              target="_blank" 
+              </li>
+              <li>
+                <a href="mailto:contact@overseas.ai" className="flex items-center hover:text-indigo-700">
+                  <i className="fas fa-envelope mr-2"></i> contact@overseas.ai
+                </a>
+              </li>
+            </ul>
+            <a
+              href="https://play.google.com/store/apps/details?id=ai.overseas"
+              target="_blank"
               rel="noopener noreferrer"
-              className="inline-block bg-white text-gray-900 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+              className="inline-flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-indigo-700 transition-colors shadow"
             >
-              <i className="fa fa-mobile mr-2"></i>
-              Download App
+              <i className="fas fa-mobile"></i> Download App
             </a>
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <hr className="border-gray-800 my-8" />
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm mb-4 md:mb-0">
+        <div className="mt-10 pt-6 border-t border-indigo-100 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-gray-400 text-xs">
             © 2024 Overseas.ai. All rights reserved.
           </p>
-          <div className="flex space-x-6 text-sm">
-            <Link href="/privacy-policy" className="text-gray-400 hover:text-white transition-colors">
+          <div className="flex gap-6 text-xs">
+            <Link href="/privacy-policy" className="text-gray-500 hover:text-indigo-700 transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms-condition" className="text-gray-400 hover:text-white transition-colors">
+            <Link href="/terms-condition" className="text-gray-500 hover:text-indigo-700 transition-colors">
               Terms of Service
             </Link>
           </div>
