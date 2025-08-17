@@ -530,7 +530,8 @@ export default function JobsPage() {
                           onClick={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            await handleApplyJob(job.id);
+                            router.push(`/job-description/${job.id}`);
+
                           }}
                         >
                           Apply Now
