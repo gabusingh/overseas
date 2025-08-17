@@ -135,12 +135,14 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
   // Memoize popular searches data
   const popularSearches = useMemo(() => {
     return data && data.length > 0 ? data.slice(0, 6) : [
-      { label: "Software Developer", value: 1, img: "/images/institute.png" },
-      { label: "Data Scientist", value: 2, img: "/images/institute.png" },
-      { label: "Marketing Manager", value: 3, img: "/images/institute.png" },
-      { label: "Sales Executive", value: 4, img: "/images/institute.png" },
-      { label: "UI/UX Designer", value: 5, img: "/images/institute.png" },
-      { label: "Project Manager", value: 6, img: "/images/institute.png" }
+      { label: "Helper", value: 1, img: "/images/institute.png" },
+      { label: "Plumber", value: 2, img: "/images/institute.png" },
+      { label: "Electrician", value: 3, img: "/images/institute.png" },
+      { label: "Painter", value: 4, img: "/images/institute.png" },
+      { label: "Steel Fixer", value: 5, img: "/images/institute.png" },
+      { label: "Mason", value: 6, img: "/images/institute.png" },
+      { label: "Carpenter", value: 6, img: "/images/institute.png" }
+
     ];
   }, [data]);
 
