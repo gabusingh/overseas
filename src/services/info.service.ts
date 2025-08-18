@@ -166,9 +166,19 @@ export const getVersionCode = async () => {
 export const getNewsFeedData = async () => {
   try {
     const response = await axios.get(BASE_URL + 'get-news-feed');
-    return response;
+    // Map API response to NewsItem[]
+    const newsData = response.data?.newsData || [];
+    const mapped = newsData.map((item: any) => ({
+      news_title: item.ArticleTitle || '',
+      news_description: item.summary || '',
+      image: item.image || '',
+      created_at: item.Date || '',
+      link: item.Link || '',
+      id: item.Link || item.ArticleTitle || Math.random().toString(36).slice(2, 10),
+    }));
+    return { data: { newsData: mapped } };
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error('Error fetching news feed:', error);
     throw error;
   }
 };

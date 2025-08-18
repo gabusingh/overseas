@@ -67,6 +67,7 @@ interface NewsItem {
   news_description: string;
   image?: string;
   created_at: string;
+  link?: string;
 }
 
 // Loading component
@@ -95,6 +96,7 @@ export default function Home() {
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [successStories, setSuccessStories] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalNews, setModalNews] = useState<NewsItem | null>(null);
 
 
   // Cache key for localStorage
@@ -224,7 +226,7 @@ export default function Home() {
       <HeroSection data={departmentList} countryData={countryList} />
 
       {/* Top Countries Hiring Now - New Component */}
-      <TopCountriesHiring limit={12} />
+  <TopCountriesHiring limit={4} />
 
       {/* Find Jobs by Department Section */}
       <FindJobsByDepartment limit={12} showViewAll={true} />
@@ -236,7 +238,7 @@ export default function Home() {
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Top Companies Hiring</h2>
             <p className="text-gray-600">Join leading companies from around the world</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             {companyList.slice(0, 8).map((company) => (
               <div key={company.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300 cursor-pointer group">
                 <div className="text-center">
@@ -333,29 +335,72 @@ export default function Home() {
 
       {/* News & Resources */}
       {newsList.length > 0 && (
-        <section className="py-16 bg-gray-50">
+        <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Latest News & Insights</h2>
-              <p className="text-gray-600">Stay updated with the latest trends in overseas employment</p>
+              <h2 className="text-4xl font-extrabold text-blue-900 mb-4">Latest News & Resources</h2>
+              <p className="text-lg text-blue-700">Stay updated with the latest trends in overseas employment</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
               {newsList.map((news) => (
-                <article key={news.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
-                  <div className="p-6">
-                    <h3 className="font-semibold text-gray-900 mb-3 line-clamp-2">{news.news_title}</h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">{news.news_description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">{new Date(news.created_at).toLocaleDateString()}</span>
-                      <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                        Read More →
-                      </button>
+                <article
+                  key={news.id}
+                  className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col overflow-hidden border border-blue-100"
+                >
+                  {/* News image removed as per request */}
+                  <div className="flex-1 flex flex-col p-6">
+                    <h3 className="font-bold text-xl text-blue-900 mb-2 line-clamp-2">{news.news_title}</h3>
+                    <p className="text-gray-700 text-base mb-4 line-clamp-3">{news.news_description}</p>
+                    <div className="flex items-center justify-between mt-auto">
+                      <span className="text-xs text-gray-400">{new Date(news.created_at).toLocaleDateString()}</span>
+                      {/* If news has a link, redirect. Otherwise, open modal with full description. */}
+                      {news.link ? (
+                        <a
+                          href={news.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 font-semibold text-sm transition-colors"
+                        >
+                          Read More →
+                        </a>
+                      ) : (
+                        <button
+                          className="text-blue-600 hover:text-blue-800 font-semibold text-sm transition-colors"
+                          onClick={() => setModalNews(news)}
+                        >
+                          Read More →
+                        </button>
+                      )}
                     </div>
                   </div>
                 </article>
               ))}
             </div>
           </div>
+          {/* News Modal */}
+          {modalNews && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative animate-fadeIn">
+                <button
+                  className="absolute top-4 right-4 text-gray-400 hover:text-blue-600 text-2xl"
+                  onClick={() => setModalNews(null)}
+                  aria-label="Close"
+                >
+                  &times;
+                </button>
+                {/* News image removed as per request */}
+                <h3 className="font-bold text-2xl text-blue-900 mb-2">{modalNews.news_title}</h3>
+                <p className="text-gray-700 text-base mb-4 whitespace-pre-line">{modalNews.news_description}</p>
+                <div className="text-xs text-gray-400 mb-2">{new Date(modalNews.created_at).toLocaleDateString()}</div>
+                <button
+                  className="mt-2 px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  onClick={() => setModalNews(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
