@@ -15,16 +15,28 @@ import {
 } from "./ui/resizable-navbar";
 
 function ResizableHeader() {
-  const { globalState } = useGlobalState();
+  const { globalState, setGlobalState } = useGlobalState();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLangPopup, setShowLangPopup] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user");
-    router.push("/login");
+  const handleLogout = async () => {
+    const accessToken = localStorage.getItem("access_token");
+    try {
+      if (accessToken) {
+        const { logOut } = await import("../services/user.service");
+        await logOut(accessToken);
+      }
+    } catch (error) {
+      // Optionally show error to user, but proceed with logout
+      console.error("Logout API failed", error);
+    } finally {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("user");
+      setGlobalState(prev => ({ ...prev, user: null }));
+      router.push("/login");
+    }
   };
 
   const navItems = [
