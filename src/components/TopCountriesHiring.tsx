@@ -133,7 +133,7 @@ const TopCountriesHiring: React.FC<TopCountriesHiringProps> = ({ className = "",
             <div className="h-8 bg-gray-200 rounded-lg w-96 mx-auto mb-4 animate-pulse"></div>
             <div className="h-4 bg-gray-200 rounded w-64 mx-auto animate-pulse"></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <div key={index} className="bg-white rounded-xl p-6 shadow-sm border animate-pulse">
                 <div className="flex items-center justify-between mb-4">
@@ -267,7 +267,7 @@ const TopCountriesHiring: React.FC<TopCountriesHiringProps> = ({ className = "",
         </div> */}
 
         {/* Countries Grid  */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {filteredCountries.map((country) => {
             const trend = getTrendIndicator(country.totalJobs);
             const TrendIcon = trend.icon;
