@@ -369,8 +369,26 @@ export default function SearchResultsPage() {
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+        {/* Main Content Layout */}
+        <div className="flex gap-6">
+          {/* Left Sidebar - Filters */}
+          <div className={`w-64 flex-shrink-0 ${showFilter ? 'block' : 'hidden lg:block'}`}>
+            {showFilter && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden" onClick={() => setShowFilter(false)} />
+            )}
+            <div className={`${showFilter ? 'fixed inset-y-0 left-0 z-50 w-80 lg:relative lg:inset-auto lg:w-64 lg:sticky lg:top-6 lg:max-h-[calc(100vh-12rem)]' : 'lg:sticky lg:top-6 lg:max-h-[calc(100vh-12rem)]'}`}>
+              <JobFilter 
+                setShowFilter={setShowFilter}
+                payload={payload}
+                setPayload={setPayload}
+              />
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0">
+            {/* Search and Filters */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             <div className="flex-1 max-w-md">
               <div className="relative">
@@ -388,12 +406,12 @@ export default function SearchResultsPage() {
             <div className="flex items-center gap-4">
               <Button
                 onClick={() => setShowFilter(!showFilter)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
+                className="lg:hidden flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-lg"
               >
                 <Filter className="w-4 h-4" />
-                Filters
+                All Filters
               </Button>
-
+              
               {/* Pagination Type Toggle */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">View:</span>
@@ -436,18 +454,6 @@ export default function SearchResultsPage() {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Filter Sidebar */}
-        {showFilter && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden" onClick={() => setShowFilter(false)} />
-        )}
-        <div className={`${showFilter ? 'fixed inset-y-0 left-0 z-50 w-80 lg:relative lg:inset-auto lg:w-64 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)]' : 'lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)]'}`}>
-          <JobFilter 
-            setShowFilter={setShowFilter}
-            payload={payload}
-            setPayload={setPayload}
-          />
         </div>
 
         {/* Jobs List */}
@@ -575,6 +581,8 @@ export default function SearchResultsPage() {
               </CardContent>
             </Card>
           ))}
+            </div>
+          </div>
         </div>
 
         {/* Load More Button */}
