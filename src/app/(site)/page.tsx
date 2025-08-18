@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { getOccupations, getCountriesForJobs, getNewsFeedData, getSuccessNotification } from '../../services/info.service';
 import { getInstitutes } from '../../services/institute.service';
 import { getAllCompanies } from '../../services/hra.service';
+import { NewsSlider } from '../../components/NewsSlider';
 import { toast } from 'sonner';
 
 // Lazy load heavy components
@@ -67,6 +68,11 @@ interface NewsItem {
   news_description: string;
   image?: string;
   created_at: string;
+  // API response structure
+  ArticleTitle?: string;
+  Link?: string;
+  Date?: string;
+  summary?: string;
 }
 
 // Loading component
@@ -135,8 +141,9 @@ export default function Home() {
       const cachedData = getCachedData();
       if (cachedData && typeof cachedData === 'object') {
         // Use cached data immediately
-        setDepartmentList((cachedData as any).occupations || []);
-        setCountryList((cachedData as any).countries || []);
+        const cached = cachedData as { occupations?: Department[]; countries?: Country[] };
+        setDepartmentList(cached.occupations || []);
+        setCountryList(cached.countries || []);
         setLoading(false);
         toast.success('Loaded from cache!');
         return;
@@ -192,7 +199,16 @@ export default function Home() {
           getSuccessNotification()
         ]);
         
-        setNewsList(newsRes?.data?.newsData?.slice(0, 6) || []);
+        // Process the news data from the API response structure
+        const processedNews = newsRes?.data?.newsData?.slice(0, 6)?.map((item: unknown) => ({
+          id: (item as any).id || Math.random(),
+          news_title: (item as any).ArticleTitle || (item as any).news_title || 'News Article',
+          news_description: (item as any).summary || (item as any).news_description || 'Article description',
+          image: (item as any).image || '/images/news1.svg',
+          created_at: (item as any).Date || (item as any).created_at || new Date().toISOString(),
+          Link: (item as any).Link || '#'
+        })) || [];
+        setNewsList(processedNews);
         setSuccessStories(successRes?.notifications?.slice(0, 8) || []);
       }, 500);
       
@@ -347,9 +363,14 @@ export default function Home() {
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">{news.news_description}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-500">{new Date(news.created_at).toLocaleDateString()}</span>
-                      <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                      <a 
+                        href={news.Link || '#'} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                      >
                         Read More →
-                      </button>
+                      </a>
                     </div>
                   </div>
                 </article>
