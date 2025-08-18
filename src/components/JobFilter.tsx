@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
-import { X, Filter } from "lucide-react";
+import { X, Filter, Check } from "lucide-react";
 
 interface JobFilterProps {
   setShowFilter: (show: boolean) => void;
@@ -60,9 +60,8 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
   const getOccupationsListFunc = async () => {
     try {
       const response = await getOccupations();
-      console.log('Occupations API Response:', response); // Debug log
+      console.log('Occupations API Response:', response);
       
-      // Handle different possible response structures
       let occupationData = [];
       if (response?.occupation && Array.isArray(response.occupation)) {
         occupationData = response.occupation;
@@ -75,10 +74,10 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
       const occupations = occupationData.map((item: any) => ({
         label: item.occupation || item.title || item.name,
         value: item.id,
-        img: "/images/institute.png", // Use existing image instead of backend URL that might not exist
+        img: "/images/institute.png",
       }));
       
-      console.log('Processed occupations:', occupations); // Debug log
+      console.log('Processed occupations:', occupations);
       setDepartmentList(occupations || []);
     } catch (error) {
       console.log('Error fetching occupations:', error);
@@ -88,9 +87,8 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
   const getCountriesForJobsFunc = async () => {
     try {
       const response = await getCountriesForJobs();
-      console.log('Countries API Response:', response); // Debug log
+      console.log('Countries API Response:', response);
       
-      // Handle different possible response structures
       let countryData = [];
       if (response?.countries && Array.isArray(response.countries)) {
         countryData = response.countries;
@@ -100,7 +98,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         countryData = response;
       }
       
-      console.log('Processed countries:', countryData); // Debug log
+      console.log('Processed countries:', countryData);
       setCountryList(countryData || []);
     } catch (error) {
       console.log('Error fetching countries:', error);
@@ -113,33 +111,33 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
   }, []);
 
   const handleCheckboxChange = (type: string, value: number | string) => {
+    console.log('Checkbox clicked:', type, value); // Debug log
+    
     setPayload((prevState: JobFilterPayload) => {
       const updated = { ...prevState };
+      
       if (type === "jobOccupation") {
-        if (updated.jobOccupation.includes(value as number)) {
-          updated.jobOccupation = updated.jobOccupation.filter(
-            (item) => item !== value
-          );
+        const numValue = value as number;
+        if (updated.jobOccupation.includes(numValue)) {
+          updated.jobOccupation = updated.jobOccupation.filter(item => item !== numValue);
         } else {
-          updated.jobOccupation.push(value as number);
+          updated.jobOccupation = [...updated.jobOccupation, numValue];
         }
       } else if (type === "jobLocationCountry") {
-        if (updated.jobLocationCountry.includes(value as number)) {
-          updated.jobLocationCountry = updated.jobLocationCountry.filter(
-            (item) => item !== value
-          );
+        const numValue = value as number;
+        if (updated.jobLocationCountry.includes(numValue)) {
+          updated.jobLocationCountry = updated.jobLocationCountry.filter(item => item !== numValue);
         } else {
-          updated.jobLocationCountry.push(value as number);
+          updated.jobLocationCountry = [...updated.jobLocationCountry, numValue];
         }
       } else if (type === "passportType") {
         updated.passportType = updated.passportType === value ? "" : (value as string);
       } else if (type === "languageRequired") {
-        if (updated.languageRequired.includes(value as string)) {
-          updated.languageRequired = updated.languageRequired.filter(
-            (item) => item !== value
-          );
+        const strValue = value as string;
+        if (updated.languageRequired.includes(strValue)) {
+          updated.languageRequired = updated.languageRequired.filter(item => item !== strValue);
         } else {
-          updated.languageRequired.push(value as string);
+          updated.languageRequired = [...updated.languageRequired, strValue];
         }
       } else if (type === "contractPeriod") {
         updated.contractPeriod = updated.contractPeriod === value ? "" : (value as string);
@@ -148,6 +146,8 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
       } else if (type === "sortBy") {
         updated.sortBy = updated.sortBy === value ? "" : (value as string);
       }
+      
+      console.log('Updated payload:', updated); // Debug log
       return updated;
     });
   };
@@ -156,19 +156,13 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
     setPayload((prevState: JobFilterPayload) => {
       const updated = { ...prevState };
       if (type === "jobOccupation") {
-        updated.jobOccupation = updated.jobOccupation.filter(
-          (item) => item !== value
-        );
+        updated.jobOccupation = updated.jobOccupation.filter(item => item !== value);
       } else if (type === "jobLocationCountry") {
-        updated.jobLocationCountry = updated.jobLocationCountry.filter(
-          (item) => item !== value
-        );
+        updated.jobLocationCountry = updated.jobLocationCountry.filter(item => item !== value);
       } else if (type === "passportType") {
         updated.passportType = "";
       } else if (type === "languageRequired") {
-        updated.languageRequired = updated.languageRequired.filter(
-          (item) => item !== value
-        );
+        updated.languageRequired = updated.languageRequired.filter(item => item !== value);
       } else if (type === "contractPeriod") {
         updated.contractPeriod = "";
       }
@@ -189,6 +183,64 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
     const country = countryList.find((v) => v.id === id);
     return country ? country.name : id;
   };
+
+  // Custom Checkbox Component
+  const CustomCheckbox = ({ 
+    checked, 
+    onChange, 
+    label, 
+    value, 
+    type = "checkbox" 
+  }: {
+    checked: boolean;
+    onChange: () => void;
+    label: string;
+    value: string | number;
+    type?: "checkbox" | "radio";
+  }) => (
+    <div 
+      className="flex items-center cursor-pointer group p-2 rounded-lg hover:bg-gray-50 transition-colors duration-150"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onChange();
+      }}
+      role={type}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onChange();
+        }
+      }}
+      aria-checked={checked}
+    >
+      <div className="relative flex-shrink-0">
+        <div 
+          className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center ${
+            checked 
+              ? 'bg-blue-600 border-blue-600' 
+              : 'bg-white border-gray-300 group-hover:border-blue-400'
+          }`}
+        >
+          {checked && (
+            <Check className="w-3 h-3 text-white" />
+          )}
+        </div>
+        <input
+          type={type}
+          checked={checked}
+          onChange={onChange}
+          value={value}
+          className="sr-only"
+          aria-label={label}
+        />
+      </div>
+      <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900 select-none">
+        {label}
+      </span>
+    </div>
+  );
 
   return (
     <div className="bg-white lg:rounded-lg lg:border lg:border-gray-200 h-full lg:h-auto flex flex-col">
@@ -212,7 +264,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
 
       {/* Content - Scrollable */}
       <div className="p-4 space-y-6 flex-1 overflow-y-auto">
-        {/* Applied Filters - Clean Style */}
+        {/* Applied Filters */}
         <div className="space-y-2">
           {Object.entries(payload).some(([key, values]) => 
             (Array.isArray(values) && values.length > 0) || 
@@ -292,36 +344,23 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         {/* Sort By */}
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900 text-sm">Sort By</h4>
-          <div className="space-y-2.5">
+          <div className="space-y-1">
             {[
-              "service_charge_asc",
-              "salary_desc",
-              "experience_asc",
-              "age_limit_desc",
-              "date_posted_desc",
-              "working_hours_asc",
-            ].map((sortOption) => (
-              <label key={sortOption} className="flex items-center cursor-pointer group">
-                <input
-                  type="radio"
-                  value={sortOption}
-                  checked={payload.sortBy === sortOption}
-                  onChange={() => handleCheckboxChange("sortBy", sortOption)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-3"
-                />
-                <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                  {sortOption === "service_charge_asc" &&
-                    "Service Charge - Low to high"}
-                  {sortOption === "salary_desc" && "Salary - High to Low"}
-                  {sortOption === "experience_asc" &&
-                    "Experience - Fresher to Experienced"}
-                  {sortOption === "age_limit_desc" && "Age limit - High to Low"}
-                  {sortOption === "date_posted_desc" &&
-                    "Date posted - New to Old"}
-                  {sortOption === "working_hours_asc" &&
-                    "Working Hours - low to High"}
-                </span>
-              </label>
+              { value: "service_charge_asc", label: "Service Charge - Low to high" },
+              { value: "salary_desc", label: "Salary - High to Low" },
+              { value: "experience_asc", label: "Experience - Fresher to Experienced" },
+              { value: "age_limit_desc", label: "Age limit - High to Low" },
+              { value: "date_posted_desc", label: "Date posted - New to Old" },
+              { value: "working_hours_asc", label: "Working Hours - low to High" },
+            ].map((option) => (
+              <CustomCheckbox
+                key={option.value}
+                checked={payload.sortBy === option.value}
+                onChange={() => handleCheckboxChange("sortBy", option.value)}
+                label={option.label}
+                value={option.value}
+                type="radio"
+              />
             ))}
           </div>
         </div>
@@ -331,26 +370,20 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         {/* Department */}
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900 text-sm">Department</h4>
-          <div className="space-y-2.5">
-            {(showFullDep ? departmentList : departmentList.slice(0, 6)).map(
-              (v, i) => (
-                <label key={i} className="flex items-center cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    value={v.value}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-3 rounded"
-                    checked={payload.jobOccupation.includes(v.value)}
-                    onChange={() =>
-                      handleCheckboxChange("jobOccupation", v.value)
-                    }
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-gray-900">{v.label}</span>
-                </label>
-              )
-            )}
+          <div className="space-y-1">
+            {(showFullDep ? departmentList : departmentList.slice(0, 6)).map((dept) => (
+              <CustomCheckbox
+                key={dept.value}
+                checked={payload.jobOccupation.includes(dept.value)}
+                onChange={() => handleCheckboxChange("jobOccupation", dept.value)}
+                label={dept.label}
+                value={dept.value}
+                type="checkbox"
+              />
+            ))}
             {showFullDep ? (
               <button
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium mt-2"
                 onClick={() => setShowFullDep(false)}
               >
                 Show Less Options
@@ -358,7 +391,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
             ) : (
               departmentList.length > 6 && (
                 <button
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium mt-2"
                   onClick={() => setShowFullDep(true)}
                 >
                   +{departmentList.length - 6} more
@@ -373,26 +406,20 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         {/* Country */}
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900 text-sm">Country</h4>
-          <div className="space-y-2.5">
-            {(showFullCountry ? countryList : countryList.slice(0, 6)).map(
-              (v, i) => (
-                <label key={i} className="flex items-center cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    value={v.id}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-3 rounded"
-                    checked={payload.jobLocationCountry.includes(v.id)}
-                    onChange={() =>
-                      handleCheckboxChange("jobLocationCountry", v.id)
-                    }
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-gray-900">{v.name}</span>
-                </label>
-              )
-            )}
+          <div className="space-y-1">
+            {(showFullCountry ? countryList : countryList.slice(0, 6)).map((country) => (
+              <CustomCheckbox
+                key={country.id}
+                checked={payload.jobLocationCountry.includes(country.id)}
+                onChange={() => handleCheckboxChange("jobLocationCountry", country.id)}
+                label={country.name}
+                value={country.id}
+                type="checkbox"
+              />
+            ))}
             {showFullCountry ? (
               <button
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium mt-2"
                 onClick={() => setShowFullCountry(false)}
               >
                 Show Less Options
@@ -400,7 +427,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
             ) : (
               countryList.length > 6 && (
                 <button
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium mt-2"
                   onClick={() => setShowFullCountry(true)}
                 >
                   +{countryList.length - 6} more
@@ -415,18 +442,16 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         {/* Passport Type */}
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900 text-sm">Passport Type</h4>
-          <div className="space-y-2.5">
+          <div className="space-y-1">
             {["ECR", "ECNR", "ECR/ECNR"].map((type) => (
-              <label key={type} className="flex items-center cursor-pointer group">
-                <input
-                  type="radio"
-                  value={type}
-                  checked={payload.passportType === type}
-                  onChange={() => handleCheckboxChange("passportType", type)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-3"
-                />
-                <span className="text-sm text-gray-700 group-hover:text-gray-900">{type}</span>
-              </label>
+              <CustomCheckbox
+                key={type}
+                checked={payload.passportType === type}
+                onChange={() => handleCheckboxChange("passportType", type)}
+                label={type}
+                value={type}
+                type="radio"
+              />
             ))}
           </div>
         </div>
@@ -436,18 +461,16 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         {/* Experience Type */}
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900 text-sm">Experience Type</h4>
-          <div className="space-y-2.5">
+          <div className="space-y-1">
             {["No", "National", "International", "Any"].map((type) => (
-              <label key={type} className="flex items-center cursor-pointer group">
-                <input
-                  type="radio"
-                  value={type}
-                  checked={payload.jobExpTypeReq === type}
-                  onChange={() => handleCheckboxChange("jobExpTypeReq", type)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-3"
-                />
-                <span className="text-sm text-gray-700 group-hover:text-gray-900">{type}</span>
-              </label>
+              <CustomCheckbox
+                key={type}
+                checked={payload.jobExpTypeReq === type}
+                onChange={() => handleCheckboxChange("jobExpTypeReq", type)}
+                label={type}
+                value={type}
+                type="radio"
+              />
             ))}
           </div>
         </div>
@@ -457,23 +480,17 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         {/* Language Required */}
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900 text-sm">Language Required</h4>
-          <div className="space-y-2.5">
-            {["English", "Arabic", "Japanese", "German", "Hindi"].map(
-              (language) => (
-                <label key={language} className="flex items-center cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    value={language}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-3 rounded"
-                    checked={payload.languageRequired.includes(language)}
-                    onChange={() =>
-                      handleCheckboxChange("languageRequired", language)
-                    }
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-gray-900">{language}</span>
-                </label>
-              )
-            )}
+          <div className="space-y-1">
+            {["English", "Arabic", "Japanese", "German", "Hindi"].map((language) => (
+              <CustomCheckbox
+                key={language}
+                checked={payload.languageRequired.includes(language)}
+                onChange={() => handleCheckboxChange("languageRequired", language)}
+                label={language}
+                value={language}
+                type="checkbox"
+              />
+            ))}
           </div>
         </div>
 
@@ -482,30 +499,27 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         {/* Contract Period */}
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900 text-sm">Contract Period</h4>
-          <div className="space-y-2.5">
-            {["12", "24", "36", "more"].map((period) => (
-              <label key={period} className="flex items-center cursor-pointer group">
-                <input
-                  type="radio"
-                  value={period}
-                  checked={payload.contractPeriod === period}
-                  onChange={() =>
-                    handleCheckboxChange("contractPeriod", period)
-                  }
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-3"
-                />
-                <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                  {period === "more"
-                    ? "More than 36 months"
-                    : `0 to ${period} months`}
-                </span>
-              </label>
+          <div className="space-y-1">
+            {[
+              { value: "12", label: "0 to 12 months" },
+              { value: "24", label: "0 to 24 months" },
+              { value: "36", label: "0 to 36 months" },
+              { value: "more", label: "More than 36 months" },
+            ].map((period) => (
+              <CustomCheckbox
+                key={period.value}
+                checked={payload.contractPeriod === period.value}
+                onChange={() => handleCheckboxChange("contractPeriod", period.value)}
+                label={period.label}
+                value={period.value}
+                type="radio"
+              />
             ))}
           </div>
         </div>
       </div>
 
-      {/* Mobile Apply Button - Fixed at bottom */}
+      {/* Mobile Apply Button */}
       <div className="lg:hidden p-4 border-t border-gray-100 bg-white flex-shrink-0">
         <Button
           onClick={handleApplyFilters}
