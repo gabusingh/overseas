@@ -1,11 +1,11 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, MapPin, DollarSign, Calendar, Users, Clock, Star, Heart, ExternalLink, Search, Filter, TrendingUp, Globe, Briefcase } from "lucide-react";
+import { Building2, MapPin, DollarSign, Calendar, Users, Clock, Star, Heart, ExternalLink, Search, Filter, TrendingUp, Globe, Briefcase, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { getThisWeekJob } from "@/services/job.service";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -63,15 +63,26 @@ interface LastWeekJobsResponse {
 export default function JobsLastWeekPage() {
   const [jobs, setJobs] = useState<LastWeekJob[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [sortBy, setSortBy] = useState<string>("recent");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [lastPage, setLastPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [paginationType, setPaginationType] = useState<'pagination' | 'loadMore'>('loadMore');
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const fetchLastWeekJobs = async (page: number = 1) => {
-    setLoading(true);
+  const fetchLastWeekJobs = useCallback(async (page: number = 1, append: boolean = false) => {
+    const isInitialLoad = page === 1 && !append;
+    if (isInitialLoad) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+    
     try {
       const formData = new FormData();
       formData.append('page', page.toString());
@@ -80,27 +91,84 @@ export default function JobsLastWeekPage() {
       console.log('Last Week Jobs Response:', response);
       
       if (response?.jobs) {
-        setJobs(response.jobs as LastWeekJob[]);
-        const lastWeekResponse = response as LastWeekJobsResponse;
-        setTotalJobs(lastWeekResponse.totalJobs || response.jobs.length);
-        setLastPage(lastWeekResponse.lastPage || 1);
-        setCurrentPage(lastWeekResponse.currentPage || 1);
+        const newJobs = response.jobs as LastWeekJob[];
+        const totalPagesCount = response.lastPage || 1;
+        
+        if (append) {
+          setJobs(prev => [...prev, ...newJobs]);
+        } else {
+          setJobs(newJobs);
+        }
+        
+        setTotalJobs(response.totalJobs || newJobs.length);
+        setLastPage(totalPagesCount);
+        setCurrentPage(response.currentPage || page);
+        setHasMore(page < totalPagesCount);
       } else {
-        setJobs([]);
-        setTotalJobs(0);
+        if (append) {
+          setHasMore(false);
+        } else {
+          setJobs([]);
+          setTotalJobs(0);
+          setLastPage(1);
+        }
       }
     } catch (error) {
       console.error('Error fetching last week jobs:', error);
       toast.error('Failed to load jobs. Please try again.');
-      setJobs([]);
+      if (append) {
+        setHasMore(false);
+      }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, []);
+
+  // Load more jobs
+  const handleLoadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      const nextPage = currentPage + 1;
+      fetchLastWeekJobs(nextPage, true);
+    }
+  }, [loadingMore, hasMore, currentPage, fetchLastWeekJobs]);
+
+  // Handle page change for pagination
+  const handlePageChange = useCallback((page: number) => {
+    if (page !== currentPage && !loading) {
+      fetchLastWeekJobs(page, false);
+    }
+  }, [currentPage, loading, fetchLastWeekJobs]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (paginationType === 'loadMore' && hasMore && !loadingMore) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !loadingMore) {
+            handleLoadMore();
+          }
+        },
+        { threshold: 0.1 }
+      );
+
+      if (loadMoreRef.current) {
+        observer.observe(loadMoreRef.current);
+      }
+
+      observerRef.current = observer;
+
+      return () => {
+        if (observerRef.current) {
+          observerRef.current.disconnect();
+        }
+      };
+    }
+  }, [paginationType, hasMore, loadingMore, handleLoadMore]);
 
   useEffect(() => {
-    fetchLastWeekJobs(1);
-  }, []);
+    fetchLastWeekJobs(1, false);
+  }, [fetchLastWeekJobs]);
 
   const handleSort = (value: string) => {
     setSortBy(value);
@@ -120,11 +188,6 @@ export default function JobsLastWeekPage() {
     });
     
     setJobs(sortedJobs);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    fetchLastWeekJobs(page);
   };
 
   const formatSalary = (wages: string, currency: string, currencyValue: string) => {
@@ -184,7 +247,7 @@ export default function JobsLastWeekPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="animate-pulse">
             {/* Hero Skeleton */}
             <div className="text-center mb-12">
@@ -196,10 +259,12 @@ export default function JobsLastWeekPage() {
               </div>
             </div>
             
-            {/* Filters Skeleton */}
-            <div className="flex justify-between items-center mb-8">
-              <div className="h-6 bg-gray-200 rounded w-48"></div>
-              <div className="h-10 bg-gray-200 rounded w-48"></div>
+            {/* Search Skeleton */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+              <div className="flex justify-between items-center">
+                <div className="h-10 bg-gray-200 rounded w-96"></div>
+                <div className="h-10 bg-gray-200 rounded w-48"></div>
+              </div>
             </div>
             
             {/* Jobs Skeleton */}
@@ -238,7 +303,7 @@ export default function JobsLastWeekPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-6">
@@ -279,7 +344,7 @@ export default function JobsLastWeekPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Search jobs, locations, or skills..."
+                  placeholder="Search within results..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -304,6 +369,33 @@ export default function JobsLastWeekPage() {
                   <SelectItem value="company">Job Title A-Z</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Pagination Type Toggle */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">View:</span>
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setPaginationType('loadMore')}
+                    className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                      paginationType === 'loadMore' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Load More
+                  </button>
+                  <button
+                    onClick={() => setPaginationType('pagination')}
+                    className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                      paginationType === 'pagination' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Pages
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -463,8 +555,54 @@ export default function JobsLastWeekPage() {
           </div>
         )}
 
+        {/* Load More Button */}
+        {paginationType === 'loadMore' && hasMore && !loading && (
+          <div ref={loadMoreRef} className="flex justify-center mt-8">
+            <Button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              {loadingMore ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 mr-2" />
+                  Load More Jobs
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Load More Loading State */}
+        {paginationType === 'loadMore' && loadingMore && (
+          <div className="flex justify-center mt-8">
+            <div className="flex items-center gap-2 text-gray-600">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Loading more jobs...</span>
+            </div>
+          </div>
+        )}
+
+        {/* End of Results */}
+        {paginationType === 'loadMore' && !hasMore && jobs.length > 0 && (
+          <div className="text-center mt-8 py-8">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 max-w-md mx-auto">
+              <ChevronUp className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">You&apos;ve reached the end!</h3>
+              <p className="text-gray-600 text-sm">
+                You&apos;ve seen all {totalJobs} available jobs. Check back later for new opportunities.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Pagination */}
-        {lastPage > 1 && (
+        {paginationType === 'pagination' && lastPage > 1 && (
           <div className="flex justify-center mt-12">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
               <div className="flex items-center gap-2">

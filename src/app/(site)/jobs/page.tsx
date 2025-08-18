@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import Link from "next/link";
-import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart } from "lucide-react";
+import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { getJobList, saveJobById, getOccupations, applyJobApi } from "../../../services/job.service";
 import { getCountriesForJobs } from "../../../services/info.service";
 import JobFilter from "../../../components/JobFilter";
@@ -37,6 +37,7 @@ interface Job {
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [savedJobs, setSavedJobs] = useState<(string | number)[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +46,9 @@ export default function JobsPage() {
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState(0);
   const [totalJobs, setTotalJobs] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [sortBy, setSortBy] = useState('latest');
+  const [paginationType, setPaginationType] = useState<'pagination' | 'loadMore'>('loadMore');
   const [payload, setPayload] = useState({
     jobOccupation: [] as number[],
     jobLocationCountry: [] as number[],
@@ -63,6 +66,8 @@ export default function JobsPage() {
   const searchParams = useSearchParams();
   const { globalState } = useGlobalState();
   const jobsPerPage = 10;
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Apply job function with profile completion modal
   const handleApplyJob = async (jobId: number) => {
@@ -108,207 +113,241 @@ export default function JobsPage() {
   };
 
   // Save job function
-  const handleSaveJob = async (jobId: string | number | undefined) => {
-    if (!jobId) return;
-    
-    try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        toast.error('Please login to save jobs');
-        router.push('/login');
-        return;
-      }
+  const handleSaveJob = async (jobId: number) => {
+    if (!globalState?.user) {
+      toast.warning("Please login to save jobs");
+      setTimeout(() => {
+        router.push("/login");
+      }, 1000);
+      return;
+    }
 
-      await saveJobById(Number(jobId), token);
-      setSavedJobs(prev => [...prev, jobId]);
-      toast.success('Job saved successfully');
-    } catch (error) {
-      toast.error('Failed to save job');
+    try {
+      const response = await saveJobById(jobId, globalState?.user?.access_token);
+      if (response?.data?.msg === "Job saved successfully") {
+        toast.success("Job saved successfully!");
+        setSavedJobs(prev => [...prev, jobId]);
+      } else {
+        toast.error(response?.data?.error || "Failed to save job");
+      }
+    } catch (error: any) {
+      console.error('Save job error:', error);
+      toast.error(error?.response?.data?.error || "Failed to save job");
     }
   };
 
-  // Handle URL parameters for category/department filtering
+  // Fetch jobs with pagination
+  const fetchJobs = useCallback(async (page: number = 1, append: boolean = false) => {
+    try {
+      const isInitialLoad = page === 1 && !append;
+      if (isInitialLoad) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      const formData = new FormData();
+      formData.append('page', page.toString());
+      formData.append('per_page', jobsPerPage.toString());
+
+      // Add filter payload
+      if (payload.jobOccupation.length > 0) {
+        payload.jobOccupation.forEach(id => formData.append('jobOccupation[]', id.toString()));
+      }
+      if (payload.jobLocationCountry.length > 0) {
+        payload.jobLocationCountry.forEach(id => formData.append('jobLocationCountry[]', id.toString()));
+      }
+      if (payload.passportType) {
+        formData.append('passportType', payload.passportType);
+      }
+      if (payload.languageRequired.length > 0) {
+        payload.languageRequired.forEach(lang => formData.append('languageRequired[]', lang));
+      }
+      if (payload.contractPeriod) {
+        formData.append('contractPeriod', payload.contractPeriod);
+      }
+      if (payload.jobExpTypeReq) {
+        formData.append('jobExpTypeReq', payload.jobExpTypeReq);
+      }
+      if (payload.sortBy) {
+        formData.append('sortBy', payload.sortBy);
+      }
+
+      const response = await getJobList(formData);
+      
+      if (response?.jobs) {
+        const newJobs = response.jobs;
+        const totalPagesCount = response.lastPage || Math.ceil((response.totalJobs || 0) / jobsPerPage);
+        
+        if (append) {
+          setJobs(prev => [...prev, ...newJobs]);
+        } else {
+          setJobs(newJobs);
+        }
+        
+        setTotalPages(totalPagesCount);
+        setTotalJobs(response.totalJobs || newJobs.length);
+        setCurrentPage(page);
+        setHasMore(page < totalPagesCount);
+      } else {
+        if (append) {
+          setHasMore(false);
+        } else {
+          setJobs([]);
+          setTotalPages(0);
+          setTotalJobs(0);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      toast.error('Failed to load jobs. Please try again.');
+      if (append) {
+        setHasMore(false);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [payload, jobsPerPage, globalState?.user]);
+
+  // Load more jobs
+  const handleLoadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      const nextPage = currentPage + 1;
+      fetchJobs(nextPage, true);
+    }
+  }, [loadingMore, hasMore, currentPage, fetchJobs]);
+
+  // Handle page change for pagination
+  const handlePageChange = useCallback((page: number) => {
+    if (page !== currentPage && !loading) {
+      fetchJobs(page, false);
+    }
+  }, [currentPage, loading, fetchJobs]);
+
+  // Intersection Observer for infinite scroll
   useEffect(() => {
-    const category = searchParams.get('category');
-    const department = searchParams.get('department');
-    const categoryName = searchParams.get('categoryName');
-    const departmentName = searchParams.get('departmentName');
-    const searchQuery = searchParams.get('search');
-    
-    if (category) {
-      setPayload(prev => ({
-        ...prev,
-        jobOccupation: [parseInt(category)]
-      }));
-    } else if (department) {
-      setPayload(prev => ({
-        ...prev,
-        jobOccupation: [parseInt(department)]
-      }));
+    if (paginationType === 'loadMore' && hasMore && !loadingMore) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !loadingMore) {
+            handleLoadMore();
+          }
+        },
+        { threshold: 0.1 }
+      );
+
+      if (loadMoreRef.current) {
+        observer.observe(loadMoreRef.current);
+      }
+
+      observerRef.current = observer;
+
+      return () => {
+        if (observerRef.current) {
+          observerRef.current.disconnect();
+        }
+      };
     }
-    
-    if (searchQuery) {
-      setSearchTerm(searchQuery);
-    }
-  }, [searchParams]);
+  }, [paginationType, hasMore, loadingMore, handleLoadMore]);
 
   // Fetch initial data
   useEffect(() => {
-    fetchJobs();
-    fetchCategories();
-    fetchCountries();
-  }, [currentPage, payload]);
+    fetchJobs(1, false);
+  }, [fetchJobs]);
 
-  const fetchJobs = async () => {
-    try {
-      setLoading(true);
-      const formData = new FormData();
-      
-      // Add filters to form data
-      for (const key in payload) {
-        if (Array.isArray(payload[key as keyof typeof payload]) && (payload[key as keyof typeof payload] as any[]).length > 0) {
-          formData.append(key, JSON.stringify(payload[key as keyof typeof payload]));
-        } else if (payload[key as keyof typeof payload] !== "") {
-          formData.append(key, payload[key as keyof typeof payload] as string);
-        }
-      }
-      formData.append("pageNo", currentPage.toString());
-      
-      const response = await getJobList(formData);
-      
-      if (response?.jobs || response?.data) {
-        const jobsData = response.jobs || response.data || [];
-        setJobs(jobsData as Job[]);
-        setTotalJobs(jobsData.length);
-        setTotalPages(Math.ceil(jobsData.length / 10));
-      } else {
-        setJobs([]);
-        setTotalJobs(0);
-        setTotalPages(0);
-      }
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-      toast.error("Failed to load jobs. Please try again.");
-      setJobs([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await getOccupations();
-      console.log('Categories API Response:', response); // Debug log
-      
-      // Handle different possible response structures
-      let occupationData = [];
-      if (response?.occupation && Array.isArray(response.occupation)) {
-        occupationData = response.occupation;
-      } else if (response?.data && Array.isArray(response.data)) {
-        occupationData = response.data;
-      } else if (Array.isArray(response)) {
-        occupationData = response;
-      }
-      
-      if (occupationData.length > 0) {
-        const categoryData = occupationData.map((item: any) => ({
+  // Fetch categories and countries
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getOccupations();
+        const occupationData = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+        const categories = occupationData.map((item: any) => ({
           label: item.occupation || item.title || item.name,
           value: item.id,
-          count: item.jobCount || 0
-        })).slice(0, 8);
-        console.log('Processed categories:', categoryData); // Debug log
-        setCategories(categoryData);
-      } else {
-        console.warn('No categories found in API response');
+          count: 0
+        }));
+        setCategories(categories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
       }
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    }
-  };
+    };
 
-  const fetchCountries = async () => {
-    try {
-      const response = await getCountriesForJobs();
-      console.log('Countries API Response:', response); // Debug log
-      
-      // Handle different possible response structures
-      let countryData = [];
-      if (response?.countries && Array.isArray(response.countries)) {
-        countryData = response.countries;
-      } else if (response?.data && Array.isArray(response.data)) {
-        countryData = response.data;
-      } else if (Array.isArray(response)) {
-        countryData = response;
-      }
-      
-      if (countryData.length > 0) {
-        const processedCountries = countryData.map((item: any) => ({
+    const fetchCountries = async () => {
+      try {
+        const response = await getCountriesForJobs();
+        const countryData = Array.isArray(response?.countries) ? response.countries : Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+        const countries = countryData.map((item: any) => ({
           label: item.name,
           value: item.id,
-          count: item.jobCount || item.totalJobs || 0
-        })).slice(0, 6);
-        console.log('Processed countries:', processedCountries); // Debug log
-        setCountries(processedCountries);
-      } else {
-        console.warn('No countries found in API response');
+          count: 0
+        }));
+        setCountries(countries);
+      } catch (error) {
+        console.error('Error fetching countries:', error);
       }
-    } catch (error) {
-      console.error("Error fetching countries:", error);
-    }
-  };
+    };
 
+    fetchCategories();
+    fetchCountries();
+  }, []);
+
+  // Format date
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Recent";
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch {
-      return "Recent";
-    }
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return "1 day ago";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
   };
 
+  // Format salary
   const formatSalary = (wages?: number, currency?: string) => {
     if (!wages || !currency) return "Competitive";
     return `${currency} ${wages.toLocaleString()}`;
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Clean Header Section - Naukri Style */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-                  Jobs in India
-                </h1>
-                <p className="text-gray-600 text-sm lg:text-base">
-                  {totalJobs.toLocaleString()} jobs available
-                </p>
-              </div>
-              
-              <Button
-                onClick={() => setShowFilter(!showFilter)}
-                className="lg:hidden flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md"
-              >
-                <Filter className="w-4 h-4" />
-                All Filters
-              </Button>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-4">Find Your Dream Job</h1>
+            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+              Discover thousands of job opportunities with all the information you need. It&apos;s your future.
+            </p>
+          </div>
+          
+          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="flex items-center gap-2">
+                <i className="fa fa-briefcase"></i>
+                {totalJobs.toLocaleString()} Jobs Available
+              </span>
+              <span className="flex items-center gap-2">
+                <i className="fa fa-globe"></i>
+                Global Opportunities
+              </span>
             </div>
             
-            {/* Enhanced Search Bar - Naukri Style */}
-            <div className="bg-white">
-              <SearchComponent fullWidth={true} />
-            </div>
+            <Button
+              onClick={() => setShowFilter(!showFilter)}
+              className="lg:hidden flex items-center gap-2 bg-white text-blue-600 hover:bg-gray-100 px-6 py-3 rounded-md"
+            >
+              <Filter className="w-4 h-4" />
+              All Filters
+            </Button>
+          </div>
+          
+          {/* Enhanced Search Bar - Naukri Style */}
+          <div className="bg-white">
+            <SearchComponent fullWidth={true} />
           </div>
         </div>
       </div>
@@ -358,6 +397,33 @@ export default function JobsPage() {
                     <option value="company">Company</option>
                     <option value="deadline">Date Posted</option>
                   </select>
+                  
+                  {/* Pagination Type Toggle */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">View:</span>
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setPaginationType('loadMore')}
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          paginationType === 'loadMore' 
+                            ? 'bg-white text-blue-600 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Load More
+                      </button>
+                      <button
+                        onClick={() => setPaginationType('pagination')}
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          paginationType === 'pagination' 
+                            ? 'bg-white text-blue-600 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Pages
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -399,107 +465,75 @@ export default function JobsPage() {
           ) : (
             <div className="space-y-4">
               {jobs.map((job) => (
-                <div key={job.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-200 cursor-pointer group">
-                  <div className="p-4 sm:p-6">
-                    {/* Header - Job Title and Save Button */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <Link 
-                          href={`/job-description/${job.id}`}
-                          className="block group-hover:text-blue-600 transition-colors"
-                        >
-                          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 truncate pr-4">
+                <Card key={job.id} className="hover:shadow-lg transition-shadow duration-300 border border-gray-200">
+                  <CardContent className="p-4 sm:p-6">
+                    {/* Header Section */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <CardTitle className="text-xl text-blue-600 mb-2 hover:text-blue-700 cursor-pointer">
+                          <Link href={`/job-description/${job.id}`}>
                             {job.jobTitle}
-                          </h3>
-                        </Link>
-                        
-                        {/* Company and Location */}
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-2">
-                          <div className="flex items-center gap-1.5">
-                            <Building className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <span className="truncate">{job.cmpName || job.company || "Company"}</span>
-                          </div>
+                          </Link>
+                        </CardTitle>
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
+                          <span className="flex items-center gap-1">
+                            <Building className="w-4 h-4" />
+                            {job.cmpName || job.company || "Company"}
+                          </span>
                           {job.jobLocationCountry && (
-                            <div className="flex items-center gap-1.5">
-                              <img
-                                src={`https://backend.overseas.ai/storage/uploads/countryFlag/${job.jobLocationCountry.countryFlag}`}
-                                alt="Flag"
-                                className="w-4 h-3 object-cover rounded-sm flex-shrink-0"
-                              />
-                              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                              <span className="truncate">{job.jobLocationCountry.name}</span>
-                            </div>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {job.jobLocationCountry.name}
+                            </span>
                           )}
                         </div>
                       </div>
                       
                       {/* Save Button */}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSaveJob(job.id);
-                        }}
-                        className={`ml-2 flex-shrink-0 p-2 h-8 w-8 ${savedJobs.includes(job.id) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSaveJob(job.id)}
+                        className={`p-2 rounded-full ${
+                          savedJobs.includes(job.id) 
+                            ? 'text-red-500 hover:text-red-600' 
+                            : 'text-gray-400 hover:text-gray-600'
+                        }`}
                       >
-                        <Heart className={`w-4 h-4 ${savedJobs.includes(job.id) ? 'fill-current' : ''}`} />
+                        <Heart className={`w-5 h-5 ${savedJobs.includes(job.id) ? 'fill-current' : ''}`} />
                       </Button>
                     </div>
 
-                    {/* Job Details - Clean Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
-                      {/* Salary */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
-                        <span className="text-sm font-medium text-green-700">
-                          {formatSalary(job.jobWages, job.jobWagesCurrencyType)}
-                        </span>
+                    {/* Job Details Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                      <div className="flex items-center gap-2 text-green-600 font-medium">
+                        <DollarSign className="w-4 h-4" />
+                        <span>{formatSalary(job.jobWages, job.jobWagesCurrencyType)}</span>
                       </div>
                       
-                      {/* Experience */}
-                      {job.jobExpTypeReq && (
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                          <span className="text-sm text-gray-600">
-                            {job.jobExpTypeReq} experience
-                          </span>
+                      {job.occupation && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Building className="w-4 h-4" />
+                          <span>{job.occupation}</span>
                         </div>
                       )}
                       
-                      {/* Department */}
-                      {job.occupation && (
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
-                          <span className="text-sm text-gray-600">
-                            {job.occupation}
-                          </span>
+                      {job.jobExpTypeReq && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Badge variant="outline" className="text-xs">
+                            {job.jobExpTypeReq} experience
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {job.jobAgeLimit && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Badge variant="outline" className="text-xs">
+                            Age: {job.jobAgeLimit} years
+                          </Badge>
                         </div>
                       )}
                     </div>
-
-                    {/* Job Requirements - Compact Tags */}
-                    {(job.jobAgeLimit || job.passportType || job.jobDeadline) && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {job.jobAgeLimit && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Age: {job.jobAgeLimit}
-                          </span>
-                        )}
-                        {job.passportType && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {job.passportType} Passport
-                          </span>
-                        )}
-                        {job.jobDeadline && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Apply by {job.jobDeadline}
-                          </span>
-                        )}
-                      </div>
-                    )}
 
                     {/* Bottom Section - Posted Date and Actions */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-gray-100">
@@ -537,14 +571,60 @@ export default function JobsPage() {
                         </Button>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
 
+          {/* Load More Button */}
+          {paginationType === 'loadMore' && hasMore && !loading && (
+            <div ref={loadMoreRef} className="flex justify-center mt-8">
+              <Button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4 mr-2" />
+                    Load More Jobs
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Load More Loading State */}
+          {paginationType === 'loadMore' && loadingMore && (
+            <div className="flex justify-center mt-8">
+              <div className="flex items-center gap-2 text-gray-600">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading more jobs...</span>
+              </div>
+            </div>
+          )}
+
+          {/* End of Results */}
+          {paginationType === 'loadMore' && !hasMore && jobs.length > 0 && (
+            <div className="text-center mt-8 py-8">
+              <div className="bg-white rounded-lg border border-gray-200 p-6 max-w-md mx-auto">
+                <ChevronUp className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">You&apos;ve reached the end!</h3>
+                 <p className="text-gray-600 text-sm">
+                   You&apos;ve seen all {totalJobs} available jobs. Check back later for new opportunities.
+                 </p>
+              </div>
+            </div>
+          )}
+
             {/* Pagination - Enhanced */}
-            {totalPages > 1 && (
+            {paginationType === 'pagination' && totalPages > 1 && (
               <div className="flex justify-center items-center mt-12 py-8">
                 <div className="flex items-center gap-2">
                   <Button
@@ -627,7 +707,7 @@ export default function JobsPage() {
                     <Search className="w-6 h-6 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No jobs found</h3>
-                  <p className="text-gray-500 mb-6">We couldn't find any jobs matching your search criteria. Try adjusting your filters or search terms.</p>
+                  <p className="text-gray-500 mb-6">We couldn&apos;t find any jobs matching your search criteria. Try adjusting your filters or search terms.</p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <Button 
                       variant="outline"
