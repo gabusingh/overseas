@@ -314,13 +314,13 @@ export default function JobsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6 min-h-screen">
+        <div className="flex gap-6">
           {/* Left Sidebar - Filters */}
           <div className={`w-64 flex-shrink-0 ${showFilter ? 'block' : 'hidden lg:block'}`}>
             {showFilter && (
               <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden" onClick={() => setShowFilter(false)} />
             )}
-            <div className={`${showFilter ? 'fixed inset-y-0 left-0 z-50 w-80 lg:relative lg:inset-auto lg:w-64 lg:sticky lg:top-6 lg:h-[calc(100vh-6rem)]' : 'lg:sticky lg:top-6 lg:h-[calc(100vh-6rem)]'}`}>
+            <div className={`${showFilter ? 'fixed inset-y-0 left-0 z-50 w-80 lg:relative lg:inset-auto lg:w-64 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)]' : 'lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)]'}`}>
               <JobFilter 
                 setShowFilter={setShowFilter}
                 payload={payload}

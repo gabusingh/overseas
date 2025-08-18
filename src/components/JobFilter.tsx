@@ -243,7 +243,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
   );
 
   return (
-    <div className="bg-white lg:rounded-lg lg:border lg:border-gray-200 h-full lg:h-auto flex flex-col">
+    <div className="bg-white lg:rounded-lg lg:border lg:border-gray-200 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="px-4 py-4 border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -263,7 +263,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
       </div>
 
       {/* Content - Scrollable */}
-      <div className="p-4 space-y-6 flex-1 overflow-y-auto">
+      <div className="p-4 space-y-6 flex-1 overflow-y-auto max-h-[calc(100vh-12rem)]">
         {/* Applied Filters */}
         <div className="space-y-2">
           {Object.entries(payload).some(([key, values]) => 
