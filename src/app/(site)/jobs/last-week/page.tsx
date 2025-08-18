@@ -10,6 +10,8 @@ import { getThisWeekJob } from "@/services/job.service";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion, useInView } from "framer-motion";
+import AnimatedLanguageText from "@/components/AnimatedLanguageText";
 
 // Interface for the last week jobs API response
 interface LastWeekJob {
@@ -74,6 +76,24 @@ export default function JobsLastWeekPage() {
   const router = useRouter();
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef(null);
+  const isInView = useInView(containerRef, { once: true });
+
+  // Indian language words for "Job"
+  const jobWords = [
+    { text: "Job", language: "English" },
+    { text: "नौकरी", language: "Hindi" },
+    { text: "কাজ", language: "Bengali" },
+    { text: "வேலை", language: "Tamil" },
+    { text: "ಕೆಲಸ", language: "Kannada" },
+    { text: "काम", language: "Marathi" },
+    { text: "કામ", language: "Gujarati" },
+    { text: "ജോലി", language: "Malayalam" },
+    { text: "ఉద్యోగం", language: "Telugu" },
+    { text: "ਨੌਕਰੀ", language: "Punjabi" },
+    { text: "କାମ", language: "Odia" },
+    { text: "नोकरी", language: "Konkani" }
+  ];
 
   const fetchLastWeekJobs = useCallback(async (page: number = 1, append: boolean = false) => {
     const isInitialLoad = page === 1 && !append;
@@ -303,39 +323,70 @@ export default function JobsLastWeekPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <TrendingUp className="w-4 h-4" />
-            <span>Trending This Week</span>
-          </div>
-          
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent mb-6">
-            Jobs of the Week
-          </h1>
-          
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            Discover the latest and most exciting job opportunities posted in the last 7 days. 
-            Find your next career move with top companies worldwide.
-          </p>
-          
-          <div className="flex items-center justify-center gap-8 text-sm text-gray-500">
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
-              <Clock className="w-4 h-4 text-blue-600" />
-              <span>Updated daily</span>
+      {/* Hero Section - Matching Homepage Design */}
+      <div ref={containerRef} className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="text-center">
+            {/* Hero Title */}
+            <div className="mb-8">
+              <motion.h1 
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 100 }}
+                transition={{
+                  duration: 1,
+                  delay: 0.25,
+                }}
+                className="text-4xl md:text-6xl font-bold text-gray-900 mb-4 leading-tight"
+              >
+                Jobs of the{" "}
+                <AnimatedLanguageText 
+                  words={jobWords} 
+                  interval={2000}
+                  className="font-extrabold"
+                />
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 100 }}
+                transition={{
+                  duration: 1,
+                  delay: 0.5,
+                }}
+                className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto"
+              >
+                Discover the latest and most exciting job opportunities posted in the last 7 days. 
+                Find your next career move with top companies worldwide.
+              </motion.p>
             </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
-              <Users className="w-4 h-4 text-green-600" />
-              <span>{totalJobs} jobs available</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
-              <Globe className="w-4 h-4 text-purple-600" />
-              <span>Global opportunities</span>
-            </div>
+
+            {/* Stats */}
+            <motion.div 
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 100 }}
+              transition={{
+                duration: 1,
+                delay: 0.6,
+              }}
+              className="flex items-center justify-center gap-8 text-sm text-gray-500 mb-8"
+            >
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+                <Clock className="w-4 h-4 text-blue-600" />
+                <span>Updated daily</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+                <Users className="w-4 h-4 text-green-600" />
+                <span>{totalJobs} jobs available</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+                <Globe className="w-4 h-4 text-purple-600" />
+                <span>Global opportunities</span>
+              </div>
+            </motion.div>
           </div>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Search and Filters */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">

@@ -13,6 +13,8 @@ import ProfileCompletionModal from "../../../components/ProfileCompletionModal";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGlobalState } from "../../../contexts/GlobalProvider";
+import { motion, useInView } from "framer-motion";
+import AnimatedLanguageText from "../../../components/AnimatedLanguageText";
 
 interface Job {
   id: number;
@@ -69,6 +71,24 @@ export default function JobsPage() {
   const jobsPerPage = 10;
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef(null);
+  const isInView = useInView(containerRef, { once: true });
+
+  // Indian language words for "Job"
+  const jobWords = [
+    { text: "Job", language: "English" },
+    { text: "नौकरी", language: "Hindi" },
+    { text: "কাজ", language: "Bengali" },
+    { text: "வேலை", language: "Tamil" },
+    { text: "ಕೆಲಸ", language: "Kannada" },
+    { text: "काम", language: "Marathi" },
+    { text: "કામ", language: "Gujarati" },
+    { text: "ജോലി", language: "Malayalam" },
+    { text: "ఉద్యోగం", language: "Telugu" },
+    { text: "ਨੌਕਰੀ", language: "Punjabi" },
+    { text: "କାମ", language: "Odia" },
+    { text: "नोकरी", language: "Konkani" }
+  ];
 
   // Apply job function with profile completion modal
   const handleApplyJob = async (jobId: number) => {
@@ -104,7 +124,6 @@ export default function JobsPage() {
       console.error('Apply job error:', error);
       const errorMessage = error?.response?.data?.error || error?.message || "Internal Server Error";
       if (errorMessage === "You did not fill mandatory fields.") {
-        // Show profile completion modal instead of redirecting
         setSelectedJobId(jobId);
         setShowProfileModal(true);
       } else {
@@ -315,40 +334,87 @@ export default function JobsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4">Find Your Dream Job</h1>
-            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-              Discover thousands of job opportunities with all the information you need. It&apos;s your future.
-            </p>
-          </div>
-          
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-2">
-                <i className="fa fa-briefcase"></i>
-                {totalJobs.toLocaleString()} Jobs Available
-              </span>
-              <span className="flex items-center gap-2">
-                <i className="fa fa-globe"></i>
-                Global Opportunities
-              </span>
+      {/* Hero Section - Matching Homepage Design */}
+      <div ref={containerRef} className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="text-center">
+            {/* Hero Title */}
+            <div className="mb-8">
+              <motion.h1 
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 100 }}
+                transition={{
+                  duration: 1,
+                  delay: 0.25,
+                }}
+                className="text-4xl md:text-6xl font-bold text-gray-900 mb-4 leading-tight"
+              >
+                Find Your Dream{" "}
+                <AnimatedLanguageText 
+                  words={jobWords} 
+                  interval={2000}
+                  className="font-extrabold"
+                />
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 100 }}
+                transition={{
+                  duration: 1,
+                  delay: 0.5,
+                }}
+                className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto"
+              >
+                Discover millions of job opportunities with all the information you need. It&apos;s your future.
+              </motion.p>
             </div>
-            
-            <Button
-              onClick={() => setShowFilter(!showFilter)}
-              className="lg:hidden flex items-center gap-2 bg-white text-blue-600 hover:bg-gray-100 px-6 py-3 rounded-md"
+
+            {/* Stats and Filter Toggle */}
+            <motion.div 
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 100 }}
+              transition={{
+                duration: 1,
+                delay: 0.6,
+              }}
+              className="flex flex-col lg:flex-row gap-4 items-center justify-center mb-8"
             >
-              <Filter className="w-4 h-4" />
-              All Filters
-            </Button>
-          </div>
-          
-          {/* Enhanced Search Bar - Naukri Style */}
-          <div className="bg-white">
-            <SearchComponent fullWidth={true} />
+              <div className="flex items-center gap-6 text-sm text-gray-600">
+                <span className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+                  <i className="fa fa-briefcase text-blue-600"></i>
+                  {totalJobs.toLocaleString()} Jobs Available
+                </span>
+                <span className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+                  <i className="fa fa-globe text-green-600"></i>
+                  Global Opportunities
+                </span>
+              </div>
+              
+              <Button
+                onClick={() => setShowFilter(!showFilter)}
+                className="lg:hidden flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-lg"
+              >
+                <Filter className="w-4 h-4" />
+                All Filters
+              </Button>
+            </motion.div>
+
+            {/* Search Component */}
+            <motion.div 
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 100 }}
+              transition={{
+                duration: 1,
+                delay: 0.75,
+              }}
+              className="mb-12"
+            >
+              <SearchComponent 
+                fullWidth={true} 
+                data={categories.map(cat => ({ ...cat, img: '/images/institute.png' }))}
+                countryData={countries.map(country => ({ id: country.value, name: country.label }))}
+              />
+            </motion.div>
           </div>
         </div>
       </div>
@@ -616,10 +682,10 @@ export default function JobsPage() {
             <div className="text-center mt-8 py-8">
               <div className="bg-white rounded-lg border border-gray-200 p-6 max-w-md mx-auto">
                 <ChevronUp className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">You&apos;ve reached the end!</h3>
-                 <p className="text-gray-600 text-sm">
-                   You&apos;ve seen all {totalJobs} available jobs. Check back later for new opportunities.
-                 </p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">You&apos;ve reached the end!</h3>
+                <p className="text-gray-600 text-sm">
+                  You&apos;ve seen all {totalJobs} available jobs. Check back later for new opportunities.
+                </p>
               </div>
             </div>
           )}
