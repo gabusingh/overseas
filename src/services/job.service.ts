@@ -409,7 +409,7 @@ export const getCompanies = async (page: number = 1) => {
 
 export const getCompanyById = async (id: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'get-company/' + id);
+    const response = await axios.get(BASE_URL + 'company/' + id);
     return response;
   } catch (error) {
     console.error('Error fetching company details:', error);
