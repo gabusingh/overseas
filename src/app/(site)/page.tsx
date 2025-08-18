@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { getOccupations, getCountriesForJobs, getNewsFeedData, getSuccessNotification } from '../../services/info.service';
 import { getInstitutes } from '../../services/institute.service';
 import { getAllCompanies } from '../../services/hra.service';
-import { NewsSlider } from '../../components/NewsSlider';
+import  NewsSlider  from '../../components/NewsSlider';
 import { toast } from 'sonner';
 
 // Lazy load heavy components
@@ -346,6 +346,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <NewsSlider />
 
       {/* News & Resources */}
       {newsList.length > 0 && (

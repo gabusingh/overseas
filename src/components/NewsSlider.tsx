@@ -5,22 +5,27 @@ import { Card, CardContent, CardHeader } from "./ui/card";
 import { getNewsFeedData } from "../services/info.service";
 
 interface NewsItem {
-  id?: number;
+  id: number;
   title: string;
-  excerpt?: string;
-  description?: string;
-  image?: string;
-  date?: string;
-  created_at?: string;
-  news_image?: string;
-  news_title?: string;
-  news_description?: string;
-  link?: string;
-  // API response structure
+  excerpt: string;
+  image: string;
+  date: string;
+  link: string;
+}
+
+interface ApiNewsItem {
+  id?: number;
   ArticleTitle?: string;
   Link?: string;
   Date?: string;
+  image?: string;
   summary?: string;
+  news_title?: string;
+  news_description?: string;
+  description?: string;
+  excerpt?: string;
+  created_at?: string;
+  news_image?: string;
 }
 
 function NewsSlider() {
@@ -36,10 +41,10 @@ function NewsSlider() {
       console.log('News feed data:', response?.data);
       
       // Process the news data from the API response structure
-      const newsData = response?.data?.newsData?.slice(0, 4)?.map((item: any) => ({
-        id: item.id || Math.random(),
-        title: item.ArticleTitle || item.news_title || item.title,
-        excerpt: item.summary || item.news_description || item.description || item.excerpt,
+      const newsData: NewsItem[] = response?.data?.newsData?.slice(0, 4)?.map((item: ApiNewsItem) => ({
+        id: item.id || Math.floor(Math.random() * 10000),
+        title: item.ArticleTitle || item.news_title || 'News Article',
+        excerpt: item.summary || item.news_description || item.description || item.excerpt || 'Article description',
         image: item.image || item.news_image || `/images/news${Math.floor(Math.random() * 4) + 1}.svg`,
         date: item.Date ? new Date(item.Date).toLocaleDateString('en-US', {
           year: 'numeric',
@@ -49,7 +54,7 @@ function NewsSlider() {
           year: 'numeric',
           month: 'short',
           day: 'numeric'
-        }) : item.date,
+        }) : 'Recent',
         link: item.Link || '#'
       })) || [];
       
@@ -60,30 +65,38 @@ function NewsSlider() {
       setError('Failed to load news');
       
       // Fallback to mock data if API fails
-      const fallbackNews = [
+      const fallbackNews: NewsItem[] = [
         {
+          id: 1,
           title: "New Job Opportunities in Singapore Tech Sector",
           excerpt: "Singapore continues to be a hub for technology professionals with 500+ new openings...",
           image: "/images/news1.svg",
-          date: "Dec 10, 2024"
+          date: "Dec 10, 2024",
+          link: "#"
         },
         {
+          id: 2,
           title: "UAE Healthcare Sector Hiring International Nurses",
           excerpt: "The UAE healthcare system is actively recruiting qualified international nurses...",
           image: "/images/news2.svg",
-          date: "Dec 8, 2024"
+          date: "Dec 8, 2024",
+          link: "#"
         },
         {
+          id: 3,
           title: "Canada Express Entry Program Updates",
           excerpt: "Latest changes to Canada's Express Entry system for skilled workers...",
           image: "/images/news3.svg",
-          date: "Dec 5, 2024"
+          date: "Dec 5, 2024",
+          link: "#"
         },
         {
+          id: 4,
           title: "Australia Skills Shortage Creates Opportunities",
           excerpt: "Australia faces skills shortage in multiple sectors, creating opportunities for overseas workers...",
           image: "/images/news4.svg",
-          date: "Dec 3, 2024"
+          date: "Dec 3, 2024",
+          link: "#"
         }
       ];
       setNews(fallbackNews);
