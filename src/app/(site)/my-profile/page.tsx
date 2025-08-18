@@ -156,8 +156,11 @@ export default function MyProfilePage() {
       }
       
       // Handle profile strength from dedicated endpoint
-      if (profileStrengthResponse.status === 'fulfilled' && profileStrengthResponse.value?.profileStrength) {
-        dashboardData.profile_strength = profileStrengthResponse.value.profileStrength;
+      if (
+        profileStrengthResponse.status === 'fulfilled' &&
+        profileStrengthResponse.value?.data?.profileStrength
+      ) {
+        dashboardData.profile_strength = profileStrengthResponse.value.data.profileStrength;
       }
       
       setDashboardData(dashboardData);
@@ -247,7 +250,11 @@ export default function MyProfilePage() {
                 />
               ) : (
                 <span className="text-2xl font-bold text-blue-600">
-                  {user.name ? user.name[0].toUpperCase() : user.email[0].toUpperCase()}
+                  {user.name && user.name.length > 0
+                    ? user.name[0].toUpperCase()
+                    : user.email && user.email.length > 0
+                      ? user.email[0].toUpperCase()
+                      : "?"}
                 </span>
               )}
             </div>
