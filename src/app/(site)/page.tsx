@@ -72,7 +72,7 @@ interface NewsItem {
 
 // Loading component
 const LoadingSkeleton = () => (
-  <div className="animate-pulse bg-gray-50">
+  <div className="min-h-screen animate-pulse bg-gray-50">
     <div className="bg-gradient-to-r from-blue-600 to-purple-600 h-96 mb-8"></div>
     <div className="max-w-7xl mx-auto px-4 space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
