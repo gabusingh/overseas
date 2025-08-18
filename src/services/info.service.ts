@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { apiCache } from '../lib/api-cache';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';
 
@@ -48,13 +49,15 @@ export const getDistrict = async (stateId: number): Promise<DistrictResponse> =>
 };
 
 export const getOccupations = async (): Promise<OccupationResponse> => {
-  try {
-    const response = await axios.get(BASE_URL + 'get-occupations');
-    return response.data;
-  } catch (error) {
-    console.error('Error posting data:', error);
-    throw error;
-  }
+  return apiCache.request('get-occupations', async () => {
+    try {
+      const response = await axios.get(BASE_URL + 'get-occupations');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching occupations:', error);
+      throw error;
+    }
+  });
 };
 
 export const getSkillsByOccuId = async (occuId: number) => {
@@ -78,13 +81,15 @@ export const getCountries = async (): Promise<CountryResponse> => {
 };
 
 export const getCountriesForJobs = async (): Promise<CountryResponse> => {
-  try {
-    const response = await axios.get(BASE_URL + 'country-list-for-jobs');
-    return response.data;
-  } catch (error) {
-    console.error('Error posting data:', error);
-    throw error;
-  }
+  return apiCache.request('country-list-for-jobs', async () => {
+    try {
+      const response = await axios.get(BASE_URL + 'country-list-for-jobs');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching countries for jobs:', error);
+      throw error;
+    }
+  });
 };
 
 export const getHomeData = async (): Promise<HomeDataResponse> => {
@@ -164,13 +169,15 @@ export const getVersionCode = async () => {
 };
 
 export const getNewsFeedData = async () => {
-  try {
-    const response = await axios.get(BASE_URL + 'get-news-feed');
-    return response;
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    throw error;
-  }
+  return apiCache.request('get-news-feed', async () => {
+    try {
+      const response = await axios.get(BASE_URL + 'get-news-feed');
+      return response;
+    } catch (error) {
+      console.error('Error fetching news feed:', error);
+      throw error;
+    }
+  });
 };
 
 export const getCompanies = async (page: number = 1) => {
