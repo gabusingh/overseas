@@ -160,6 +160,10 @@ function NewsSlider() {
                   width={300}
                   height={200}
                   className="w-full h-48 object-cover rounded-t-lg"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = `/images/news${Math.floor(Math.random() * 4) + 1}.svg`;
+                  }}
                 />
               </CardHeader>
               <CardContent className="p-6 flex flex-col flex-grow">
