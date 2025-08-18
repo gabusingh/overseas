@@ -163,13 +163,7 @@ export default function LoginPage() {
               </Button>
 
               <div className="text-center">
-                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-                  <img
-                    src="https://backend.overseas.ai/frontend/logo/logo_en.gif"
-                    alt="Overseas.ai Logo"
-                    className="h-8 w-8 object-contain filter brightness-0 invert"
-                  />
-                </div>
+               
                 <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
                   Welcome Back
                 </CardTitle>
