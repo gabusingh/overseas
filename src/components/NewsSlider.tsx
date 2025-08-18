@@ -15,6 +15,12 @@ interface NewsItem {
   news_image?: string;
   news_title?: string;
   news_description?: string;
+  link?: string;
+  // API response structure
+  ArticleTitle?: string;
+  Link?: string;
+  Date?: string;
+  summary?: string;
 }
 
 function NewsSlider() {
@@ -29,17 +35,22 @@ function NewsSlider() {
       const response = await getNewsFeedData();
       console.log('News feed data:', response?.data);
       
-      // Process the news data and take first 4 items
-      const newsData = response?.data?.slice(0, 4)?.map((item: any) => ({
-        id: item.id,
-        title: item.news_title || item.title,
-        excerpt: item.news_description || item.description || item.excerpt,
-        image: item.news_image || item.image || `/images/news${Math.floor(Math.random() * 4) + 1}.svg`,
-        date: item.created_at ? new Date(item.created_at).toLocaleDateString('en-US', {
+      // Process the news data from the API response structure
+      const newsData = response?.data?.newsData?.slice(0, 4)?.map((item: any) => ({
+        id: item.id || Math.random(),
+        title: item.ArticleTitle || item.news_title || item.title,
+        excerpt: item.summary || item.news_description || item.description || item.excerpt,
+        image: item.image || item.news_image || `/images/news${Math.floor(Math.random() * 4) + 1}.svg`,
+        date: item.Date ? new Date(item.Date).toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
           day: 'numeric'
-        }) : item.date
+        }) : item.created_at ? new Date(item.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }) : item.date,
+        link: item.Link || '#'
       })) || [];
       
       setNews(newsData);
@@ -146,9 +157,14 @@ function NewsSlider() {
                 <p className="text-gray-600 text-sm flex-grow mb-4">
                   {item.excerpt}
                 </p>
-                <button className="px-4 py-2 border border-blue-600 text-blue-600 text-sm rounded hover:bg-blue-600 hover:text-white transition-colors mt-auto">
+                <a 
+                  href={item.link || '#'} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 border border-blue-600 text-blue-600 text-sm rounded hover:bg-blue-600 hover:text-white transition-colors mt-auto inline-block text-center"
+                >
                   Read More
-                </button>
+                </a>
               </CardContent>
             </Card>
           ))}
