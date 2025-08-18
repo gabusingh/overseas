@@ -202,7 +202,7 @@ export default function CompanyDetailsPage() {
                   className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-xl bg-white p-2"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = "/images/default-company-logo.png";
+                    target.src = "/images/default-company-logo.svg";
                   }}
                 />
               </div>

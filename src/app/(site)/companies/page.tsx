@@ -240,7 +240,7 @@ export default function Companies() {
                         className="w-20 h-20 object-cover rounded-lg border"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = "/images/default-company-logo.png";
+                          target.src = "/images/default-company-logo.svg";
                         }}
                       />
                     </div>
