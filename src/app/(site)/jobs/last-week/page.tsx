@@ -267,7 +267,7 @@ export default function JobsLastWeekPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 py-8 pb-16">
           <div className="animate-pulse">
             {/* Hero Skeleton */}
             <div className="text-center mb-12">
@@ -386,7 +386,7 @@ export default function JobsLastWeekPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 pb-16">
         {/* Search and Filters */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -580,7 +580,8 @@ export default function JobsLastWeekPage() {
                           <div className="flex flex-col gap-3 lg:flex-shrink-0">
                             <Button 
                               asChild 
-                              className="w-full lg:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                              variant="outline"
+                              className="w-full lg:w-auto bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-700 shadow-sm hover:shadow-md transition-all duration-200"
                             >
                               <Link href={`/job-description/${job.id}`}>
                                 View Details
