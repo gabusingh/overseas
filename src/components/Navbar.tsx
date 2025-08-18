@@ -50,18 +50,7 @@ function Navbar() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3">
           {/* Logo */}
-          <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center">
-              <Image
-                src="/images/brandlogo.gif"
-                width={160}
-                height={40}
-                alt="Overseas.ai"
-                className="h-10 w-auto"
-                unoptimized
-              />
-            </Link>
-          </div>
+          
           
           {/* Desktop Navigation Menu */}
           <nav className="hidden lg:flex items-center space-x-8">
