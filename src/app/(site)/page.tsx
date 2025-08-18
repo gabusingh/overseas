@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 const HeroSection = dynamic(() => import('../../components/HeroSection'), {
   ssr: true, // Keep SSR for hero section as it's above the fold
   loading: () => (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center animate-pulse">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center animate-pulse">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="text-center">
           <div className="h-16 bg-blue-200 rounded-lg mb-4 mx-auto w-3/4"></div>
