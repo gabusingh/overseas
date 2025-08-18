@@ -306,13 +306,7 @@ export default function InstituteSignupPage() {
               <X className="h-4 w-4" />
             </Button>
             
-            <div className="text-center mb-4">
-              <img
-                src="https://backend.overseas.ai/frontend/logo/logo_en.gif"
-                alt="Overseas.ai Logo"
-                className="mx-auto h-12"
-              />
-            </div>
+          
             
             <CardTitle className="text-center text-xl font-semibold text-gray-800">
               Register Your Institute
