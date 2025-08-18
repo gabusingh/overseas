@@ -63,6 +63,10 @@ export interface JobDetail {
 interface JobListResponse {
   jobs?: Job[];
   data?: Job[];
+  totalJobs?: number;
+  currentPage?: number;
+  lastPage?: number;
+  perPage?: number;
 }
 
 interface JobDetailResponse {
@@ -99,15 +103,26 @@ export const getJobListForSearch = async (payload: object = {}): Promise<JobList
 };
 
 // Function to search jobs by search key (from legacy)
-export const searchJobsByKey = async (searchKey: string): Promise<JobListResponse> => {
+export const searchJobsByKey = async (searchKey: string | FormData): Promise<JobListResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "search-all-jobs", {
-      searchKey: searchKey.replace(/-/g, ' ')
-    }, {
-      headers: {
+    let payload: any;
+    let headers: any = {};
+    
+    if (typeof searchKey === 'string') {
+      payload = {
+        searchKey: searchKey.replace(/-/g, ' ')
+      };
+      headers = {
         'Content-Type': 'application/json',
-      }
-    });
+      };
+    } else {
+      payload = searchKey;
+      headers = {
+        'Content-Type': 'multipart/form-data',
+      };
+    }
+    
+    const response = await axios.post(BASE_URL + "search-all-jobs", payload, { headers });
     return response.data;
   } catch (error) {
     console.error("Error searching jobs:", error);

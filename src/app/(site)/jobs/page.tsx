@@ -16,7 +16,8 @@ import { useGlobalState } from "../../../contexts/GlobalProvider";
 
 interface Job {
   id: number;
-  jobTitle: string;
+  jobTitle?: string;
+  title?: string;
   cmpName?: string;
   company?: string;
   jobLocationCountry?: {
