@@ -263,7 +263,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
       </div>
 
       {/* Content - Scrollable */}
-      <div className="p-4 space-y-6 flex-1 overflow-y-auto max-h-[calc(100vh-12rem)]">
+      <div className="p-4 space-y-6 flex-1 overflow-y-auto max-h-[calc(100vh-16rem)]">
         {/* Applied Filters */}
         <div className="space-y-2">
           {Object.entries(payload).some(([key, values]) => 
