@@ -558,7 +558,7 @@ export default function SearchResultsPage() {
                         <div className="flex flex-col gap-3 lg:flex-shrink-0">
                           <Button 
                             asChild 
-                            className="w-full lg:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="w-full lg:w-auto bg-gradient-to-r text-white from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
                           >
                             <Link href={`/job-description/${job.id}`}>
                               View Details
