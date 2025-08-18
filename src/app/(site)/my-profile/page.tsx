@@ -6,7 +6,7 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { toast } from "sonner";
 import Link from "next/link";
-import { getUserDashboard, getProfileStrength, experienceList, passportView, getUserDetails } from "../../../services/user.service";
+import { getUserDashboard, getProfileStrength, experienceList, passportView, getUserDetails, getEmpDataForEdit } from "../../../services/user.service";
 import { getAppliedJobs, getSavedJobs } from "../../../services/job.service";
 import { getNotifications } from "../../../services/notification.service";
 
@@ -20,6 +20,22 @@ interface User {
   location?: string;
   occupation?: string;
   experience_years?: number;
+  gender?: string;
+  dob?: string;
+  education?: string;
+  technical_education?: string;
+  skills?: string;
+  occupation_id?: string;
+  daily_wage?: string;
+  expected_income?: string;
+  state?: string;
+  district?: string;
+  pin_code?: string;
+  passport_status?: string;
+  migration_experience?: string;
+  relocation_interest?: string;
+  reference_name?: string;
+  reference_phone?: string;
 }
 
 interface DashboardData {
@@ -42,7 +58,8 @@ export default function MyProfilePage() {
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    const userData = localStorage.getItem("user");
+    // Try both possible localStorage keys for user data (loggedUser and user)
+    let userData = localStorage.getItem("loggedUser") || localStorage.getItem("user");
     
     if (!token || !userData) {
       router.push("/login");
@@ -61,32 +78,93 @@ export default function MyProfilePage() {
 
   const loadUserData = async (token: string) => {
     try {
-      const [dashboardResponse, experiencesResponse, notificationsResponse] = await Promise.allSettled([
+      const [
+        dashboardResponse, 
+        empDataResponse, 
+        experiencesResponse, 
+        notificationsResponse,
+        appliedJobsResponse,
+        savedJobsResponse,
+        profileStrengthResponse
+      ] = await Promise.allSettled([
         getUserDashboard(token),
+        getEmpDataForEdit(token), // Get complete user profile data
         experienceList(token),
-        getNotifications(token)
+        getNotifications(token),
+        getAppliedJobs(token),
+        getSavedJobs(token),
+        getProfileStrength(token)
       ]);
 
       // Handle dashboard data with fallback
+      let dashboardData: DashboardData = {
+        profile_strength: 65,
+        applied_jobs_count: 0,
+        saved_jobs_count: 0,
+        notifications_count: 0,
+        recent_applications: [],
+        profile_views: 0
+      };
+
       if (dashboardResponse.status === 'fulfilled') {
-        setDashboardData(dashboardResponse.value);
+        dashboardData = { ...dashboardData, ...dashboardResponse.value };
       } else {
         console.warn('Dashboard API failed, using fallback data:', dashboardResponse.reason);
-        setDashboardData({
-          profile_strength: 65,
-          applied_jobs_count: 0,
-          saved_jobs_count: 0,
-          notifications_count: 0,
-          recent_applications: [],
-          profile_views: 0
-        });
       }
       
-      // Note: Removed problematic get-emp-data API call - using localStorage data instead
+      // Update user data with complete profile information from backend
+      if (empDataResponse.status === 'fulfilled' && empDataResponse.value) {
+        const empData = empDataResponse.value;
+        // Merge localStorage user data with backend profile data
+        const currentUser = JSON.parse(localStorage.getItem("loggedUser") || localStorage.getItem("user") || '{}');
+        const updatedUser = {
+          ...currentUser,
+          name: empData.empName || currentUser.name,
+          email: empData.empEmail || currentUser.email,
+          phone: empData.empWhatsapp || currentUser.phone,
+          gender: empData.empGender,
+          dob: empData.empDob,
+          education: empData.empEdu,
+          technical_education: empData.empTechEdu,
+          skills: empData.empSkill,
+          occupation_id: empData.empOccuId,
+          daily_wage: empData.empDailyWage,
+          expected_income: empData.empExpectedMonthlyIncome,
+          state: empData.empState,
+          district: empData.empDistrict,
+          pin_code: empData.empPin,
+          passport_status: empData.empPassportQ,
+          migration_experience: empData.empInternationMigrationExp,
+          relocation_interest: empData.empRelocationIntQ,
+          reference_name: empData.empRefName,
+          reference_phone: empData.empRefPhone,
+          location: empData.empState && empData.empDistrict ? `${empData.empDistrict}, ${empData.empState}` : currentUser.location
+        };
+        setUser(updatedUser);
+        // Update localStorage with complete data
+        localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
+      }
+      
+      // Handle applied jobs count
+      if (appliedJobsResponse.status === 'fulfilled' && appliedJobsResponse.value?.data) {
+        dashboardData.applied_jobs_count = appliedJobsResponse.value.data.length || 0;
+      }
+      
+      // Handle saved jobs count
+      if (savedJobsResponse.status === 'fulfilled' && savedJobsResponse.value?.data) {
+        dashboardData.saved_jobs_count = savedJobsResponse.value.data.length || 0;
+      }
+      
+      // Handle profile strength from dedicated endpoint
+      if (profileStrengthResponse.status === 'fulfilled' && profileStrengthResponse.value?.profileStrength) {
+        dashboardData.profile_strength = profileStrengthResponse.value.profileStrength;
+      }
+      
+      setDashboardData(dashboardData);
       
       // Handle experiences with fallback
       if (experiencesResponse.status === 'fulfilled') {
-        setExperiences(experiencesResponse.value?.experiences || []);
+        setExperiences(experiencesResponse.value?.experiences || experiencesResponse.value?.data || []);
       } else {
         console.warn('Experience API failed, using empty array:', experiencesResponse.reason);
         setExperiences([]);
@@ -94,11 +172,15 @@ export default function MyProfilePage() {
       
       // Handle notifications with fallback
       if (notificationsResponse.status === 'fulfilled') {
-        setNotifications(notificationsResponse.value?.notifications || []);
+        const notifs = notificationsResponse.value?.notifications || notificationsResponse.value?.data || [];
+        setNotifications(notifs);
+        dashboardData.notifications_count = notifs.length;
+        setDashboardData({...dashboardData});
       } else {
         console.warn('Notifications API failed, using empty array:', notificationsResponse.reason);
         setNotifications([]);
       }
+      
     } catch (error) {
       console.error("Error loading user data:", error);
       // Set fallback data for all sections
@@ -120,6 +202,7 @@ export default function MyProfilePage() {
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("user");
+    localStorage.removeItem("loggedUser");
     toast.success("Logged out successfully");
     router.push("/");
   };

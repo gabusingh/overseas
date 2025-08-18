@@ -338,8 +338,8 @@ export default function Home() {
         <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-extrabold text-blue-900 mb-4">Latest News & Resources</h2>
-              <p className="text-lg text-blue-700">Stay updated with the latest trends in overseas employment</p>
+              <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Latest News & Resources</h2>
+              <p className="text-sm text-gray-700">Stay updated with the latest trends in overseas employment</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
               {newsList.map((news) => (
@@ -349,7 +349,7 @@ export default function Home() {
                 >
                   {/* News image removed as per request */}
                   <div className="flex-1 flex flex-col p-6">
-                    <h3 className="font-bold text-xl text-blue-900 mb-2 line-clamp-2">{news.news_title}</h3>
+                    <h3 className="font-bold text-xl text-gray-900 mb-2 line-clamp-2">{news.news_title}</h3>
                     <p className="text-gray-700 text-base mb-4 line-clamp-3">{news.news_description}</p>
                     <div className="flex items-center justify-between mt-auto">
                       <span className="text-xs text-gray-400">{new Date(news.created_at).toLocaleDateString()}</span>

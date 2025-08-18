@@ -7,7 +7,7 @@ import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { Textarea } from "../../../components/ui/textarea";
 import { toast } from "sonner";
-import { getUserDashboard, editProfile } from "../../../services/user.service";
+import { getUserDashboard, editProfile, getEmpDataForEdit } from "../../../services/user.service";
 
 interface ProfileData {
   name?: string;
@@ -54,13 +54,49 @@ export default function EditProfilePage() {
 
   const loadProfileData = async (token: string) => {
     try {
-  const response = await getUserDashboard(token);
-      if (response) {
-        setProfileData(response);
-        if (response.profile_image) {
-          setImagePreview(response.profile_image);
+      // Load user data from localStorage first
+      const localUser = localStorage.getItem("loggedUser") || localStorage.getItem("user");
+      if (localUser) {
+        const userData = JSON.parse(localUser);
+        setProfileData({
+          email: userData.email || "",
+          phone: userData.phone || "",
+          name: userData.name || "",
+          location: userData.location || "",
+          occupation: userData.occupation || "",
+          experience_years: userData.experience_years || 0,
+          profile_image: userData.profile_image || ""
+        });
+        if (userData.profile_image) {
+          setImagePreview(userData.profile_image);
         }
       }
+      
+      // Try to get complete profile data from backend
+      try {
+        const empData = await getEmpDataForEdit(token);
+        if (empData) {
+          const completeProfileData: ProfileData = {
+            name: empData.empName || profileData.name,
+            email: empData.empEmail || profileData.email,
+            phone: empData.empWhatsapp || profileData.phone,
+            date_of_birth: empData.empDob || "",
+            gender: empData.empGender || "",
+            occupation: empData.empOccuId || profileData.occupation,
+            skills: empData.empSkill || "",
+            state: empData.empState || "",
+            city: empData.empDistrict || "",
+            postal_code: empData.empPin || "",
+            location: empData.empState && empData.empDistrict ? `${empData.empDistrict}, ${empData.empState}` : profileData.location,
+            emergency_contact_name: empData.empRefName || "",
+            emergency_contact_phone: empData.empRefPhone || ""
+          };
+          setProfileData(completeProfileData);
+        }
+      } catch (empDataError) {
+        console.warn("Could not load complete profile data, using basic data:", empDataError);
+      }
+      
     } catch (error) {
       console.error("Error loading profile data:", error);
       toast.error("Failed to load profile data");
@@ -135,10 +171,12 @@ export default function EditProfilePage() {
         toast.success("Profile updated successfully!");
         
         // Update local storage user data
-        const userData = localStorage.getItem("user");
+        const userData = localStorage.getItem("loggedUser") || localStorage.getItem("user");
         if (userData) {
           const user = JSON.parse(userData);
           const updatedUser = { ...user, ...profileData };
+          localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
+          // Keep both for backward compatibility
           localStorage.setItem("user", JSON.stringify(updatedUser));
         }
         
