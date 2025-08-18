@@ -88,7 +88,7 @@ const HeroSection = React.memo(({ data: propData, countryData }: HeroSectionProp
 
   // Memoize the hero content to prevent unnecessary re-renders
   const heroContent = useMemo(() => (
-    <div ref={containerRef} className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center">
+    <div ref={containerRef} className="bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="text-center">
           {/* Hero Title */}
