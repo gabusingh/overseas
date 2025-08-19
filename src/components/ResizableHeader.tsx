@@ -34,6 +34,7 @@ function ResizableHeader() {
     } finally {
       localStorage.removeItem("access_token");
       localStorage.removeItem("user");
+      localStorage.removeItem("loggedUser");
       setGlobalState(prev => ({ ...prev, user: null }));
       router.push("/login");
     }

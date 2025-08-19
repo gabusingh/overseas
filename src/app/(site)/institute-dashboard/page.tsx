@@ -28,6 +28,7 @@ export default function InstituteDashboardPage() {
   const [instituteData, setInstituteData] = useState<InstituteDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
+  const { setGlobalState } = require("@/contexts/GlobalProvider").useGlobalState();
 
   const stats = [
     { title: "Active Courses", value: instituteData?.totalCourses?.toString() || "0", icon: "fa fa-book" },
@@ -92,10 +93,11 @@ export default function InstituteDashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("loggedUser");
-    localStorage.removeItem("access_token");
-    toast.success("Logged out successfully");
-    router.push("/");
+  localStorage.removeItem("loggedUser");
+  localStorage.removeItem("access_token");
+  setGlobalState((prev: any) => ({ ...prev, user: null }));
+  toast.success("Logged out successfully");
+  router.push("/");
   };
 
   const handleNavigation = (path: string) => {

@@ -27,6 +27,7 @@ export default function HraDashboardPage() {
   const [hraData, setHraData] = useState<HraDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
+  const { setGlobalState } = require("@/contexts/GlobalProvider").useGlobalState();
 
   const stats = [
     { title: "Active Job Postings", value: hraData?.totalPostedJobs?.toString() || "0", icon: "fa fa-briefcase" },
@@ -89,10 +90,11 @@ export default function HraDashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("loggedUser");
-    localStorage.removeItem("access_token");
-    toast.success("Logged out successfully");
-    router.push("/");
+  localStorage.removeItem("loggedUser");
+  localStorage.removeItem("access_token");
+  setGlobalState((prev: any) => ({ ...prev, user: null }));
+  toast.success("Logged out successfully");
+  router.push("/");
   };
 
   const handleNavigation = (path: string) => {

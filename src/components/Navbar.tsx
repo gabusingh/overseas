@@ -6,15 +6,16 @@ import { useGlobalState } from "../contexts/GlobalProvider";
 import { useRouter } from "next/navigation";
 
 function Navbar() {
-  const { globalState } = useGlobalState();
+  const { globalState, setGlobalState } = useGlobalState();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user");
-    router.push("/login");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("user");
+  setGlobalState(prev => ({ ...prev, user: null }));
+  router.push("/login");
   };
 
   const navItems = [

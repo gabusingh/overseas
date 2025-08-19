@@ -55,6 +55,7 @@ export default function MyProfilePage() {
   const [experiences, setExperiences] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const router = useRouter();
+  const { setGlobalState } = require("@/contexts/GlobalProvider").useGlobalState();
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -203,11 +204,12 @@ export default function MyProfilePage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("loggedUser");
-    toast.success("Logged out successfully");
-    router.push("/");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("loggedUser");
+  setGlobalState((prev: any) => ({ ...prev, user: null }));
+  toast.success("Logged out successfully");
+  router.push("/");
   };
 
   if (loading) {

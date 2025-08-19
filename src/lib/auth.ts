@@ -35,9 +35,20 @@ export const setStoredUser = (user: User, token: string): void => {
 export const clearStoredAuth = (): void => {
   if (typeof window === 'undefined') return;
   
+  // Clear all possible authentication-related data
   localStorage.removeItem('user');
   localStorage.removeItem('access_token');
   localStorage.removeItem('loggedUser');
+  
+  // Clear any session storage as well
+  sessionStorage.removeItem('user');
+  sessionStorage.removeItem('access_token');
+  sessionStorage.removeItem('loggedUser');
+  
+  // Clear any other auth-related items that might exist
+  localStorage.removeItem('token');
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('userToken');
 };
 
 export const isAuthenticated = (): boolean => {

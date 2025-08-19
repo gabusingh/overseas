@@ -1,11 +1,80 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuTrigger, NavigationMenuContent } from "../../components/ui/navigation-menu";
+import { useGlobalState } from "@/contexts/GlobalProvider";
+import { clearStoredAuth } from "@/lib/auth";
+import { logOut } from "@/services/user.service";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const { globalState, setGlobalState } = useGlobalState();
+  const router = useRouter();
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  const user = globalState.user?.user;
+  const isAuthenticated = !!user;
+
+  const handleLogout = async () => {
+    try {
+      const accessToken = globalState.user?.access_token;
+      if (accessToken) {
+        await logOut(accessToken);
+      }
+    } catch (error) {
+      console.error('Logout API error:', error);
+      // Continue with logout even if API call fails
+    } finally {
+      // Clear all stored authentication data
+      clearStoredAuth();
+      // Clear global state
+      setGlobalState({
+        user: null,
+        profileStrength: null,
+        notifications: null,
+        regSource: null
+      });
+      toast.success('Successfully logged out');
+      router.push('/');
+    }
+  };
+
+  const getUserDisplayName = () => {
+    if (!user) return '';
+    return user.name || user.email || user.phone || 'User';
+  };
+
+  const getUserDashboardLink = () => {
+    if (!user) return '/login';
+    switch (user.type) {
+      case 'person':
+        return '/my-profile';
+      case 'company':
+        return '/hra-dashboard';
+      case 'institute':
+        return '/institute-dashboard';
+      default:
+        return '/my-profile';
+    }
+  };
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -24,12 +93,28 @@ export default function Header() {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="/login" className="text-gray-600 hover:text-blue-600">
-              Login
-            </Link>
-            <Link href="/register" className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-              Register for free
-            </Link>
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-gray-600 text-sm">
+                  Welcome, {getUserDisplayName()}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-red-600 text-sm"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link href="/login" className="text-gray-600 hover:text-blue-600">
+                  Login
+                </Link>
+                <Link href="/register" className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                  Register for free
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -308,14 +393,82 @@ export default function Header() {
             <Link href="/for-employers" className="text-gray-600 hover:text-blue-600 font-medium">
               For Employers
             </Link>
-            <div className="flex items-center space-x-2">
-              <Link href="/login" className="text-gray-700 hover:text-blue-600 font-medium">
-                Login
-              </Link>
-              <Link href="/register" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium">
-                Register
-              </Link>
-            </div>
+            
+            {isAuthenticated ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-md hover:bg-gray-50"
+                >
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                    {getUserDisplayName().charAt(0).toUpperCase()}
+                  </div>
+                  <span className="max-w-32 truncate">{getUserDisplayName()}</span>
+                  <svg className={`w-4 h-4 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                    <div className="py-1">
+                      <Link
+                        href={getUserDashboardLink()}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <i className="fa fa-dashboard mr-3 text-blue-600"></i>
+                        My Dashboard
+                      </Link>
+                      <Link
+                        href="/my-profile"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <i className="fa fa-user mr-3 text-green-600"></i>
+                        My Profile
+                      </Link>
+                      <Link
+                        href="/applied-jobs"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <i className="fa fa-briefcase mr-3 text-purple-600"></i>
+                        Applied Jobs
+                      </Link>
+                      <Link
+                        href="/job-alerts"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <i className="fa fa-bell mr-3 text-yellow-600"></i>
+                        Job Alerts
+                      </Link>
+                      <div className="border-t border-gray-100"></div>
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <i className="fa fa-sign-out mr-3"></i>
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link href="/login" className="text-gray-700 hover:text-blue-600 font-medium">
+                  Login
+                </Link>
+                <Link href="/register" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium">
+                  Register
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -352,12 +505,45 @@ export default function Header() {
                 For Employers
               </Link>
               <div className="pt-4 space-y-2">
-                <Link href="/login" className="block w-full text-center py-2 border border-blue-600 text-blue-600 rounded-md font-medium">
-                  Login
-                </Link>
-                <Link href="/register" className="block w-full text-center py-2 bg-blue-600 text-white rounded-md font-medium">
-                  Register
-                </Link>
+                {isAuthenticated ? (
+                  <>
+                    <Link 
+                      href={getUserDashboardLink()} 
+                      className="block w-full text-center py-2 border border-blue-600 text-blue-600 rounded-md font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <i className="fa fa-dashboard mr-2"></i>
+                      My Dashboard
+                    </Link>
+                    <Link 
+                      href="/my-profile" 
+                      className="block w-full text-center py-2 border border-green-600 text-green-600 rounded-md font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <i className="fa fa-user mr-2"></i>
+                      My Profile
+                    </Link>
+                    <button 
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="block w-full text-center py-2 bg-red-600 text-white rounded-md font-medium"
+                    >
+                      <i className="fa fa-sign-out mr-2"></i>
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="block w-full text-center py-2 border border-blue-600 text-blue-600 rounded-md font-medium">
+                      Login
+                    </Link>
+                    <Link href="/register" className="block w-full text-center py-2 bg-blue-600 text-white rounded-md font-medium">
+                      Register
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

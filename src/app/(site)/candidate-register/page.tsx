@@ -11,9 +11,12 @@ import { X, Eye, EyeOff, User, Phone, Lock } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import Head from "next/head";
+import { setStoredUser } from "@/lib/auth";
+import { useGlobalState } from "@/contexts/GlobalProvider";
 
 export default function CandidateRegisterPage() {
   const router = useRouter();
+  const { setUserData } = useGlobalState();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
@@ -168,8 +171,12 @@ export default function CandidateRegisterPage() {
       const data = await response.json();
 
       if (data.access_token) {
-        localStorage.setItem("loggedUser", JSON.stringify(data));
-        localStorage.setItem("access_token", data.access_token);
+        // Store user data using the proper auth library
+        setStoredUser(data.user, data.access_token);
+        
+        // Update global state
+        await setUserData();
+        
         toast.success("Registration successful! Welcome to Overseas.ai");
         
         setTimeout(() => {
@@ -229,7 +236,7 @@ export default function CandidateRegisterPage() {
                     placeholder="Enter your full name"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="pl-10"
+                    className="pl-10 border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
                   />
                 </div>
                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
@@ -250,7 +257,7 @@ export default function CandidateRegisterPage() {
                       placeholder="Enter 10-digit mobile number"
                       value={formData.mobile}
                       onChange={(e) => handleInputChange("mobile", e.target.value)}
-                      className="rounded-l-none pl-10"
+                      className="rounded-l-none pl-10 border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
                       maxLength={10}
                     />
                   </div>
@@ -269,7 +276,7 @@ export default function CandidateRegisterPage() {
                     placeholder="Create a strong password"
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
                   />
                   <Button
                     type="button"
@@ -295,7 +302,7 @@ export default function CandidateRegisterPage() {
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
                   />
                   <Button
                     type="button"
@@ -333,6 +340,7 @@ export default function CandidateRegisterPage() {
                     placeholder="Enter 6-digit OTP"
                     value={formData.otp}
                     onChange={(e) => handleInputChange("otp", e.target.value)}
+                    className="text-center text-lg tracking-widest border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
                     maxLength={6}
                   />
                   {errors.otp && <p className="text-red-500 text-xs mt-1">{errors.otp}</p>}
