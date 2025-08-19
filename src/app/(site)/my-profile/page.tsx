@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -54,7 +54,10 @@ export default function MyProfilePage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [experiences, setExperiences] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [appliedJobs, setAppliedJobs] = useState<any[]>([]);
+  const [savedJobs, setSavedJobs] = useState<any[]>([]);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setGlobalState } = require("@/contexts/GlobalProvider").useGlobalState();
 
   useEffect(() => {
@@ -71,11 +74,17 @@ export default function MyProfilePage() {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       loadUserData(token);
+      
+      // Handle tab query parameter
+      const tabParam = searchParams.get('tab');
+      if (tabParam && ['overview', 'personal', 'experience', 'applied', 'saved', 'notifications', 'documents'].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
     } catch (error) {
       console.error("Error parsing user data:", error);
       router.push("/login");
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   const loadUserData = async (token: string) => {
     try {
@@ -146,14 +155,28 @@ export default function MyProfilePage() {
         localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
       }
       
-      // Handle applied jobs count
+      // Handle applied jobs count and data
       if (appliedJobsResponse.status === 'fulfilled' && appliedJobsResponse.value?.data) {
-        dashboardData.applied_jobs_count = appliedJobsResponse.value.data.length || 0;
+        const appliedJobsData = Array.isArray(appliedJobsResponse.value.data) ? appliedJobsResponse.value.data : [];
+        setAppliedJobs(appliedJobsData);
+        dashboardData.applied_jobs_count = appliedJobsData.length || 0;
+      } else if (appliedJobsResponse.status === 'rejected') {
+        console.warn('Applied jobs API failed:', appliedJobsResponse.reason);
+        setAppliedJobs([]);
+      } else {
+        setAppliedJobs([]);
       }
       
-      // Handle saved jobs count
+      // Handle saved jobs count and data
       if (savedJobsResponse.status === 'fulfilled' && savedJobsResponse.value?.data) {
-        dashboardData.saved_jobs_count = savedJobsResponse.value.data.length || 0;
+        const savedJobsData = Array.isArray(savedJobsResponse.value.data) ? savedJobsResponse.value.data : [];
+        setSavedJobs(savedJobsData);
+        dashboardData.saved_jobs_count = savedJobsData.length || 0;
+      } else if (savedJobsResponse.status === 'rejected') {
+        console.warn('Saved jobs API failed:', savedJobsResponse.reason);
+        setSavedJobs([]);
+      } else {
+        setSavedJobs([]);
       }
       
       // Handle profile strength from dedicated endpoint
@@ -353,6 +376,8 @@ export default function MyProfilePage() {
             <TabButton tabKey="overview" label="Overview" active={activeTab === 'overview'} />
             <TabButton tabKey="personal" label="Personal Info" active={activeTab === 'personal'} />
             <TabButton tabKey="experience" label="Experience" active={activeTab === 'experience'} />
+            <TabButton tabKey="applied" label="Applied Jobs" active={activeTab === 'applied'} />
+            <TabButton tabKey="saved" label="Saved Jobs" active={activeTab === 'saved'} />
             <TabButton tabKey="notifications" label="Notifications" active={activeTab === 'notifications'} />
             <TabButton tabKey="documents" label="Documents" active={activeTab === 'documents'} />
           </nav>
@@ -536,6 +561,125 @@ export default function MyProfilePage() {
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-gray-500">No notifications yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === 'applied' && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg font-semibold text-gray-900">Applied Jobs</CardTitle>
+                    <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      <Link href="/jobs">Find More Jobs</Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {appliedJobs.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="text-sm text-gray-600 mb-4">
+                        <p>Total Applications: {appliedJobs.length}</p>
+                      </div>
+                      {appliedJobs.slice(0, 5).map((job, index) => (
+                        <div key={job.id || index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-semibold text-gray-900">{job.jobTitle || job.title}</h4>
+                            <Badge className={`text-xs ${
+                              job.applicationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              job.applicationStatus === 'shortlisted' ? 'bg-green-100 text-green-800' :
+                              job.applicationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {job.applicationStatus || 'Pending'}
+                            </Badge>
+                          </div>
+                          <p className="text-gray-600 text-sm mb-2">{job.companyName || job.company}</p>
+                          <div className="flex justify-between items-center text-sm text-gray-500">
+                            <span>Applied: {new Date(job.appliedOn || job.applied_date).toLocaleDateString()}</span>
+                            <Button asChild size="sm" variant="outline">
+                              <Link href={`/applied-jobs`}>View Details</Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="text-center pt-4">
+                        <Button asChild variant="outline">
+                          <Link href="/applied-jobs">View All Applications</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-4">📝</div>
+                      <p className="text-gray-500 mb-4">No job applications yet</p>
+                      <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                        <Link href="/jobs">Start Applying</Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === 'saved' && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg font-semibold text-gray-900">Saved Jobs</CardTitle>
+                    <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      <Link href="/jobs">Find More Jobs</Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {savedJobs.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="text-sm text-gray-600 mb-4">
+                        <p>Total Saved: {savedJobs.length}</p>
+                      </div>
+                      {savedJobs.slice(0, 5).map((job, index) => (
+                        <div key={job.id || index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-semibold text-gray-900">{job.job_title || job.title}</h4>
+                            <Badge variant="outline" className="text-xs">
+                              💾 Saved
+                            </Badge>
+                          </div>
+                          <p className="text-gray-600 text-sm mb-2">{job.company_name || job.company}</p>
+                          <div className="flex justify-between items-center text-sm text-gray-500">
+                            <span>📍 {job.location}{job.country && `, ${job.country}`}</span>
+                            <div className="space-x-2">
+                              <Button asChild size="sm" variant="outline">
+                                <Link href={`/job-description/${job.id}`}>View Job</Link>
+                              </Button>
+                              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                Apply Now
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="text-center pt-4">
+                        <Button asChild variant="outline">
+                          <Link href="/saved-jobs">View All Saved Jobs</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-4">💾</div>
+                      <p className="text-gray-500 mb-4">No saved jobs yet</p>
+                      <p className="text-sm text-gray-400 mb-4">Save jobs you're interested in by clicking the heart icon</p>
+                      <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                        <Link href="/jobs">Browse Jobs</Link>
+                      </Button>
                     </div>
                   )}
                 </CardContent>

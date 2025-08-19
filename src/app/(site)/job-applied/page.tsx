@@ -10,7 +10,7 @@ import { getAppliedJobs } from '../../../services/job.service';
 import { useGlobalState } from '../../../contexts/GlobalProvider';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import AppliedJobsDebug from '../../../components/AppliedJobsDebug';
+
 
 interface AppliedJob {
   id: number;
@@ -51,45 +51,45 @@ export default function JobAppliedPage() {
     console.log('=== fetchAppliedJobs started ===');
     console.log('globalState:', globalState);
     console.log('globalState?.user:', globalState?.user);
-    
+
     try {
       setLoading(true);
-      
+
       // Get token from global state (should now work correctly)
       const tokenToUse = globalState?.user?.access_token || '';
-      
+
       console.log('Using token:', tokenToUse ? `${tokenToUse.substring(0, 10)}...` : 'No token available');
-      
+
       if (!tokenToUse) {
         console.error('No token available, setting empty array');
         setAppliedJobs([]);
         toast.error('Authentication token not found. Please login again.');
         return;
       }
-      
+
       console.log('About to call getAppliedJobs API...');
       const response = await getAppliedJobs(tokenToUse);
       console.log('getAppliedJobs response received');
-      
+
       // Debug the response structure
       console.log('API Response:', response);
       console.log('Response.data:', response?.data);
       console.log('Response.data.jobs:', response?.data?.jobs);
-      
+
       // Match the old codebase exactly: response?.data?.jobs
       const jobsData = response?.data?.jobs || [];
       console.log('Jobs data extracted:', jobsData);
       console.log('Jobs data type:', typeof jobsData);
       console.log('Jobs data is array:', Array.isArray(jobsData));
       console.log('Jobs data length:', jobsData?.length);
-      
+
       // Ensure it's always an array
       const safeJobsData = Array.isArray(jobsData) ? jobsData : [];
       console.log('Safe jobs data:', safeJobsData);
-      
+
       setAppliedJobs(safeJobsData);
       console.log('Applied jobs state updated successfully');
-      
+
     } catch (error: any) {
       console.error('Error fetching applied jobs:', error);
       console.error('Error details:', {
@@ -97,7 +97,7 @@ export default function JobAppliedPage() {
         response: error?.response?.data,
         status: error?.response?.status
       });
-      
+
       // Always set empty array on error
       setAppliedJobs([]);
       toast.error('Failed to load applied jobs');
@@ -183,9 +183,6 @@ export default function JobAppliedPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Debug Component - Remove in production */}
-      <AppliedJobsDebug />
-      
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
@@ -308,7 +305,7 @@ export default function JobAppliedPage() {
       {/* Load More Button (if needed) */}
       {filteredJobs.length > 0 && filteredJobs.length < appliedJobs.length && (
         <div className="text-center mt-8">
-          <Button variant="outline" onClick={() => {}}>
+          <Button variant="outline" onClick={() => { }}>
             Load More
           </Button>
         </div>
