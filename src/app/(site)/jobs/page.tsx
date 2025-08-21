@@ -1,17 +1,17 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { useEffect, useState, useRef } from "react";
+import { Card, CardContent, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import Link from "next/link";
-import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart } from "lucide-react";
 import { getJobList, saveJobById, getOccupations, applyJobApi } from "../../../services/job.service";
 import { getCountriesForJobs } from "../../../services/info.service";
 import JobFilter from "../../../components/JobFilter";
 import SearchComponent from "../../../components/SearchComponent";
 import ProfileCompletionModal from "../../../components/ProfileCompletionModal";
 import { toast } from "sonner";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useGlobalState } from "../../../contexts/GlobalProvider";
 import { motion, useInView } from "framer-motion";
 import AnimatedLanguageText from "../../../components/AnimatedLanguageText";
@@ -40,18 +40,18 @@ interface Job {
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  // const [loadingMore, setLoadingMore] = useState(false); // Removed with load more functionality
   const [showFilter, setShowFilter] = useState(false);
   const [savedJobs, setSavedJobs] = useState<(string | number)[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  // const [searchTerm, setSearchTerm] = useState(''); // Removed as not used
   const [currentPage, setCurrentPage] = useState(1);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState(0);
   const [totalJobs, setTotalJobs] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [sortBy, setSortBy] = useState('latest');
-  const [paginationType, setPaginationType] = useState<'pagination' | 'loadMore'>('loadMore');
+  // const [hasMore, setHasMore] = useState(true); // Removed with load more functionality
+  // const [sortBy, setSortBy] = useState('latest'); // Removed as not used
+  // const [paginationType, setPaginationType] = useState<'pagination' | 'loadMore'>('pagination'); // Removed as only pagination is used
   const [payload, setPayload] = useState({
     jobOccupation: [] as number[],
     jobLocationCountry: [] as number[],
@@ -66,11 +66,11 @@ export default function JobsPage() {
   const [countries, setCountries] = useState<Array<{label: string, value: number, count?: number}>>([]);
   
   const router = useRouter();
-  const searchParams = useSearchParams();
+  // const searchParams = useSearchParams(); // Removed as not used
   const { globalState } = useGlobalState();
-  const jobsPerPage = 10;
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [jobsPerPage, setJobsPerPage] = useState(10);
+  // const observerRef = useRef<IntersectionObserver | null>(null); // Removed
+  // const loadMoreRef = useRef<HTMLDivElement>(null); // Removed
   const containerRef = useRef(null);
   const isInView = useInView(containerRef, { once: true });
 
@@ -101,13 +101,13 @@ export default function JobsPage() {
       return;
     }
 
-    let payload = {
+    const payload = {
       id: jobId,
       "apply-job": "",
     };
     
     try {
-      let response = await applyJobApi(
+      const response = await applyJobApi(
         payload,
         globalState?.user?.access_token
       );
@@ -120,9 +120,9 @@ export default function JobsPage() {
       } else {
         toast.error(response?.data?.error || "Something went wrong");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Apply job error:', error);
-      const errorMessage = error?.response?.data?.error || error?.message || "Internal Server Error";
+      const errorMessage = (error as any)?.response?.data?.error || (error as any)?.message || "Internal Server Error";
       if (errorMessage === "You did not fill mandatory fields.") {
         setSelectedJobId(jobId);
         setShowProfileModal(true);
@@ -150,138 +150,170 @@ export default function JobsPage() {
       } else {
         toast.error(response?.data?.error || "Failed to save job");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Save job error:', error);
-      toast.error(error?.response?.data?.error || "Failed to save job");
+      toast.error((error as any)?.response?.data?.error || "Failed to save job");
     }
   };
 
-  // Fetch jobs with pagination
-  const fetchJobs = useCallback(async (page: number = 1, append: boolean = false) => {
-    try {
-      const isInitialLoad = page === 1 && !append;
-      if (isInitialLoad) {
+  // fetchJobs function removed - functionality moved to useEffect and handlePageChange
+
+  // Load more jobs - REMOVED
+  // const handleLoadMore = useCallback(() => {
+  //   if (!loadingMore && hasMore) {
+  //     const nextPage = currentPage + 1;
+  //     fetchJobs(nextPage, true);
+  //   }
+  // }, [loadingMore, hasMore, currentPage, fetchJobs]);
+
+  // Handle page change for pagination
+  const handlePageChange = async (page: number) => {
+    if (page !== currentPage && !loading) {
+      try {
         setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
-
-      const formData = new FormData();
-      formData.append('page', page.toString());
-      formData.append('per_page', jobsPerPage.toString());
-
-      // Add filter payload
-      if (payload.jobOccupation.length > 0) {
-        payload.jobOccupation.forEach(id => formData.append('jobOccupation[]', id.toString()));
-      }
-      if (payload.jobLocationCountry.length > 0) {
-        payload.jobLocationCountry.forEach(id => formData.append('jobLocationCountry[]', id.toString()));
-      }
-      if (payload.passportType) {
-        formData.append('passportType', payload.passportType);
-      }
-      if (payload.languageRequired.length > 0) {
-        payload.languageRequired.forEach(lang => formData.append('languageRequired[]', lang));
-      }
-      if (payload.contractPeriod) {
-        formData.append('contractPeriod', payload.contractPeriod);
-      }
-      if (payload.jobExpTypeReq) {
-        formData.append('jobExpTypeReq', payload.jobExpTypeReq);
-      }
-      if (payload.sortBy) {
-        formData.append('sortBy', payload.sortBy);
-      }
-
-      const response = await getJobList(formData);
-      
-      if (response?.jobs) {
-        const newJobs = response.jobs;
-        const totalPagesCount = response.lastPage || Math.ceil((response.totalJobs || 0) / jobsPerPage);
         
-        if (append) {
-          setJobs(prev => [...prev, ...newJobs]);
-        } else {
-          setJobs(newJobs);
+        const formData = new FormData();
+        formData.append('page', page.toString());
+        formData.append('per_page', jobsPerPage.toString());
+
+        // Add filter payload
+        if (payload.jobOccupation.length > 0) {
+          payload.jobOccupation.forEach(id => formData.append('jobOccupation[]', id.toString()));
         }
+        if (payload.jobLocationCountry.length > 0) {
+          payload.jobLocationCountry.forEach(id => formData.append('jobLocationCountry[]', id.toString()));
+        }
+        if (payload.passportType) {
+          formData.append('passportType', payload.passportType);
+        }
+        if (payload.languageRequired.length > 0) {
+          payload.languageRequired.forEach(lang => formData.append('languageRequired[]', lang));
+        }
+        if (payload.contractPeriod) {
+          formData.append('contractPeriod', payload.contractPeriod);
+        }
+        if (payload.jobExpTypeReq) {
+          formData.append('jobExpTypeReq', payload.jobExpTypeReq);
+        }
+        if (payload.sortBy) {
+          formData.append('sortBy', payload.sortBy);
+        }
+
+        const response = await getJobList(formData);
         
-        setTotalPages(totalPagesCount);
-        setTotalJobs(response.totalJobs || newJobs.length);
-        setCurrentPage(page);
-        setHasMore(page < totalPagesCount);
-      } else {
-        if (append) {
-          setHasMore(false);
+        if (response?.jobs) {
+          const newJobs = response.jobs;
+          const totalPagesCount = response.lastPage || Math.ceil((response.totalJobs || 0) / jobsPerPage);
+          
+          setJobs(newJobs);
+          setTotalPages(totalPagesCount);
+          setTotalJobs(response.totalJobs || newJobs.length);
+          setCurrentPage(page);
         } else {
           setJobs([]);
           setTotalPages(0);
           setTotalJobs(0);
         }
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+        toast.error('Failed to load jobs. Please try again.');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-      toast.error('Failed to load jobs. Please try again.');
-      if (append) {
-        setHasMore(false);
-      }
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
     }
-  }, [payload, jobsPerPage, globalState?.user]);
+  };
 
-  // Load more jobs
-  const handleLoadMore = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      const nextPage = currentPage + 1;
-      fetchJobs(nextPage, true);
-    }
-  }, [loadingMore, hasMore, currentPage, fetchJobs]);
+  // Intersection Observer for infinite scroll - REMOVED
+  // useEffect(() => {
+  //   if (paginationType === 'loadMore' && hasMore && !loadingMore) {
+  //     const observer = new IntersectionObserver(
+  //       (entries) => {
+  //         if (entries[0].isIntersecting && hasMore && !loadingMore) {
+  //           handleLoadMore();
+  //         }
+  //       },
+  //       { threshold: 0.1 }
+  //     );
 
-  // Handle page change for pagination
-  const handlePageChange = useCallback((page: number) => {
-    if (page !== currentPage && !loading) {
-      fetchJobs(page, false);
-    }
-  }, [currentPage, loading, fetchJobs]);
+  //     if (loadMoreRef.current) {
+  //       observer.observe(loadMoreRef.current);
+  //     }
 
-  // Intersection Observer for infinite scroll
+  //     observerRef.current = observer;
+
+  //     return () => {
+  //       if (observerRef.current) {
+  //         observerRef.current.disconnect();
+  //       }
+  //     };
+  //   }
+  // }, [paginationType, hasMore, loadingMore, handleLoadMore]);
+
+  // Fetch jobs when filters or pagination settings change
   useEffect(() => {
-    if (paginationType === 'loadMore' && hasMore && !loadingMore) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore && !loadingMore) {
-            handleLoadMore();
-          }
-        },
-        { threshold: 0.1 }
-      );
+    const loadJobs = async () => {
+      try {
+        setLoading(true);
+        
+        const formData = new FormData();
+        formData.append('page', '1');
+        formData.append('per_page', jobsPerPage.toString());
 
-      if (loadMoreRef.current) {
-        observer.observe(loadMoreRef.current);
-      }
-
-      observerRef.current = observer;
-
-      return () => {
-        if (observerRef.current) {
-          observerRef.current.disconnect();
+        // Add filter payload
+        if (payload.jobOccupation.length > 0) {
+          payload.jobOccupation.forEach(id => formData.append('jobOccupation[]', id.toString()));
         }
-      };
-    }
-  }, [paginationType, hasMore, loadingMore, handleLoadMore]);
+        if (payload.jobLocationCountry.length > 0) {
+          payload.jobLocationCountry.forEach(id => formData.append('jobLocationCountry[]', id.toString()));
+        }
+        if (payload.passportType) {
+          formData.append('passportType', payload.passportType);
+        }
+        if (payload.languageRequired.length > 0) {
+          payload.languageRequired.forEach(lang => formData.append('languageRequired[]', lang));
+        }
+        if (payload.contractPeriod) {
+          formData.append('contractPeriod', payload.contractPeriod);
+        }
+        if (payload.jobExpTypeReq) {
+          formData.append('jobExpTypeReq', payload.jobExpTypeReq);
+        }
+        if (payload.sortBy) {
+          formData.append('sortBy', payload.sortBy);
+        }
 
-  // Fetch initial data
-  useEffect(() => {
-    fetchJobs(1, false);
-  }, [fetchJobs]);
+        const response = await getJobList(formData);
+        
+        if (response?.jobs) {
+          const newJobs = response.jobs;
+          const totalPagesCount = response.lastPage || Math.ceil((response.totalJobs || 0) / jobsPerPage);
+          
+          setJobs(newJobs);
+          setTotalPages(totalPagesCount);
+          setTotalJobs(response.totalJobs || newJobs.length);
+          setCurrentPage(1);
+        } else {
+          setJobs([]);
+          setTotalPages(0);
+          setTotalJobs(0);
+        }
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+        toast.error('Failed to load jobs. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadJobs();
+  }, [payload, jobsPerPage]);
 
   // Fetch categories and countries
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await getOccupations();
-        const occupationData = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+        const occupationData = Array.isArray((response as any)?.data) ? (response as any).data : Array.isArray(response) ? response : [];
         const categories = occupationData.map((item: any) => ({
           label: item.occupation || item.title || item.name,
           value: item.id,
@@ -296,7 +328,7 @@ export default function JobsPage() {
     const fetchCountries = async () => {
       try {
         const response = await getCountriesForJobs();
-        const countryData = Array.isArray(response?.countries) ? response.countries : Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+        const countryData = Array.isArray((response as any)?.countries) ? (response as any).countries : Array.isArray((response as any)?.data) ? (response as any).data : Array.isArray(response) ? response : [];
         const countries = countryData.map((item: any) => ({
           label: item.name,
           value: item.id,
@@ -465,31 +497,23 @@ export default function JobsPage() {
                     <option value="deadline">Date Posted</option>
                   </select>
                   
-                  {/* Pagination Type Toggle */}
+                  {/* Items per page selector */}
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">View:</span>
-                    <div className="flex bg-gray-100 rounded-lg p-1">
-                      <button
-                        onClick={() => setPaginationType('loadMore')}
-                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                          paginationType === 'loadMore' 
-                            ? 'bg-white text-blue-600 shadow-sm' 
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Load More
-                      </button>
-                      <button
-                        onClick={() => setPaginationType('pagination')}
-                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                          paginationType === 'pagination' 
-                            ? 'bg-white text-blue-600 shadow-sm' 
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Pages
-                      </button>
-                    </div>
+                    <span className="text-sm text-gray-600">Show:</span>
+                    <select
+                      value={jobsPerPage}
+                      onChange={(e) => {
+                        const newPerPage = parseInt(e.target.value);
+                        setJobsPerPage(newPerPage);
+                        // The useEffect will handle the refetch automatically
+                      }}
+                      className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[60px]"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <span className="text-sm text-gray-600">per page</span>
                   </div>
                 </div>
               </div>
@@ -644,54 +668,10 @@ export default function JobsPage() {
             </div>
           )}
 
-          {/* Load More Button */}
-          {paginationType === 'loadMore' && hasMore && !loading && (
-            <div ref={loadMoreRef} className="flex justify-center mt-8">
-              <Button
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                {loadingMore ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-4 h-4 mr-2" />
-                    Load More Jobs
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-
-          {/* Load More Loading State */}
-          {paginationType === 'loadMore' && loadingMore && (
-            <div className="flex justify-center mt-8">
-              <div className="flex items-center gap-2 text-gray-600">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Loading more jobs...</span>
-              </div>
-            </div>
-          )}
-
-          {/* End of Results */}
-          {paginationType === 'loadMore' && !hasMore && jobs.length > 0 && (
-            <div className="text-center mt-8 py-8">
-              <div className="bg-white rounded-lg border border-gray-200 p-6 max-w-md mx-auto">
-                <ChevronUp className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">You&apos;ve reached the end!</h3>
-                <p className="text-gray-600 text-sm">
-                  You&apos;ve seen all {totalJobs} available jobs. Check back later for new opportunities.
-                </p>
-              </div>
-            </div>
-          )}
+          {/* Load More functionality removed - now using pagination only */}
 
             {/* Pagination - Enhanced */}
-            {paginationType === 'pagination' && totalPages > 1 && (
+            {totalPages > 1 && (
               <div className="flex justify-center items-center mt-12 py-8">
                 <div className="flex items-center gap-2">
                   <Button
@@ -708,7 +688,7 @@ export default function JobsPage() {
                     const pages = [];
                     const maxVisiblePages = 5;
                     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
                     
                     if (endPage - startPage + 1 < maxVisiblePages) {
                       startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -820,3 +800,4 @@ export default function JobsPage() {
     </div>
   );
 }
+
