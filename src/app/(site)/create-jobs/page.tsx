@@ -9,7 +9,6 @@ import {
   getOccupations,
   getSkillsByOccuId,
 } from "@/services/info.service";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -66,7 +65,7 @@ const CreateJobs = () => {
   const [countryList, setCountryList] = useState<{label: string; value: string}[]>([]);
   const [currencyList, setCurrencyList] = useState<{label: string; value: string}[]>([]);
   const [occupations, setOccupations] = useState<{label: string; value: string}[]>([]);
-  const [hrList, setHrList] = useState<any[]>([]);
+  // Local UI state only
   const [loading, setLoading] = useState(false);
 
   const getSkillList = async (id: string) => {
@@ -76,10 +75,11 @@ const CreateJobs = () => {
         setSkillList([]);
         return;
       }
-      let response = await getSkillsByOccuId(occuId);
-      let skills = response?.skills?.map((item: any) => ({
+      const response = await getSkillsByOccuId(occuId);
+      type SkillApi = { id: string | number; skill: string };
+      const skills = (response as { skills?: SkillApi[] })?.skills?.map((item) => ({
         label: item.skill,
-        value: item.id,
+        value: String(item.skill),
       }));
       setSkillList(skills || []);
     } catch (error) {
@@ -89,16 +89,26 @@ const CreateJobs = () => {
 
   const getListOfCountry = async () => {
     try {
-      let response = await getCountries();
-  let countries: any[] = Array.isArray(response) ? response : (response as any)?.countries || [];
-      let country = countries.map((item: any) => ({
+      const response = await getCountries();
+      type CountryApi = { id: string | number; name: string; currencyName?: string };
+      const countries: CountryApi[] = Array.isArray(response)
+        ? (response as CountryApi[])
+        : (((response as { countries?: CountryApi[] })?.countries) ?? []);
+      const country = countries.map((item) => ({
         label: item.name,
-        value: item.id,
+        value: String(item.id),
       }));
-      let currency = countries.map((item: any) => ({
-        label: item.currencyName,
-        value: item.currencyName,
-      }));
+      const currencyRaw = countries.map((item) => ({
+        label: item.currencyName ?? "",
+        value: item.currencyName ?? "",
+      })).filter(c => c.value);
+      // Deduplicate currencies by value to avoid duplicate keys (e.g., EUR across countries)
+      const seenCurrency = new Set<string>();
+      const currency = currencyRaw.filter((c) => {
+        if (seenCurrency.has(c.value)) return false;
+        seenCurrency.add(c.value);
+        return true;
+      });
       setCountryList(country);
       setCurrencyList(currency);
     } catch (error) {
@@ -108,11 +118,14 @@ const CreateJobs = () => {
 
   const getOccupationList = async () => {
     try {
-      let response = await getOccupations();
-  let occupationList: any[] = Array.isArray(response) ? response : (response as any)?.occupation || [];
-      let occupations = occupationList?.map((item: any) => ({
+      const response = await getOccupations();
+      type OccupationApi = { id: string | number; occupation: string };
+      const occupationList: OccupationApi[] = Array.isArray(response)
+        ? (response as OccupationApi[])
+        : (((response as { occupation?: OccupationApi[] })?.occupation) ?? []);
+      const occupations = occupationList?.map((item) => ({
         label: item.occupation,
-        value: item.id,
+        value: String(item.id),
       }));
       setOccupations(occupations || []);
     } catch (error) {
@@ -237,11 +250,15 @@ const CreateJobs = () => {
       const createFormData = new FormData();
       // Append all form data
       (Object.keys(formData) as (keyof FormDataType)[]).forEach(key => {
+        const value = formData[key];
         if (key === "jobSkill" || key === "languageRequired") {
-          createFormData.append(key, JSON.stringify(formData[key]));
-        } else if (formData[key] !== null && formData[key] !== "") {
-          // @ts-ignore
-          createFormData.append(key, formData[key] as any);
+          createFormData.append(key, JSON.stringify(value));
+        } else if (key === "jobPhoto") {
+          if (value) {
+            createFormData.append(key, value as File);
+          }
+        } else if (value !== null && value !== "") {
+          createFormData.append(key, String(value));
         }
       });
 
@@ -305,7 +322,7 @@ const CreateJobs = () => {
     }
   };
 
-  const formFields = [
+  const formFields: FieldConfig[] = [
     { name: "jobTitle", label: "Job Title", type: "text" },
     {
       name: "jobOccupation",
@@ -545,143 +562,336 @@ const CreateJobs = () => {
     { name: "jobPhoto", label: "Job Photo", type: "file" },
   ];
 
-  return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50 py-8">
-      <Card className="w-full max-w-3xl p-8 shadow-lg border border-gray-200 bg-white">
-        <h1 className="text-2xl font-bold mb-6 text-center text-blue-700">Create a New Job</h1>
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
-        >
-          {formFields.map((field) => (
-            <div key={field.name} className="flex flex-col gap-2">
-              <Label htmlFor={field.name}>{field.label}</Label>
-              {field.type === "select" ? (
-                <CustomSelect.Select
-                  value={
-                    typeof formData[field.name as keyof FormDataType] === 'string' || typeof formData[field.name as keyof FormDataType] === 'number'
-                      ? String(formData[field.name as keyof FormDataType])
-                      : ''
-                  }
-                  onValueChange={value => setFormData({ ...formData, [field.name]: value })}
-                  disabled={field.name === 'jobSkill' && skillList.length === 0}
+  // UI helpers for grouped sections and hints
+  const getPlaceholder = (name: string) => {
+    const map: Record<string, string> = {
+      jobTitle: "e.g. Senior Electrician",
+      cmpNameACT: "e.g. Gulf Contracting Co.",
+      jobInterviewPlace: "e.g. Kolkata Office or Zoom",
+      jobArea: "e.g. Dubai, Abu Dhabi",
+      jobVacancyNo: "e.g. 25",
+      jobWages: "e.g. 3500",
+      service_charge: "e.g. 15000",
+      jobWorkingHour: "e.g. 8 hours/day",
+      jobAgeLimit: "18 - 60",
+      hrName: "Full name",
+      hrEmail: "name@company.com",
+      hrNumber: "+91 98xxxxxxx",
+      companyJobID: "Internal reference (optional)",
+    };
+    return map[name] || undefined;
+  };
+
+  const getSelectPlaceholder = (name: string, fallback: string = "Select option") => {
+    const map: Record<string, string> = {
+      jobOccupation: "Select department",
+      jobSkill: "Add a skill",
+      jobMode: "Select interview mode",
+      jobLocationCountry: "Select country",
+      jobWagesCurrencyType: "Select currency",
+      salary_negotiable: "Is salary negotiable?",
+      passport_type: "Select passport type",
+      expCerificateReq: "Experience certificate?",
+      jobWorkVideoReq: "Work video required?",
+      jobExpReq: "Experience required?",
+      jobExpTypeReq: "Experience location",
+      jobExpDuration: "Years of experience",
+      DLReq: "Driving license",
+      jobWorkingDay: "Working days per month",
+      jobOvertime: "Overtime policy",
+      jobFood: "Food provision",
+      jobAccommodation: "Accommodation",
+      jobMedicalFacility: "Medical facility",
+      jobTransportation: "Work transportation",
+      languageRequired: "Add language",
+    };
+    return map[name] || fallback;
+  };
+
+  const Section: React.FC<{ 
+    title: string; 
+    subtitle?: string; 
+    children: React.ReactNode; 
+    cols?: string;
+    collapsible?: boolean;
+    removable?: boolean;
+    onRemove?: () => void;
+  }> = ({ 
+    title, 
+    subtitle, 
+    children, 
+    cols = "grid-cols-1 md:grid-cols-2",
+    collapsible = false,
+    removable = false,
+    onRemove
+  }) => {
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    
+    return (
+      <section className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between p-6 md:p-8 pb-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+              {collapsible && (
+                <button
+                  type="button"
+                  onClick={() => setIsCollapsed(!isCollapsed)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label={isCollapsed ? 'Expand section' : 'Collapse section'}
                 >
-                  <CustomSelect.SelectTrigger className="w-full" />
-                  <CustomSelect.SelectContent className="min-w-[180px] z-50">
-                    {field?.options?.length === 0 && (
-                      <CustomSelect.SelectItem value="placeholder" disabled>
-                        No options available
-                      </CustomSelect.SelectItem>
-                    )}
-                    {field?.options?.map((v) => (
-                      v.value !== '' ? (
-                        <CustomSelect.SelectItem key={v.value} value={v.value}>
-                          {v.label}
-                        </CustomSelect.SelectItem>
-                      ) : null
-                    ))}
-                  </CustomSelect.SelectContent>
-                </CustomSelect.Select>
-              ) : field.type === "textarea" ? (
-                <Textarea
-                  id={field.name}
-                  name={field.name}
-                  value={
-                    typeof formData[field.name as keyof FormDataType] === 'string' || typeof formData[field.name as keyof FormDataType] === 'number'
-                      ? formData[field.name as keyof FormDataType] as string | number
-                      : ''
-                  }
-                  onChange={handleOnChange}
-                />
-              ) : field.type === "file" ? (
-                <Input
-                  id={field.name}
-                  type="file"
-                  name={field.name}
-                  onChange={handleOnChange}
-                />
-              ) : field.type === "multiple" ? (
-                <div className="flex flex-col gap-1">
-                  <CustomSelect.Select
-                    value=""
-                    onValueChange={value => {
-                      const prev = Array.isArray(formData[field.name as keyof FormDataType]) ? formData[field.name as keyof FormDataType] as string[] : [];
-                      if (!prev.includes(value)) {
-                        setFormData({ ...formData, [field.name]: [...prev, value] });
-                      }
-                    }}
-                    disabled={field.name === 'jobSkill' && skillList.length === 0}
+                  <svg 
+                    className={`w-4 h-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
                   >
-                    <CustomSelect.SelectTrigger className="w-full" />
-                    <CustomSelect.SelectContent className="min-w-[180px] z-50 bg-white border border-gray-200">
-                      {field?.options?.length === 0 && (
-                        <CustomSelect.SelectItem value="placeholder" disabled>
-                          No options available
-                        </CustomSelect.SelectItem>
-                      )}
-                      {field?.options?.map((v, idx) => {
-                        if (v.value === '') return null;
-                        // Ensure unique key by appending index if duplicate values exist
-                        const duplicateCount = field.options.filter(opt => opt.value === v.value).length;
-                        const key = duplicateCount > 1 ? `${v.value}-${idx}` : v.value;
-                        return (
-                          <CustomSelect.SelectItem key={key} value={v.value}>
-                            {v.label}
-                          </CustomSelect.SelectItem>
-                        );
-                      })}
-                    </CustomSelect.SelectContent>
-                  </CustomSelect.Select>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {/* Show selected values as badges with remove option */}
-                    {Array.isArray(formData[field.name as keyof FormDataType]) &&
-                      (formData[field.name as keyof FormDataType] as string[]).map((val) => (
-                        <span key={val} className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs flex items-center gap-1">
-                          {val}
-                          <button
-                            type="button"
-                            className="ml-1 text-blue-700 hover:text-red-500 focus:outline-none"
-                            onClick={() => {
-                              setFormData({
-                                ...formData,
-                                [field.name]: (formData[field.name as keyof FormDataType] as string[]).filter(v => v !== val),
-                              });
-                            }}
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                  </div>
-                </div>
-              ) : (
-                <Input
-                  id={field.name}
-                  type={field.type}
-                  name={field.name}
-                  value={
-                    typeof formData[field.name as keyof FormDataType] === 'string' || typeof formData[field.name as keyof FormDataType] === 'number'
-                      ? formData[field.name as keyof FormDataType] as string | number
-                      : ''
-                  }
-                  onChange={handleOnChange}
-                />
-              )}
-              {errors[field.name as keyof FormDataType] && (
-                <span className="text-red-600 text-xs mt-1">{errors[field.name as keyof FormDataType]}</span>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               )}
             </div>
-          ))}
-          <div className="md:col-span-2 flex justify-center mt-6">
-            <Button type="submit" className="w-full max-w-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg" disabled={loading}>
-              {loading ? "Creating..." : "Submit"}
-            </Button>
+            {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
           </div>
-        </form>
-      </Card>
+          {removable && onRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="text-gray-400 hover:text-red-500 transition-colors ml-4 p-1"
+              aria-label={`Remove ${title} section`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+        {!isCollapsed && (
+          <div className="px-6 md:px-8 pb-6 md:pb-8">
+            <div className={`grid ${cols} gap-6`}>{children}</div>
+          </div>
+        )}
+      </section>
+    );
+  };
+
+  type Option = { label: string; value: string };
+  type FieldConfig = {
+    name: string;
+    label: string;
+    type: "text" | "number" | "email" | "date" | "select" | "multiple" | "textarea" | "file";
+    options?: Option[];
+  };
+
+  const renderField = (field: FieldConfig) => (
+    <div key={field.name} className="flex flex-col gap-2">
+      <Label htmlFor={field.name} className="text-sm text-gray-700">{field.label}</Label>
+      {field.type === "select" ? (
+        <CustomSelect.Select
+          value={
+            typeof formData[field.name as keyof FormDataType] === 'string' || typeof formData[field.name as keyof FormDataType] === 'number'
+              ? String(formData[field.name as keyof FormDataType])
+              : ''
+          }
+          onValueChange={value => setFormData({ ...formData, [field.name]: value })}
+          disabled={field.name === 'jobSkill' && skillList.length === 0}
+        >
+          <CustomSelect.SelectTrigger className="w-full">
+            <CustomSelect.SelectValue placeholder={getSelectPlaceholder(field.name)} />
+          </CustomSelect.SelectTrigger>
+          <CustomSelect.SelectContent className="min-w-[180px] z-50">
+            {field?.options?.length === 0 && (
+              <CustomSelect.SelectItem value="placeholder" disabled>
+                No options available
+              </CustomSelect.SelectItem>
+            )}
+            {field?.options?.map((v: Option, idx: number) => (
+              v.value !== '' ? (
+                <CustomSelect.SelectItem key={`${v.value}-${idx}`} value={v.value}>
+                  {v.label}
+                </CustomSelect.SelectItem>
+              ) : null
+            ))}
+          </CustomSelect.SelectContent>
+        </CustomSelect.Select>
+      ) : field.type === "textarea" ? (
+        <Textarea
+          id={field.name}
+          name={field.name}
+          placeholder="Describe responsibilities, requirements, benefits..."
+          className="min-h-[120px]"
+          value={
+            typeof formData[field.name as keyof FormDataType] === 'string' || typeof formData[field.name as keyof FormDataType] === 'number'
+              ? formData[field.name as keyof FormDataType] as string | number
+              : ''
+          }
+          onChange={handleOnChange}
+        />
+      ) : field.type === "file" ? (
+        <Input
+          id={field.name}
+          type="file"
+          name={field.name}
+          onChange={handleOnChange}
+        />
+      ) : field.type === "multiple" ? (
+        <div className="flex flex-col gap-1">
+          <CustomSelect.Select
+            value=""
+            onValueChange={value => {
+              const prev = Array.isArray(formData[field.name as keyof FormDataType]) ? formData[field.name as keyof FormDataType] as string[] : [];
+              if (!prev.includes(value)) {
+                setFormData({ ...formData, [field.name]: [...prev, value] });
+              }
+            }}
+            disabled={field.name === 'jobSkill' && skillList.length === 0}
+          >
+            <CustomSelect.SelectTrigger className="w-full">
+              <div className="flex flex-wrap items-center gap-2 w-full min-h-[1.75rem]">
+                {Array.isArray(formData[field.name as keyof FormDataType]) && (formData[field.name as keyof FormDataType] as string[]).length > 0 ? (
+                  (formData[field.name as keyof FormDataType] as string[]).map((val) => (
+                    <span
+                      key={val}
+                      className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded text-xs flex items-center gap-1 border border-gray-200"
+                    >
+                      {val}
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className="text-gray-500 hover:text-red-500 cursor-pointer select-none"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setFormData({
+                            ...formData,
+                            [field.name]: (formData[field.name as keyof FormDataType] as string[]).filter(v => v !== val),
+                          });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setFormData({
+                              ...formData,
+                              [field.name]: (formData[field.name as keyof FormDataType] as string[]).filter(v => v !== val),
+                            });
+                          }
+                        }}
+                        aria-label={`Remove ${val}`}
+                      >
+                        ×
+                      </span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-400 text-sm">{getSelectPlaceholder(field.name, 'Add option')}</span>
+                )}
+              </div>
+            </CustomSelect.SelectTrigger>
+            <CustomSelect.SelectContent className="min-w-[180px] z-50 bg-white border border-gray-200">
+              {field?.options?.length === 0 && (
+                <CustomSelect.SelectItem value="placeholder" disabled>
+                  No options available
+                </CustomSelect.SelectItem>
+              )}
+              {field?.options?.map((v: Option, idx: number) => {
+                if (v.value === '') return null;
+                const key = `${v.value}-${idx}`;
+                return (
+                  <CustomSelect.SelectItem key={key} value={v.value}>
+                    {v.label}
+                  </CustomSelect.SelectItem>
+                );
+              })}
+            </CustomSelect.SelectContent>
+          </CustomSelect.Select>
+        </div>
+      ) : (
+        <Input
+          id={field.name}
+          type={field.type}
+          name={field.name}
+          placeholder={getPlaceholder(field.name)}
+          value={
+            typeof formData[field.name as keyof FormDataType] === 'string' || typeof formData[field.name as keyof FormDataType] === 'number'
+              ? formData[field.name as keyof FormDataType] as string | number
+              : ''
+          }
+          onChange={handleOnChange}
+        />
+      )}
+      {errors[field.name as keyof FormDataType] && (
+        <span className="text-red-600 text-xs mt-1">{errors[field.name as keyof FormDataType]}</span>
+      )}
+    </div>
+  );
+
+  const basicInfoFields = ["jobTitle", "jobOccupation", "jobSkill", "cmpNameACT", "jobPhoto", "jobDescription"];
+  const interviewFields = ["jobMode", "jobInterviewDate", "jobInterviewPlace"];
+  const locationFields = ["jobLocationCountry", "jobArea", "jobDeadline"];
+  const openingsFields = ["jobVacancyNo", "jobWages", "jobWagesCurrencyType", "salary_negotiable", "passport_type", "service_charge", "contract_period"];
+  const requirementsFields = ["expCerificateReq", "jobWorkVideoReq", "jobExpReq", "jobExpTypeReq", "jobExpDuration", "DLReq", "languageRequired"];
+  const benefitsFields = ["jobWorkingDay", "jobWorkingHour", "jobOvertime", "jobFood", "jobAccommodation", "jobMedicalFacility", "jobTransportation", "jobAgeLimit"];
+  const contactFields = ["hrName", "hrEmail", "hrNumber", "companyJobID"];
+
+  const fieldsByName: Record<string, FieldConfig> = Object.fromEntries(
+    formFields.map((f) => [f.name, f] as const)
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-brand-light-blue to-white">
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl md:text-2xl font-semibold text-brand-blue">Create a New Job</h1>
+          <Button
+            onClick={handleSubmit}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+            disabled={loading}
+          >
+            {loading ? "Creating..." : "Publish Job"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        <Section title="Basic Details" subtitle="Role, department, skills and overview">
+          {basicInfoFields.map((n) => renderField(fieldsByName[n]))}
+        </Section>
+
+        <Section title="Interview" subtitle="Mode, date and venue" collapsible>
+          {interviewFields.map((n) => renderField(fieldsByName[n]))}
+        </Section>
+
+        <Section title="Location & Timeline" subtitle="Where the job is and the deadline" collapsible>
+          {locationFields.map((n) => renderField(fieldsByName[n]))}
+        </Section>
+
+        <Section title="Opening & Compensation" subtitle="Vacancies, wages, currency and contract">
+          {openingsFields.map((n) => renderField(fieldsByName[n]))}
+        </Section>
+
+        <Section title="Requirements" subtitle="Experience, certificates, licenses and languages" collapsible>
+          {requirementsFields.map((n) => renderField(fieldsByName[n]))}
+        </Section>
+
+        <Section title="Benefits & Working Conditions" subtitle="Days, hours, OT, food, accommodation, medical and transport" collapsible>
+          {benefitsFields.map((n) => renderField(fieldsByName[n]))}
+        </Section>
+
+        <Section title="Contact" subtitle="Who can candidates reach out to?" collapsible>
+          {contactFields.map((n) => renderField(fieldsByName[n]))}
+        </Section>
+
+        <div className="flex justify-end">
+          <Button type="button" onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold min-w-[160px]" disabled={loading}>
+            {loading ? "Creating..." : "Submit"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

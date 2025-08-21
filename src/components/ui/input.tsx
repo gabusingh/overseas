@@ -3,6 +3,52 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  const inputProps: React.InputHTMLAttributes<HTMLInputElement> = {
+    ...(props as any),
+  };
+  // Improve number input UX: allow manual typing, prevent scroll wheel changes
+  if (type === "number") {
+    inputProps.inputMode = inputProps.inputMode || "decimal";
+    inputProps.pattern = inputProps.pattern || "[0-9]*";
+    
+    // Prevent scroll wheel from changing values accidentally
+    inputProps.onWheel = (e) => {
+      (e.target as HTMLInputElement).blur();
+    };
+    
+    // Prevent auto-advancing on keypress for better manual typing experience
+    inputProps.onKeyDown = (e) => {
+      // Allow all navigation and editing keys
+      const allowedKeys = [
+        'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+        'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'Home', 'End', 'PageUp', 'PageDown'
+      ];
+      
+      // Allow Ctrl/Cmd combinations (copy, paste, etc.)
+      if (e.ctrlKey || e.metaKey) {
+        return;
+      }
+      
+      // Allow allowed keys
+      if (allowedKeys.includes(e.key)) {
+        return;
+      }
+      
+      // Allow numeric keys and decimal point
+      if (/^[0-9.]$/.test(e.key)) {
+        return;
+      }
+      
+      // Prevent any other keys
+      e.preventDefault();
+    };
+    
+    // Remove step attribute to prevent auto-increment behavior
+    if (!inputProps.step) {
+      inputProps.step = "any";
+    }
+  }
   return (
     <input
       type={type}
@@ -13,7 +59,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className
       )}
-      {...props}
+      {...inputProps}
     />
   )
 }
