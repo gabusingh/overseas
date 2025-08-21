@@ -15,16 +15,16 @@ body {
 }
 /* navbar start */
 .textBlue {
-  color: #17487f;
+  color: #2563eb;
 }
 .bgBlue {
-  background: #17487f;
+  background: #2563eb;
 }
 .fontMono {
   font-family: monospace;
 }
 .borderBottom {
-  border-bottom: 2px solid #17487f;
+  border-bottom: 2px solid #2563eb;
 }
 .vh50 {
   height: 50vh;
@@ -61,14 +61,14 @@ body {
 .searchComponent button {
   border: none;
   padding: 10px 30px;
-  background-color: #17487f;
+  background-color: #2563eb;
   color: white;
   border-radius: 0px 20px 20px 0px;
 }
 /* search component end */
 
 .downloadButton {
-  background-color: #17487f;
+  background-color: #2563eb;
   color: white;
   border: none;
   font-weight: 600;
@@ -83,7 +83,7 @@ body {
   font-weight: 600;
   padding: 15px 35px;
   border-radius: 25px;
-  border: 2px solid #17487f;
+  border: 2px solid #2563eb;
   box-shadow: 2px 2px 4px black;
 }
 .borderRadius {
@@ -225,33 +225,33 @@ body {
   width: 50px;
   border-radius: 50%;
   margin: 0px 7px;
-  border: 2px solid #17487f;
+  border: 2px solid #2563eb;
 }
 .lightBlueBg {
   background-color: #f0f7ff;
 }
 .borderLeft2 {
-  border-left: 2.5px solid #17487f;
+  border-left: 2.5px solid #2563eb;
 }
 .gola {
   height: 40px;
   width: 40px;
   border-radius: 20px;
-  border: 2px solid #17487f;
+  border: 2px solid #2563eb;
   display: flex;
   justify-content: center;
   align-items: center;
   background-color: whitesmoke;
 }
 .borderBlue {
-  border: 1px solid #17487f;
+  border: 1px solid #2563eb;
   border-radius: 5px 20px 20px 5px;
 }
 .borderRadiusLeft20 {
   border-radius: 0px 20px 20px 0px;
 }
 .borderLeft {
-  border-left: 1px solid #17487f;
+  border-left: 1px solid #2563eb;
 }
 .customLabel label {
   margin-bottom: 5px;
@@ -338,7 +338,7 @@ body {
   height: 50vh;
 }
 .termsCondition h3{
-  color: #17487F;
+  color: #2563eb;
   font-weight: 600;
   font-size: 30px;
 }

@@ -849,7 +849,7 @@ const CreateJobs = () => {
           <h1 className="text-xl md:text-2xl font-semibold text-brand-blue">Create a New Job</h1>
           <Button
             onClick={handleSubmit}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+            className="bg-brand-blue hover:bg-brand-blue/90 text-white font-semibold"
             disabled={loading}
           >
             {loading ? "Creating..." : "Publish Job"}
@@ -887,7 +887,7 @@ const CreateJobs = () => {
         </Section>
 
         <div className="flex justify-end">
-          <Button type="button" onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold min-w-[160px]" disabled={loading}>
+          <Button type="button" onClick={handleSubmit} className="bg-brand-blue hover:bg-brand-blue/90 text-white font-semibold min-w-[160px]" disabled={loading}>
             {loading ? "Creating..." : "Submit"}
           </Button>
         </div>

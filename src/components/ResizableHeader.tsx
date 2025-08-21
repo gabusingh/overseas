@@ -99,9 +99,9 @@ function ResizableHeader() {
                   <Link
                     key={index}
                     href={item.href}
-                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors dark:text-indigo-400 dark:hover:bg-neutral-800 dark:hover:text-indigo-300"
+                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-brand-blue/10 hover:text-brand-blue transition-colors dark:text-indigo-400 dark:hover:bg-neutral-800 dark:hover:text-indigo-300"
                   >
-                    <i className="fa fa-briefcase mr-3 text-blue-500"></i>
+                    <i className="fa fa-briefcase mr-3 text-brand-blue"></i>
                     {item.label}
                   </Link>
                 ))}
@@ -131,9 +131,9 @@ function ResizableHeader() {
                   <Link
                     key={index}
                     href={item.href}
-                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors dark:text-indigo-400 dark:hover:bg-neutral-800 dark:hover:text-indigo-300"
+                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-brand-blue/10 hover:text-brand-blue transition-colors dark:text-indigo-400 dark:hover:bg-neutral-800 dark:hover:text-indigo-300"
                   >
-                    <i className="fa fa-cog mr-3 text-blue-500"></i>
+                    <i className="fa fa-cog mr-3 text-brand-blue"></i>
                     {item.label}
                   </Link>
                 ))}

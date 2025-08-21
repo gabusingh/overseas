@@ -131,7 +131,7 @@ export default function ResumeBuildingPage() {
         {/* Benefits Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="text-center p-6 bg-white rounded-lg shadow-sm border">
-            <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-brand-blue/10 rounded-full flex items-center justify-center">
               <i className="fa fa-magic text-2xl textBlue"></i>
             </div>
             <h3 className="text-lg font-semibold mb-2">ATS Optimized</h3>
@@ -182,7 +182,7 @@ export default function ResumeBuildingPage() {
               key={template.id}
               className={`bg-white rounded-lg shadow-sm border-2 transition-all hover:shadow-md cursor-pointer ${
                 selectedTemplate === template.id
-                  ? "border-blue-500 bg-blue-50"
+                  ? "border-brand-blue bg-brand-blue/10"
                   : "border-gray-200 hover:border-gray-300"
               }`}
               onClick={() => handleTemplateSelect(template.id)}
@@ -202,9 +202,9 @@ export default function ResumeBuildingPage() {
                   </div>
                 )}
                 {selectedTemplate === template.id && (
-                  <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center rounded-t-lg">
+                  <div className="absolute inset-0 bg-brand-blue bg-opacity-20 flex items-center justify-center rounded-t-lg">
                     <div className="bg-white rounded-full p-2">
-                      <i className="fa fa-check text-blue-500 text-2xl"></i>
+                      <i className="fa fa-check text-brand-blue text-2xl"></i>
                     </div>
                   </div>
                 )}
@@ -220,7 +220,7 @@ export default function ResumeBuildingPage() {
                         e.stopPropagation();
                         handlePreviewTemplate(template.id);
                       }}
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                      className="text-sm text-brand-blue hover:text-brand-blue/80"
                     >
                       Preview
                     </button>
@@ -241,7 +241,7 @@ export default function ResumeBuildingPage() {
         <div className="text-center space-y-4">
           <button
             onClick={handleStartBuilding}
-            className="bgBlue text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bgBlue text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-brand-blue/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!selectedTemplate || loading}
           >
             {loading ? (
@@ -285,7 +285,7 @@ export default function ResumeBuildingPage() {
               className="flex items-center justify-between p-4 bg-white rounded-lg border hover:shadow-md transition-all"
             >
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <div className="w-10 h-10 bg-brand-blue/10 rounded-full flex items-center justify-center mr-3">
                   <i className="fa fa-book textBlue"></i>
                 </div>
                 <div className="text-left">
