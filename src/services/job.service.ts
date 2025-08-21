@@ -76,11 +76,8 @@ interface JobDetailResponse {
 
 export const getJobList = async (payload: FormData): Promise<JobListResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "filter-all-jobs", payload, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-      }
-    });
+    // Let axios set the proper multipart boundary automatically
+    const response = await axios.post(BASE_URL + "filter-all-jobs", payload);
     return response.data;
   } catch (error) {
     console.error("Error posting data:", error);

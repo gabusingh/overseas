@@ -61,7 +61,23 @@ export default function RootLayout({
         {/* Viewport meta for mobile optimization */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         
-        {/* Service Worker Registration */}
+        {/* Service Worker Registration - Temporarily disabled for debugging */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Unregister existing service workers for debugging
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for(let registration of registrations) {
+                    registration.unregister();
+                    console.log('SW unregistered for debugging');
+                  }
+                });
+              }
+            `,
+          }}
+        />
+        {/*
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -79,6 +95,7 @@ export default function RootLayout({
             `,
           }}
         />
+        */}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

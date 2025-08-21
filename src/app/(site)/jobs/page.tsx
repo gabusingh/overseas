@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import type { ReactNode } from "react";
 import { Card, CardContent, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -44,7 +45,7 @@ export default function JobsPage() {
   const [showFilter, setShowFilter] = useState(false);
   const [savedJobs, setSavedJobs] = useState<(string | number)[]>([]);
   // const [searchTerm, setSearchTerm] = useState(''); // Removed as not used
-  const [currentPage, setCurrentPage] = useState(1);
+  // Pagination removed
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState(0);
@@ -68,7 +69,7 @@ export default function JobsPage() {
   const router = useRouter();
   // const searchParams = useSearchParams(); // Removed as not used
   const { globalState } = useGlobalState();
-  const [jobsPerPage, setJobsPerPage] = useState(10);
+  const [pageNo, setPageNo] = useState(1);
   // const observerRef = useRef<IntersectionObserver | null>(null); // Removed
   // const loadMoreRef = useRef<HTMLDivElement>(null); // Removed
   const containerRef = useRef(null);
@@ -166,62 +167,7 @@ export default function JobsPage() {
   //   }
   // }, [loadingMore, hasMore, currentPage, fetchJobs]);
 
-  // Handle page change for pagination
-  const handlePageChange = async (page: number) => {
-    if (page !== currentPage && !loading) {
-      try {
-        setLoading(true);
-        
-        const formData = new FormData();
-        formData.append('page', page.toString());
-        formData.append('per_page', jobsPerPage.toString());
-
-        // Add filter payload
-        if (payload.jobOccupation.length > 0) {
-          payload.jobOccupation.forEach(id => formData.append('jobOccupation[]', id.toString()));
-        }
-        if (payload.jobLocationCountry.length > 0) {
-          payload.jobLocationCountry.forEach(id => formData.append('jobLocationCountry[]', id.toString()));
-        }
-        if (payload.passportType) {
-          formData.append('passportType', payload.passportType);
-        }
-        if (payload.languageRequired.length > 0) {
-          payload.languageRequired.forEach(lang => formData.append('languageRequired[]', lang));
-        }
-        if (payload.contractPeriod) {
-          formData.append('contractPeriod', payload.contractPeriod);
-        }
-        if (payload.jobExpTypeReq) {
-          formData.append('jobExpTypeReq', payload.jobExpTypeReq);
-        }
-        if (payload.sortBy) {
-          formData.append('sortBy', payload.sortBy);
-        }
-
-        const response = await getJobList(formData);
-        
-        if (response?.jobs) {
-          const newJobs = response.jobs;
-          const totalPagesCount = response.lastPage || Math.ceil((response.totalJobs || 0) / jobsPerPage);
-          
-          setJobs(newJobs);
-          setTotalPages(totalPagesCount);
-          setTotalJobs(response.totalJobs || newJobs.length);
-          setCurrentPage(page);
-        } else {
-          setJobs([]);
-          setTotalPages(0);
-          setTotalJobs(0);
-        }
-      } catch (error) {
-        console.error('Error fetching jobs:', error);
-        toast.error('Failed to load jobs. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+  // Pagination removed: no handlePageChange
 
   // Intersection Observer for infinite scroll - REMOVED
   // useEffect(() => {
@@ -249,15 +195,14 @@ export default function JobsPage() {
   //   }
   // }, [paginationType, hasMore, loadingMore, handleLoadMore]);
 
-  // Fetch jobs when filters or pagination settings change
+  // Fetch jobs for current pageNo (pagination enabled)
   useEffect(() => {
     const loadJobs = async () => {
       try {
         setLoading(true);
-        
+        const perPage = 10; // default page size fallback
         const formData = new FormData();
-        formData.append('page', '1');
-        formData.append('per_page', jobsPerPage.toString());
+        formData.append('pageNo', String(pageNo));
 
         // Add filter payload
         if (payload.jobOccupation.length > 0) {
@@ -283,20 +228,13 @@ export default function JobsPage() {
         }
 
         const response = await getJobList(formData);
-        
-        if (response?.jobs) {
-          const newJobs = response.jobs;
-          const totalPagesCount = response.lastPage || Math.ceil((response.totalJobs || 0) / jobsPerPage);
-          
-          setJobs(newJobs);
-          setTotalPages(totalPagesCount);
-          setTotalJobs(response.totalJobs || newJobs.length);
-          setCurrentPage(1);
-        } else {
-          setJobs([]);
-          setTotalPages(0);
-          setTotalJobs(0);
-        }
+        const pageJobs = (response as any)?.jobs || (response as any)?.data || [];
+        const totalCount = (response as any)?.totalJobs || (response as any)?.total || pageJobs.length;
+        const lastPageFromServer = (response as any)?.lastPage || Math.ceil(totalCount / perPage) || 1;
+
+        setJobs(Array.isArray(pageJobs) ? pageJobs : []);
+        setTotalJobs(totalCount);
+        setTotalPages(lastPageFromServer);
       } catch (error) {
         console.error('Error fetching jobs:', error);
         toast.error('Failed to load jobs. Please try again.');
@@ -306,7 +244,7 @@ export default function JobsPage() {
     };
 
     loadJobs();
-  }, [payload, jobsPerPage]);
+  }, [payload, pageNo]);
 
   // Fetch categories and countries
   useEffect(() => {
@@ -477,9 +415,7 @@ export default function JobsPage() {
                     {totalJobs.toLocaleString()} Jobs
                   </h2>
                   {totalPages > 0 && (
-                    <span className="text-sm text-gray-500">
-                      | Page {currentPage} of {totalPages}
-                    </span>
+                    <span className="text-sm text-gray-500">| Page {pageNo} of {totalPages}</span>
                   )}
                 </div>
                 
@@ -497,24 +433,7 @@ export default function JobsPage() {
                     <option value="deadline">Date Posted</option>
                   </select>
                   
-                  {/* Items per page selector */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Show:</span>
-                    <select
-                      value={jobsPerPage}
-                      onChange={(e) => {
-                        const newPerPage = parseInt(e.target.value);
-                        setJobsPerPage(newPerPage);
-                        // The useEffect will handle the refetch automatically
-                      }}
-                      className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[60px]"
-                    >
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                    </select>
-                    <span className="text-sm text-gray-600">per page</span>
-                  </div>
+                  {/* Items per page selector removed */}
                 </div>
               </div>
             </div>
@@ -668,83 +587,73 @@ export default function JobsPage() {
             </div>
           )}
 
-          {/* Load More functionality removed - now using pagination only */}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center mt-12 py-8">
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setPageNo((p) => Math.max(1, p - 1))}
+                  disabled={pageNo === 1}
+                  variant="outline"
+                  className="px-4 py-2"
+                >
+                  <i className="fa fa-chevron-left mr-2"></i>
+                  Previous
+                </Button>
 
-            {/* Pagination - Enhanced */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center mt-12 py-8">
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    variant="outline"
-                    className="px-4 py-2"
-                  >
-                    <i className="fa fa-chevron-left mr-2"></i>
-                    Previous
-                  </Button>
-                  
-                  {(() => {
-                    const pages = [];
-                    const maxVisiblePages = 5;
-                    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                    
-                    if (endPage - startPage + 1 < maxVisiblePages) {
-                      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                {(() => {
+                  const pages: ReactNode[] = [];
+                  const maxVisiblePages = 5;
+                  let startPage = Math.max(1, pageNo - Math.floor(maxVisiblePages / 2));
+                  const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                  if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                  }
+                  if (startPage > 1) {
+                    pages.push(
+                      <Button key={1} variant="outline" onClick={() => setPageNo(1)}>1</Button>
+                    );
+                    if (startPage > 2) {
+                      pages.push(<span key="dots1" className="px-2 text-gray-500">...</span>);
                     }
-
-                    // First page
-                    if (startPage > 1) {
-                      pages.push(
-                        <Button key={1} variant="outline" onClick={() => handlePageChange(1)}>1</Button>
-                      );
-                      if (startPage > 2) {
-                        pages.push(<span key="dots1" className="px-2 text-gray-500">...</span>);
-                      }
+                  }
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <Button
+                        key={i}
+                        onClick={() => setPageNo(i)}
+                        variant={pageNo === i ? "default" : "outline"}
+                        className={pageNo === i ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                      >
+                        {i}
+                      </Button>
+                    );
+                  }
+                  if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                      pages.push(<span key="dots2" className="px-2 text-gray-500">...</span>);
                     }
+                    pages.push(
+                      <Button key={totalPages} variant="outline" onClick={() => setPageNo(totalPages)}>
+                        {totalPages}
+                      </Button>
+                    );
+                  }
+                  return pages;
+                })()}
 
-                    // Visible pages
-                    for (let i = startPage; i <= endPage; i++) {
-                      pages.push(
-                        <Button
-                          key={i}
-                          onClick={() => handlePageChange(i)}
-                          variant={currentPage === i ? "default" : "outline"}
-                          className={currentPage === i ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
-                        >
-                          {i}
-                        </Button>
-                      );
-                    }
-
-                    // Last page
-                    if (endPage < totalPages) {
-                      if (endPage < totalPages - 1) {
-                        pages.push(<span key="dots2" className="px-2 text-gray-500">...</span>);
-                      }
-                      pages.push(
-                        <Button key={totalPages} variant="outline" onClick={() => handlePageChange(totalPages)}>
-                          {totalPages}
-                        </Button>
-                      );
-                    }
-
-                    return pages;
-                  })()}
-                  
-                  <Button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    variant="outline"
-                    className="px-4 py-2"
-                  >
-                    Next
-                    <i className="fa fa-chevron-right ml-2"></i>
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => setPageNo((p) => Math.min(totalPages, p + 1))}
+                  disabled={pageNo === totalPages}
+                  variant="outline"
+                  className="px-4 py-2"
+                >
+                  Next
+                  <i className="fa fa-chevron-right ml-2"></i>
+                </Button>
               </div>
-            )}
+            </div>
+          )}
             
             {/* No Results - Clean State */}
             {!loading && jobs.length === 0 && (

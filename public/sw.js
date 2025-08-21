@@ -1,29 +1,51 @@
 const CACHE_NAME = 'overseas-ai-v1';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/images/institute.png',
+  '/images/overseas.ainewlogo.png',
+  '/images/brandlogo.gif',
 ];
 
-// Cache API responses for these endpoints
+// Cache API responses for these endpoints (excluding pagination-sensitive endpoints)
 const API_CACHE_PATTERNS = [
   'https://backend.overseas.ai/api/get-occupations',
   'https://backend.overseas.ai/api/country-list-for-jobs',
   'https://backend.overseas.ai/api/country-list',
 ];
 
+// Don't cache these endpoints as they need to be fresh
+const NO_CACHE_PATTERNS = [
+  'get-job-list',
+  'apply-job',
+  'save-job',
+];
+
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(function(cache) {
-        return cache.addAll(urlsToCache);
+        // Add files one by one with error handling
+        return Promise.allSettled(
+          urlsToCache.map(url => 
+            cache.add(url).catch(err => {
+              console.warn('Failed to cache:', url, err);
+              return null;
+            })
+          )
+        );
       })
   );
 });
 
 self.addEventListener('fetch', function(event) {
   const requestUrl = event.request.url;
+  
+  // Don't cache pagination and job interaction endpoints
+  if (NO_CACHE_PATTERNS.some(pattern => requestUrl.includes(pattern))) {
+    // Just fetch without caching
+    event.respondWith(fetch(event.request));
+    return;
+  }
   
   // Cache API responses for 10 minutes
   if (API_CACHE_PATTERNS.some(pattern => requestUrl.includes(pattern))) {
