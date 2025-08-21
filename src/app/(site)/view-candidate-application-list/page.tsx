@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
+import { getAppliedCandidatesList } from "@/services/hra.service";
 
 interface Application {
   id: string;
@@ -59,119 +60,41 @@ export default function ViewCandidateApplicationsPage() {
         return;
       }
 
-      // Mock data - replace with actual API call
-      const mockApplications: Application[] = [
-        {
-          id: "1",
-          candidateName: "Ahmed Hassan",
-          email: "ahmed.hassan@email.com",
-          phone: "+971-50-123-4567",
-          jobTitle: "Senior Software Engineer",
-          jobId: jobId || "1",
-          appliedDate: "2024-12-10",
-          status: "pending",
-          experience: "5 years",
-          currentLocation: "Mumbai, India",
-          expectedSalary: "12000",
-          currency: "AED",
-          resumeUrl: "/resumes/ahmed_hassan.pdf",
-          coverLetter: "I am excited to apply for this position...",
-          skills: ["React", "Node.js", "MongoDB", "AWS"],
-          education: "Bachelor's in Computer Science",
-          availability: "Immediately",
-          rating: 4.2,
-          profilePicture: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-          id: "2",
-          candidateName: "Priya Sharma",
-          email: "priya.sharma@email.com",
-          phone: "+91-98765-43210",
-          jobTitle: "Senior Software Engineer",
-          jobId: jobId || "1",
-          appliedDate: "2024-12-09",
-          status: "shortlisted",
-          experience: "7 years",
-          currentLocation: "Bangalore, India",
-          expectedSalary: "15000",
-          currency: "AED",
-          resumeUrl: "/resumes/priya_sharma.pdf",
-          coverLetter: "With 7 years of experience in full-stack development...",
-          skills: ["Angular", "Python", "PostgreSQL", "Docker"],
-          education: "Master's in Software Engineering",
-          availability: "2 weeks notice",
-          rating: 4.7,
-          profilePicture: "https://images.unsplash.com/photo-1494790108755-2616b612b5ab?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-          id: "3",
-          candidateName: "Mohammad Khan",
-          email: "mohammad.khan@email.com",
-          phone: "+92-300-123-4567",
-          jobTitle: "Senior Software Engineer",
-          jobId: jobId || "1",
-          appliedDate: "2024-12-08",
-          status: "interviewed",
-          experience: "6 years",
-          currentLocation: "Karachi, Pakistan",
-          expectedSalary: "10000",
-          currency: "AED",
-          resumeUrl: "/resumes/mohammad_khan.pdf",
-          coverLetter: "I have extensive experience in building scalable applications...",
-          skills: ["Vue.js", "Laravel", "MySQL", "Redis"],
-          education: "Bachelor's in Information Technology",
-          availability: "1 month notice",
-          rating: 4.0,
-          profilePicture: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-          id: "4",
-          candidateName: "Sarah Johnson",
-          email: "sarah.johnson@email.com",
-          phone: "+1-555-123-4567",
-          jobTitle: "Senior Software Engineer",
-          jobId: jobId || "1",
-          appliedDate: "2024-12-07",
-          status: "hired",
-          experience: "8 years",
-          currentLocation: "New York, USA",
-          expectedSalary: "18000",
-          currency: "AED",
-          resumeUrl: "/resumes/sarah_johnson.pdf",
-          coverLetter: "I am thrilled to apply for this opportunity...",
-          skills: ["React Native", "TypeScript", "GraphQL", "Kubernetes"],
-          education: "Master's in Computer Engineering",
-          availability: "Immediately",
-          rating: 4.9,
-          profilePicture: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-          id: "5",
-          candidateName: "Raj Patel",
-          email: "raj.patel@email.com",
-          phone: "+91-87654-32109",
-          jobTitle: "Senior Software Engineer",
-          jobId: jobId || "1",
-          appliedDate: "2024-12-06",
-          status: "rejected",
-          experience: "4 years",
-          currentLocation: "Ahmedabad, India",
-          expectedSalary: "8000",
-          currency: "AED",
-          resumeUrl: "/resumes/raj_patel.pdf",
-          coverLetter: "I believe my skills align perfectly with your requirements...",
-          skills: ["PHP", "CodeIgniter", "jQuery", "Bootstrap"],
-          education: "Bachelor's in Computer Applications",
-          availability: "Immediately",
-          rating: 3.2,
-          profilePicture: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face"
-        }
-      ];
+      // Fetch applied candidates list using real API
+      const response = await getAppliedCandidatesList(token, 1);
+      const candidatesData = response?.data || response || [];
+      
+      // Transform API response to match Application interface
+      const transformedApplications: Application[] = (Array.isArray(candidatesData) ? candidatesData : []).map((candidate: any) => ({
+        id: candidate.id?.toString() || Math.random().toString(),
+        candidateName: candidate.empName || candidate.candidateName || "Unknown Candidate",
+        email: candidate.empEmail || candidate.email || "No email provided",
+        phone: candidate.empPhone || candidate.phone || "No phone provided",
+        jobTitle: candidate.jobTitle || "Applied Position",
+        jobId: candidate.jobId?.toString() || jobId || "1",
+        appliedDate: candidate.appliedOn || candidate.created_at || new Date().toISOString().split('T')[0],
+        status: "pending" as Application["status"], // Default status
+        experience: candidate.experience || "Not specified",
+        currentLocation: `${candidate.empDistrict || ""}, ${candidate.empState || "Unknown Location"}`.trim(),
+        expectedSalary: candidate.expectedSalary || "Negotiable",
+        currency: "AED", // Default currency
+        resumeUrl: candidate.resumeUrl || "/resume-placeholder.pdf",
+        coverLetter: candidate.coverLetter || "No cover letter provided",
+        skills: candidate.skills || [],
+        education: candidate.education || "Not specified",
+        availability: candidate.availability || "To be discussed",
+        profilePicture: candidate.empPhoto || undefined,
+        rating: candidate.rating || undefined,
+        notes: candidate.notes || undefined
+      }));
 
-      setApplications(mockApplications);
+      setApplications(transformedApplications);
     } catch (error) {
       console.error("Error fetching applications:", error);
-      toast.error("Failed to load applications");
+      toast.error("Failed to load applications. Please try again.");
+      
+      // Set empty array on error
+      setApplications([]);
     } finally {
       setLoading(false);
     }

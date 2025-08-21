@@ -4,23 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
-
-interface HraDashboardData {
-  totalPostedJobs: number;
-  totalAppliedCandidates: number;
-  totalPostedBulkHiring: number;
-  recentApplications?: Array<{
-    candidateName: string;
-    jobTitle: string;
-    appliedOn: string;
-    status: string;
-  }>;
-  recentJobs?: Array<{
-    jobTitle: string;
-    location: string;
-    applicationsCount: number;
-  }>;
-}
+import { getHraDashboardData, type HraDashboardData } from "@/services/hra.service";
 
 export default function HraDashboardPage() {
   const router = useRouter();
@@ -46,7 +30,7 @@ export default function HraDashboardPage() {
     { name: "Schedule Interview", path: "/view-candidate-application-list", icon: "fa fa-calendar" },
     { name: "View Reports", path: "/hra-jobs", icon: "fa fa-chart-bar" },
     { name: "Bulk Hire", path: "/create-bulk-hire", icon: "fa fa-users" },
-    { name: "Notifications", path: "/hra-notifications", icon: "fa fa-bell" }
+    { name: "Notifications", path: "/notifications", icon: "fa fa-bell" }
   ];
 
   const fetchHraDashboardData = async () => {
@@ -62,28 +46,21 @@ export default function HraDashboardPage() {
       const userData = JSON.parse(user);
       setUserData(userData);
 
-      // Mock data for now - replace with actual API call
-      const mockData: HraDashboardData = {
-        totalPostedJobs: 24,
-        totalAppliedCandidates: 156,
-        totalPostedBulkHiring: 8,
-        recentApplications: [
-          { candidateName: "John Smith", jobTitle: "Software Engineer", appliedOn: "2024-12-10", status: "Under Review" },
-          { candidateName: "Sarah Johnson", jobTitle: "Project Manager", appliedOn: "2024-12-09", status: "Interview Scheduled" },
-          { candidateName: "Mike Wilson", jobTitle: "UX Designer", appliedOn: "2024-12-08", status: "Shortlisted" },
-          { candidateName: "Emma Davis", jobTitle: "Data Analyst", appliedOn: "2024-12-07", status: "Hired" }
-        ],
-        recentJobs: [
-          { jobTitle: "Senior Developer", location: "Dubai", applicationsCount: 15 },
-          { jobTitle: "Project Manager", location: "Saudi Arabia", applicationsCount: 8 },
-          { jobTitle: "UI/UX Designer", location: "Qatar", applicationsCount: 22 }
-        ]
-      };
-      
-      setHraData(mockData);
+      // Fetch real data from HRA dashboard analytics API
+      const dashboardData = await getHraDashboardData(token);
+      setHraData(dashboardData);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-      toast.error("Failed to load dashboard");
+      toast.error("Failed to load dashboard data. Please try again.");
+      
+      // Set default data on error to prevent UI crashes
+      setHraData({
+        totalPostedJobs: 0,
+        totalAppliedCandidates: 0,
+        totalPostedBulkHiring: 0,
+        recentApplications: [],
+        recentJobs: []
+      });
     } finally {
       setLoading(false);
     }

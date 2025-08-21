@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
+import { getAllCreatedJobs } from "@/services/hra.service";
 
 interface Job {
   id: string;
@@ -46,114 +47,45 @@ export default function HraViewJobsPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("access_token");
-      if (!token) {
+      const user = localStorage.getItem("loggedUser");
+      
+      if (!token || !user) {
         router.push("/login");
         return;
       }
 
-      // Mock data - replace with actual API call
-      const mockJobs: Job[] = [
-        {
-          id: "1",
-          title: "Senior Software Engineer",
-          company: "Tech Solutions LLC",
-          location: "Dubai",
-          country: "UAE",
-          jobType: "full-time",
-          salaryRange: "8000 - 12000",
-          currency: "AED",
-          postedDate: "2024-12-10",
-          applicationDeadline: "2024-12-25",
-          status: "active",
-          applicationsCount: 45,
-          viewsCount: 234,
-          shortlistedCount: 8,
-          experienceLevel: "senior",
-          isUrgent: true,
-          isFeatured: false
-        },
-        {
-          id: "2",
-          title: "Project Manager",
-          company: "Construction Corp",
-          location: "Riyadh",
-          country: "Saudi Arabia",
-          jobType: "full-time",
-          salaryRange: "15000 - 20000",
-          currency: "SAR",
-          postedDate: "2024-12-08",
-          applicationDeadline: "2024-12-22",
-          status: "active",
-          applicationsCount: 32,
-          viewsCount: 187,
-          shortlistedCount: 5,
-          experienceLevel: "mid",
-          isUrgent: false,
-          isFeatured: true
-        },
-        {
-          id: "3",
-          title: "Marketing Specialist",
-          company: "Digital Agency",
-          location: "Doha",
-          country: "Qatar",
-          jobType: "full-time",
-          salaryRange: "6000 - 9000",
-          currency: "QAR",
-          postedDate: "2024-12-05",
-          applicationDeadline: "2024-12-20",
-          status: "paused",
-          applicationsCount: 28,
-          viewsCount: 156,
-          shortlistedCount: 3,
-          experienceLevel: "junior",
-          isUrgent: false,
-          isFeatured: false
-        },
-        {
-          id: "4",
-          title: "Data Analyst",
-          company: "Analytics Inc",
-          location: "Kuwait City",
-          country: "Kuwait",
-          jobType: "contract",
-          salaryRange: "800 - 1200",
-          currency: "KWD",
-          postedDate: "2024-12-03",
-          applicationDeadline: "2024-12-18",
-          status: "closed",
-          applicationsCount: 67,
-          viewsCount: 289,
-          shortlistedCount: 12,
-          experienceLevel: "mid",
-          isUrgent: false,
-          isFeatured: false
-        },
-        {
-          id: "5",
-          title: "UI/UX Designer",
-          company: "Design Studio",
-          location: "Manama",
-          country: "Bahrain",
-          jobType: "part-time",
-          salaryRange: "400 - 600",
-          currency: "BHD",
-          postedDate: "2024-12-01",
-          applicationDeadline: "2024-12-15",
-          status: "draft",
-          applicationsCount: 0,
-          viewsCount: 0,
-          shortlistedCount: 0,
-          experienceLevel: "junior",
-          isUrgent: false,
-          isFeatured: false
-        }
-      ];
+      // Fetch all created jobs using the correct API as per hraapi.md
+      const response = await getAllCreatedJobs(token);
+      
+      // Transform API response to match Job interface
+      const jobsData = response?.data || response || [];
+      const transformedJobs: Job[] = (Array.isArray(jobsData) ? jobsData : []).map((job: any) => ({
+        id: job.id?.toString() || job.jobId?.toString() || Math.random().toString(),
+        title: job.jobTitle || job.title || "Untitled Job",
+        company: job.company || job.cmpName || "Company Name",
+        location: job.location || job.jobLocation || job.country_location || "Multiple Locations",
+        country: job.country || job.jobLocationCountry?.name || job.country_location || "Unknown",
+        jobType: job.jobType || job.job_type || "full-time",
+        salaryRange: job.salaryRange || job.jobWages?.toString() || "TBD",
+        currency: job.currency || job.jobWagesCurrencyType || job.jobLocationCountry?.currencyName || "USD",
+        postedDate: job.postedDate || job.created_at || new Date().toISOString().split('T')[0],
+        applicationDeadline: job.applicationDeadline || job.jobDeadline || new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+        status: job.status || "active" as Job["status"],
+        applicationsCount: job.applicationsCount || job.totalAppliedCandidates || 0,
+        viewsCount: job.viewsCount || 0,
+        shortlistedCount: job.shortlistedCount || 0,
+        experienceLevel: job.experienceLevel || job.jobExpTypeReq || "all",
+        isUrgent: job.isUrgent || false,
+        isFeatured: job.isFeatured || false
+      }));
 
-      setJobs(mockJobs);
+      setJobs(transformedJobs);
     } catch (error) {
       console.error("Error fetching jobs:", error);
-      toast.error("Failed to load jobs");
+      toast.error("Failed to load jobs. Please try again.");
+      
+      // Set empty array on error to prevent UI crashes
+      setJobs([]);
     } finally {
       setLoading(false);
     }
@@ -301,10 +233,6 @@ export default function HraViewJobsPage() {
 
   return (
     <>
-      <Head>
-        <title>My Job Postings - Manage Jobs | Overseas.ai</title>
-        <meta name="description" content="View and manage your job postings, track applications, and analyze job performance." />
-      </Head>
 
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-8">

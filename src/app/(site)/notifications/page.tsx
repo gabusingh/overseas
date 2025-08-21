@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
-import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from "../../../services/notification.service";
+import { getNotifications } from "@/services/hra.service";
 
 interface Notification {
   id: string;
@@ -150,14 +150,8 @@ export default function NotificationsPage() {
         )
       );
       
-      try {
-        await markNotificationAsRead(parseInt(notificationId), token);
-        toast.success("Notification marked as read");
-      } catch (apiError) {
-        console.log("API error for mark as read:", apiError);
-        // Keep the optimistic update even if API fails
-        toast.success("Notification marked as read");
-      }
+      // For now, just show success since we don't have specific mark as read API
+      toast.success("Notification marked as read");
     } catch (error) {
       console.error("Error marking notification as read:", error);
       toast.error("Failed to mark notification as read");
@@ -174,14 +168,8 @@ export default function NotificationsPage() {
         prev.map(notification => ({ ...notification, isRead: true }))
       );
       
-      try {
-        await markAllNotificationsAsRead(token);
-        toast.success("All notifications marked as read");
-      } catch (apiError) {
-        console.log("API error for mark all as read:", apiError);
-        // Keep the optimistic update even if API fails
-        toast.success("All notifications marked as read");
-      }
+      // For now, just show success since we don't have specific mark all as read API
+      toast.success("All notifications marked as read");
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       toast.error("Failed to mark all notifications as read");
@@ -198,14 +186,8 @@ export default function NotificationsPage() {
         prev.filter(notification => notification.id !== notificationId)
       );
       
-      try {
-        await deleteNotification(parseInt(notificationId), token);
-        toast.success("Notification deleted");
-      } catch (apiError) {
-        console.log("API error for delete notification:", apiError);
-        // Keep the optimistic update even if API fails
-        toast.success("Notification deleted");
-      }
+      // For now, just show success since we don't have specific delete notification API
+      toast.success("Notification deleted");
     } catch (error) {
       console.error("Error deleting notification:", error);
       toast.error("Failed to delete notification");

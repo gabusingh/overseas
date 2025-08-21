@@ -17,30 +17,117 @@ interface CompanyListResponse {
   success?: boolean;
 };
 
-// Function to get all companies list (from legacy getHraList)
-export const getAllCompanies = async (): Promise<CompanyListResponse> => {
+// Interface for HRA Dashboard Data
+export interface HraDashboardData {
+  totalPostedJobs: number;
+  totalAppliedCandidates: number;
+  totalPostedBulkHiring: number;
+  latestPostedJobs?: Array<{
+    id: number;
+    jobID: string;
+    jobTitle: string;
+    jobVacancyNo: string;
+    jobDeadline: string;
+    jobWages: string;
+    country_location: string;
+    occupation: string;
+    jobAgeLimit: string;
+    passportType: string;
+    jobExpTypeReq: string;
+    totalAppliedCandidates: number;
+    created_at: string;
+    jobPhoto: string;
+    jobLocationCountry: {
+      id: number;
+      name: string;
+      currencyName: string;
+      currencySymbol: string;
+      countryFlag: string;
+    };
+  }>;
+  latestAppliedCandidates?: Array<{
+    id: number;
+    empName: string;
+    empPhoto: string;
+    empDob: string;
+    age: number;
+    appliedOn: string;
+    empState: string;
+    empDistrict: string;
+  }>;
+  // Legacy support for existing components
+  recentApplications?: Array<{
+    candidateName: string;
+    jobTitle: string;
+    appliedOn: string;
+    status: string;
+  }>;
+  recentJobs?: Array<{
+    jobTitle: string;
+    location: string;
+    applicationsCount: number;
+  }>;
+}
+
+export const getAllCompanies = async (token: string) => {
   try {
-    const response = await axios.get(BASE_URL + 'get-all-companies');
+    const response = await axios.get(`${BASE_URL}get-all-companies`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   } catch (error) {
-    console.error('Error fetching all companies:', error);
+    console.error("Error fetching all companies:", error);
     throw error;
   }
 };
 
-// Alias for backward compatibility
-export const getHraList = getAllCompanies;
-
-export const getHraDashboardData = async (accessToken: string) => {
+export const getCompanyDetails = async (companyId: string, token: string) => {
   try {
-    const response = await axios.get(BASE_URL + 'hra-dashboard', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+    const response = await axios.get(`${BASE_URL}company/${companyId}`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching HRA dashboard data:', error);
+    console.error("Error fetching company details:", error);
+    throw error;
+  }
+};
+
+export const getJobsPostedByHra = async (hraId: string, token: string) => {
+  try {
+    const response = await axios.get(`${BASE_URL}jobs-posted-by-hra/${hraId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching jobs posted by HRA:", error);
+    throw error;
+  }
+};
+
+export const getHrDetails = async (token: string) => {
+  try {
+    const response = await axios.get(`${BASE_URL}get-hr-details`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching HR details:", error);
+    throw error;
+  }
+};
+
+export const getHraDashboardAnalytics = async (token: string) => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}get-hra-dashboard-analytics`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching HRA dashboard analytics:", error);
     throw error;
   }
 };
@@ -60,13 +147,47 @@ export const createJob = async (formData: FormData, accessToken: string) => {
   }
 };
 
-export const getHraJobs = async (accessToken: string) => {
+// Alias for compatibility with legacy code
+export const createJobByHr = createJob;
+
+// Wrapper function to use the dashboard analytics API for HRA dashboard data
+export const getHraDashboardData = async (token: string): Promise<HraDashboardData> => {
   try {
-    const response = await axios.get(BASE_URL + 'hra-jobs', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
+    const response = await getHraDashboardAnalytics(token);
+    const data = response.data || response;
+    
+    // Transform the API response to include backward compatibility
+    const transformedData: HraDashboardData = {
+      totalPostedJobs: data.totalPostedJobs || 0,
+      totalAppliedCandidates: data.totalAppliedCandidates || 0,
+      totalPostedBulkHiring: data.totalPostedBulkHiring || 0,
+      latestPostedJobs: data.latestPostedJobs || [],
+      latestAppliedCandidates: data.latestAppliedCandidates || [],
+      
+      // Transform new API format to legacy format for backward compatibility
+      recentApplications: (data.latestAppliedCandidates || []).map((candidate: any) => ({
+        candidateName: candidate.empName || 'Unknown Candidate',
+        jobTitle: 'Applied for Position', // This info isn't in the API response
+        appliedOn: candidate.appliedOn || '',
+        status: 'Applied'
+      })),
+      recentJobs: (data.latestPostedJobs || []).map((job: any) => ({
+        jobTitle: job.jobTitle || 'Untitled Job',
+        location: job.country_location || job.jobLocationCountry?.name || 'Unknown Location',
+        applicationsCount: job.totalAppliedCandidates || 0
+      }))
+    };
+    
+    return transformedData;
+  } catch (error) {
+    console.error('Error fetching HRA dashboard data:', error);
+    throw error;
+  }
+};
+
+export const getHraJobs = async (hraId: string, accessToken: string) => {
+  try {
+    const response = await getJobsPostedByHra(hraId, accessToken);
     return response;
   } catch (error) {
     console.error('Error fetching HRA jobs:', error);
@@ -143,6 +264,57 @@ export const createBulkHire = async (formData: FormData, accessToken: string) =>
     return response;
   } catch (error) {
     console.error('Error creating bulk hire:', error);
+    throw error;
+  }
+};
+
+// Get all created jobs (used for view jobs section)
+export const getAllCreatedJobs = async (token: string) => {
+  try {
+    const formData = new FormData();
+    const response = await axios.post(`${BASE_URL}all-created-jobs`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all created jobs:', error);
+    throw error;
+  }
+};
+
+// Get applied candidates list with pagination
+export const getAppliedCandidatesList = async (token: string, pageNo: number = 1) => {
+  try {
+    const formData = new FormData();
+    formData.append('pageNo', pageNo.toString());
+    
+    const response = await axios.post(`${BASE_URL}applied-candidates-list`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching applied candidates list:', error);
+    throw error;
+  }
+};
+
+// Get notifications for HRA
+export const getNotifications = async (token: string) => {
+  try {
+    const response = await axios.get(`${BASE_URL}get-notifications`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
     throw error;
   }
 };

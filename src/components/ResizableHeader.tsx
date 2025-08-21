@@ -196,7 +196,7 @@ function ResizableHeader() {
               <Image
                 src="/images/brandlogo.gif"
                 width={120}
-                height={30}
+                height={32}
                 alt="Overseas.ai"
                 className="h-8 w-auto"
                 style={{ width: 'auto', height: '32px' }}
