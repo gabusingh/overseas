@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuTrigger, NavigationMenuContent } from "../../components/ui/navigation-menu";
 import { useGlobalState } from "@/contexts/GlobalProvider";
 import { clearStoredAuth } from "@/lib/auth";
@@ -18,6 +18,74 @@ export default function Header() {
   
   const user = globalState.user?.user;
   const isAuthenticated = !!user;
+  
+  // Fallback: Read user type directly from localStorage if global state is not available
+  const [fallbackUserType, setFallbackUserType] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!user?.type) {
+      // Try to get user type from localStorage directly
+      try {
+        const loggedUser = localStorage.getItem('loggedUser');
+        const userData = localStorage.getItem('user');
+        
+        if (loggedUser) {
+          const parsed = JSON.parse(loggedUser);
+          const userType = parsed.user?.type || parsed.type;
+          setFallbackUserType(userType);
+        } else if (userData) {
+          const parsed = JSON.parse(userData);
+          setFallbackUserType(parsed.type);
+        }
+      } catch (e) {
+        console.error('Error reading fallback user type:', e);
+      }
+    } else {
+      setFallbackUserType(null);
+    }
+  }, [user?.type]);
+  
+  // Use fallback user type if global state user type is not available
+  const effectiveUser = user || (fallbackUserType ? { type: fallbackUserType } : null);
+  
+  // Debug logging for user type issue
+  React.useEffect(() => {
+    console.log('=== HEADER DEBUG START ===');
+    console.log('Header Debug - Global State:', globalState);
+    console.log('Header Debug - User Object:', user);
+    console.log('Header Debug - User Type:', user?.type);
+    console.log('Header Debug - Fallback User Type:', fallbackUserType);
+    console.log('Header Debug - Effective User:', effectiveUser);
+    console.log('Header Debug - Effective User Type:', effectiveUser?.type);
+    console.log('Header Debug - Dashboard Link Text:', getDashboardLinkText());
+    console.log('Header Debug - localStorage loggedUser:', localStorage.getItem('loggedUser'));
+    console.log('Header Debug - localStorage user:', localStorage.getItem('user'));
+    
+    // Try to parse and show the actual data
+    try {
+      const loggedUserData = localStorage.getItem('loggedUser');
+      if (loggedUserData) {
+        const parsed = JSON.parse(loggedUserData);
+        console.log('Header Debug - Parsed loggedUser:', parsed);
+        console.log('Header Debug - Parsed loggedUser type:', parsed.type || parsed.user?.type);
+      }
+    } catch (e) {
+      console.log('Header Debug - Error parsing loggedUser:', e);
+    }
+    
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        console.log('Header Debug - Parsed user:', parsed);
+        console.log('Header Debug - Parsed user type:', parsed.type);
+      }
+    } catch (e) {
+      console.log('Header Debug - Error parsing user:', e);
+    }
+    
+    console.log('=== HEADER DEBUG END ===');
+  }, [globalState, user, fallbackUserType, effectiveUser]);
 
   const handleLogout = async () => {
     try {
@@ -49,8 +117,8 @@ export default function Header() {
   };
 
   const getUserDashboardLink = () => {
-    if (!user) return '/login';
-    switch (user.type) {
+    if (!effectiveUser) return '/login';
+    switch (effectiveUser.type) {
       case 'person':
         return '/my-profile';
       case 'company':
@@ -59,6 +127,19 @@ export default function Header() {
         return '/institute-dashboard';
       default:
         return '/my-profile';
+    }
+  };
+
+  const getDashboardLinkText = () => {
+    if (!effectiveUser) return 'My Account';
+    switch (effectiveUser.type) {
+      case 'company':
+        return 'Dashboard';
+      case 'institute':
+        return 'Dashboard';
+      case 'person':
+      default:
+        return 'My Account';
     }
   };
 
@@ -418,32 +499,72 @@ export default function Header() {
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         <i className="fa fa-dashboard mr-3 text-blue-600"></i>
-                        My Dashboard
+                        {getDashboardLinkText()}
                       </Link>
-                      <Link
-                        href="/my-profile"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <i className="fa fa-user mr-3 text-green-600"></i>
-                        My Profile
-                      </Link>
-                      <Link
-                        href="/applied-jobs"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <i className="fa fa-briefcase mr-3 text-purple-600"></i>
-                        Applied Jobs
-                      </Link>
-                      <Link
-                        href="/job-alerts"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <i className="fa fa-bell mr-3 text-yellow-600"></i>
-                        Job Alerts
-                      </Link>
+                      {effectiveUser?.type !== 'company' && (
+                        <>
+                          <Link
+                            href="/my-profile"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <i className="fa fa-user mr-3 text-green-600"></i>
+                            My Profile
+                          </Link>
+                          <Link
+                            href="/applied-jobs"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <i className="fa fa-briefcase mr-3 text-purple-600"></i>
+                            Applied Jobs
+                          </Link>
+                          <Link
+                            href="/job-alerts"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <i className="fa fa-bell mr-3 text-yellow-600"></i>
+                            Job Alerts
+                          </Link>
+                        </>
+                      )}
+                      {effectiveUser?.type === 'company' && (
+                        <>
+                          <Link
+                            href="/create-jobs"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <i className="fa fa-plus mr-3 text-blue-600"></i>
+                            Create Job
+                          </Link>
+                          <Link
+                            href="/view-candidate-application-list"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <i className="fa fa-users mr-3 text-green-600"></i>
+                            Applications
+                          </Link>
+                          <Link
+                            href="/hra-jobs"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <i className="fa fa-briefcase mr-3 text-purple-600"></i>
+                            My Jobs
+                          </Link>
+                          <Link
+                            href="/notifications"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <i className="fa fa-bell mr-3 text-yellow-600"></i>
+                            Notifications
+                          </Link>
+                        </>
+                      )}
                       <div className="border-t border-gray-100"></div>
                       <button
                         onClick={() => {
@@ -513,7 +634,7 @@ export default function Header() {
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <i className="fa fa-dashboard mr-2"></i>
-                      My Dashboard
+                      {getDashboardLinkText()}
                     </Link>
                     <Link 
                       href="/my-profile" 

@@ -28,8 +28,13 @@ export const setStoredUser = (user: User, token: string): void => {
   
   localStorage.setItem('user', JSON.stringify(user));
   localStorage.setItem('access_token', token);
-  // Legacy compatibility
-  localStorage.setItem('loggedUser', JSON.stringify({ user }));
+  // Legacy compatibility - full data structure with access_token
+  localStorage.setItem('loggedUser', JSON.stringify({ 
+    user: user, 
+    access_token: token,
+    // Also store at root level for compatibility
+    ...user
+  }));
 };
 
 export const clearStoredAuth = (): void => {

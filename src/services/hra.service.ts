@@ -165,12 +165,33 @@ export const getHraDashboardData = async (token: string): Promise<HraDashboardDa
       latestAppliedCandidates: data.latestAppliedCandidates || [],
       
       // Transform new API format to legacy format for backward compatibility
-      recentApplications: (data.latestAppliedCandidates || []).map((candidate: any) => ({
-        candidateName: candidate.empName || 'Unknown Candidate',
-        jobTitle: 'Applied for Position', // This info isn't in the API response
-        appliedOn: candidate.appliedOn || '',
-        status: 'Applied'
-      })),
+      recentApplications: (data.latestAppliedCandidates || []).map((candidate: any) => {
+        // Try to get job title from different possible fields
+        const jobTitle = candidate.jobTitle || 
+                        candidate.job_title || 
+                        candidate.position || 
+                        candidate.jobOccupation ||
+                        'Applied for Position';
+        
+        // Try to get status from different possible fields
+        const status = candidate.status || 
+                      candidate.applicationStatus ||
+                      candidate.empStatus ||
+                      'Applied';
+        
+        // Format the applied date properly
+        const appliedDate = candidate.appliedOn || 
+                           candidate.applied_on || 
+                           candidate.created_at || 
+                           new Date().toISOString().split('T')[0];
+        
+        return {
+          candidateName: candidate.empName || candidate.candidateName || 'Unknown Candidate',
+          jobTitle,
+          appliedOn: appliedDate,
+          status
+        };
+      }),
       recentJobs: (data.latestPostedJobs || []).map((job: any) => ({
         jobTitle: job.jobTitle || 'Untitled Job',
         location: job.country_location || job.jobLocationCountry?.name || 'Unknown Location',

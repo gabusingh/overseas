@@ -1,9 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useGlobalState } from "../contexts/GlobalProvider";
 import { useRouter } from "next/navigation";
+import { getUserType } from "../lib/auth";
 import {
   Navbar,
   NavBody,
@@ -20,6 +21,58 @@ function ResizableHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLangPopup, setShowLangPopup] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
+  
+  // Update user type when global state changes
+  useEffect(() => {
+    const currentUserType = getUserType();
+    setUserType(currentUserType);
+  }, [globalState?.user]);
+  
+  // Get dynamic navigation data based on user type
+  const getNavigationData = () => {
+    switch (userType) {
+      case 'company':
+        return {
+          label: 'HR Dashboard',
+          mainLink: '/hra-dashboard',
+          icon: 'fa fa-tachometer',
+          dropdownItems: [
+            { label: 'Dashboard', href: '/hra-dashboard', icon: 'fa fa-tachometer' },
+            { label: 'Create Jobs', href: '/create-jobs', icon: 'fa fa-plus' },
+            { label: 'View Applications', href: '/view-candidate-application-list', icon: 'fa fa-users' },
+            { label: 'Job Reports', href: '/hra-jobs', icon: 'fa fa-chart-bar' },
+            { label: 'Bulk Hiring', href: '/create-bulk-hire', icon: 'fa fa-users-cog' },
+          ]
+        };
+      case 'institute':
+        return {
+          label: 'Institute Dashboard',
+          mainLink: '/institute-dashboard',
+          icon: 'fa fa-graduation-cap',
+          dropdownItems: [
+            { label: 'Dashboard', href: '/institute-dashboard', icon: 'fa fa-tachometer' },
+            { label: 'Courses', href: '/institute-courses', icon: 'fa fa-book' },
+            { label: 'Students', href: '/institute-students', icon: 'fa fa-users' },
+          ]
+        };
+      case 'person':
+      default:
+        return {
+          label: 'My Account',
+          mainLink: '/my-profile',
+          icon: 'fa fa-user',
+          dropdownItems: [
+            { label: 'My Profile', href: '/my-profile', icon: 'fa fa-user' },
+            { label: 'Saved Jobs', href: '/saved-jobs', icon: 'fa fa-heart' },
+            { label: 'My Applications', href: '/my-applications', icon: 'fa fa-file-text' },
+            { label: 'Resume', href: '/my-resume', icon: 'fa fa-file-pdf' },
+          ]
+        };
+    }
+  };
+  
+  const navData = getNavigationData();
 
   const handleLogout = async () => {
     const accessToken = localStorage.getItem("access_token");
@@ -154,24 +207,27 @@ function ResizableHeader() {
             {globalState?.user ? (
               <div className="relative group">
                 <button className="flex items-center text-gray-800 dark:text-white font-medium px-4 py-2 rounded-md bg-transparent shadow-none hover:-translate-y-0.5 transition duration-200">
-                  My Account
+                  <i className={`${navData.icon} mr-2`}></i>
+                  {navData.label}
                   <i className="fa fa-chevron-down ml-1 text-xs"></i>
                 </button>
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-neutral-950 dark:border-neutral-800">
-                  <Link href="/my-profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-indigo-400 dark:hover:bg-neutral-800">
-                    My Profile
-                  </Link>
-                  <Link href="/my-profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-indigo-400 dark:hover:bg-neutral-800">
-                    Saved Jobs
-                  </Link>
-                  <Link href="/my-profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-indigo-400 dark:hover:bg-neutral-800">
-                    My Applications
-                  </Link>
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-neutral-950 dark:border-neutral-800">
+                  {navData.dropdownItems.map((item, index) => (
+                    <Link 
+                      key={index}
+                      href={item.href} 
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-indigo-400 dark:hover:bg-neutral-800 transition-colors"
+                    >
+                      <i className={`${item.icon} mr-3 text-indigo-600`}></i>
+                      {item.label}
+                    </Link>
+                  ))}
                   <hr className="my-1 dark:border-neutral-700" />
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="w-full flex items-center text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
+                    <i className="fa fa-sign-out mr-3"></i>
                     Logout
                   </button>
                 </div>
@@ -304,13 +360,20 @@ function ResizableHeader() {
               <div className="border-t border-gray-200 pt-4 mt-4">
                 {globalState?.user ? (
                   <div className="space-y-2">
-                    <Link 
-                      href="/my-profile" 
-                      className="flex items-center py-3 text-indigo-600 hover:text-indigo-600 font-medium"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <i className="fa fa-user mr-3 text-blue-600"></i>My Profile
-                    </Link>
+                    <div className="px-4 py-2 text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                      {navData.label}
+                    </div>
+                    {navData.dropdownItems.map((item, index) => (
+                      <Link 
+                        key={index}
+                        href={item.href} 
+                        className="flex items-center py-3 text-indigo-600 hover:text-indigo-600 font-medium"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <i className={`${item.icon} mr-3 text-blue-600`}></i>
+                        {item.label}
+                      </Link>
+                    ))}
                     <button
                       onClick={() => {
                         handleLogout();

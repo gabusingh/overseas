@@ -92,6 +92,11 @@ export default function LoginPage() {
       }
 
       if (response?.data?.access_token) {
+        // Clear any existing auth data first to avoid conflicts
+        localStorage.removeItem("user");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("loggedUser");
+        
         // Store user data properly for auth compatibility
         const userData = {
           id: response.data.user.id,
@@ -100,6 +105,14 @@ export default function LoginPage() {
           phone: response.data.user.phone,
           name: (response.data.user as any).name || (response.data.user as any).empName || ''
         };
+        
+        // Debug logging to track user type
+        console.log('=== LOGIN DEBUG ===');
+        console.log('Response data:', response.data);
+        console.log('User data:', userData);
+        console.log('User type:', userData.type);
+        console.log('==================');
+        
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("access_token", response.data.access_token);
         // Legacy compatibility
@@ -109,22 +122,34 @@ export default function LoginPage() {
         await setUserData();
         
         toast.success("User logged in successfully");
-
+        
+        // Determine redirect route based on user type
+        let redirectPath = "/";
+        const userType = response?.data?.user?.type;
+        
+        console.log('Determining redirect for user type:', userType);
+        
+        switch (userType) {
+          case "person":
+            redirectPath = "/my-profile";
+            break;
+          case "company":
+            redirectPath = "/hra-dashboard";
+            console.log('Redirecting to HR dashboard');
+            break;
+          case "institute":
+            redirectPath = "/institute-dashboard";
+            break;
+          default:
+            console.warn('Unknown user type:', userType, 'redirecting to home');
+            redirectPath = "/";
+            break;
+        }
+        
+        console.log('Final redirect path:', redirectPath);
+        
         setTimeout(() => {
-          switch (response?.data?.user?.type) {
-            case "person":
-              router.push("/my-profile");
-              break;
-            case "company":
-              router.push("/hra-dashboard");
-              break;
-            case "institute":
-              router.push("/institute-dashboard");
-              break;
-            default:
-              router.push("/");
-              break;
-          }
+          router.push(redirectPath);
         }, 1000);
       } else {
         toast.error((response?.data as any)?.error || "Invalid credentials");

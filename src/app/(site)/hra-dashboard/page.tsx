@@ -4,25 +4,27 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
-import { getHraDashboardData, type HraDashboardData } from "@/services/hra.service";
+import { useHraData } from "@/contexts/HraDataProvider";
 
 export default function HraDashboardPage() {
   const router = useRouter();
-  const [hraData, setHraData] = useState<HraDashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { dashboardData, loading, error, fetchHraData } = useHraData();
   const [userData, setUserData] = useState<any>(null);
   const { setGlobalState } = require("@/contexts/GlobalProvider").useGlobalState();
 
   const stats = [
-    { title: "Active Job Postings", value: hraData?.totalPostedJobs?.toString() || "0", icon: "fa fa-briefcase" },
-    { title: "Total Applications", value: hraData?.totalAppliedCandidates?.toString() || "0", icon: "fa fa-users" },
-    { title: "Bulk Hiring Requests", value: hraData?.totalPostedBulkHiring?.toString() || "0", icon: "fa fa-calendar" },
-    { title: "Success Rate", value: "75%", icon: "fa fa-check-circle" }
+    { title: "Active Job Postings", value: dashboardData?.totalPostedJobs?.toString() || "0", icon: "fa fa-briefcase" },
+    { title: "Total Applications", value: dashboardData?.totalAppliedCandidates?.toString() || "0", icon: "fa fa-users" },
+    { title: "Bulk Hiring Requests", value: dashboardData?.totalPostedBulkHiring?.toString() || "0", icon: "fa fa-calendar" },
   ];
 
-  const recentApplications = hraData?.recentApplications || [
-    { candidateName: "Loading...", jobTitle: "", appliedOn: "", status: "" }
-  ];
+  // Get recent applications with better fallback handling
+  const recentApplications = dashboardData?.recentApplications && dashboardData.recentApplications.length > 0 
+    ? dashboardData.recentApplications 
+    : (loading 
+      ? [{ candidateName: "Loading...", jobTitle: "Please wait", appliedOn: "...", status: "Loading" }]
+      : [{ candidateName: "No applications yet", jobTitle: "Create a job posting to start receiving applications", appliedOn: "-", status: "N/A" }]
+    );
 
   const navigationItems = [
     { name: "Create Job", path: "/create-jobs", icon: "fa fa-plus" },
@@ -33,45 +35,60 @@ export default function HraDashboardPage() {
     { name: "Notifications", path: "/notifications", icon: "fa fa-bell" }
   ];
 
-  const fetchHraDashboardData = async () => {
+  const initializeDashboard = async () => {
     try {
       const token = localStorage.getItem("access_token");
       const user = localStorage.getItem("loggedUser");
+      const userSimple = localStorage.getItem("user");
       
       if (!token || !user) {
+        console.log('No token or user data found, redirecting to login');
         router.push("/login");
         return;
       }
 
       const userData = JSON.parse(user);
+      const userSimpleData = userSimple ? JSON.parse(userSimple) : null;
+      
+      // Check if user is a company (HR) user
+      const userType = userData?.user?.type || userData?.type || userSimpleData?.type;
+      console.log('HR Dashboard - User type check:', userType);
+      
+      if (userType !== 'company') {
+        console.log('User is not a company type, redirecting based on type:', userType);
+        toast.error('Access denied. This dashboard is only for HR/Company users.');
+        
+        // Redirect to appropriate dashboard based on user type
+        switch (userType) {
+          case 'person':
+            router.push('/my-profile');
+            break;
+          case 'institute':
+            router.push('/institute-dashboard');
+            break;
+          default:
+            router.push('/');
+            break;
+        }
+        return;
+      }
+      
       setUserData(userData);
 
-      // Fetch real data from HRA dashboard analytics API
-      const dashboardData = await getHraDashboardData(token);
-      setHraData(dashboardData);
+      // Use context to fetch HRA data with caching
+      await fetchHraData();
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      toast.error("Failed to load dashboard data. Please try again.");
-      
-      // Set default data on error to prevent UI crashes
-      setHraData({
-        totalPostedJobs: 0,
-        totalAppliedCandidates: 0,
-        totalPostedBulkHiring: 0,
-        recentApplications: [],
-        recentJobs: []
-      });
-    } finally {
-      setLoading(false);
+      console.error("Error initializing dashboard:", error);
+      toast.error("Failed to initialize dashboard. Please try again.");
     }
   };
 
   const handleLogout = () => {
-  localStorage.removeItem("loggedUser");
-  localStorage.removeItem("access_token");
-  setGlobalState((prev: any) => ({ ...prev, user: null }));
-  toast.success("Logged out successfully");
-  router.push("/");
+    localStorage.removeItem("loggedUser");
+    localStorage.removeItem("access_token");
+    setGlobalState((prev: any) => ({ ...prev, user: null }));
+    toast.success("Logged out successfully");
+    router.push("/");
   };
 
   const handleNavigation = (path: string) => {
@@ -79,7 +96,7 @@ export default function HraDashboardPage() {
   };
 
   useEffect(() => {
-    fetchHraDashboardData();
+    initializeDashboard();
   }, []);
 
   if (loading) {
@@ -214,24 +231,6 @@ export default function HraDashboardPage() {
                       </button>
                     ))}
                   </div>
-                </div>
-              </div>
-              
-              <div className="bg-white border-0 shadow-sm rounded-lg">
-                <div className="bgBlue text-white px-6 py-4 rounded-t-lg">
-                  <h5 className="mb-0 text-lg font-semibold">Account Status</h5>
-                </div>
-                <div className="p-6">
-                  <div className="mb-4">
-                    <small className="text-gray-500 text-sm">Plan: Premium</small>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div className="bgBlue h-2 rounded-full" style={{width: "75%"}}></div>
-                    </div>
-                    <small className="text-gray-500 text-sm">18/24 job postings used</small>
-                  </div>
-                  <button className="w-full border border-blue-600 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors text-sm">
-                    Upgrade Plan
-                  </button>
                 </div>
               </div>
             </div>

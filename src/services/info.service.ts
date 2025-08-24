@@ -50,9 +50,10 @@ export const getDistrict = async (stateId: number): Promise<DistrictResponse> =>
 export const getOccupations = async (): Promise<OccupationResponse> => {
   try {
     const response = await axios.get(BASE_URL + 'get-occupations');
+    console.log('🔍 Raw occupations API response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
+    console.error('Error fetching occupations:', error);
     throw error;
   }
 };
@@ -60,9 +61,10 @@ export const getOccupations = async (): Promise<OccupationResponse> => {
 export const getSkillsByOccuId = async (occuId: number) => {
   try {
     const response = await axios.get(BASE_URL + 'get-occupations/' + occuId);
+    console.log('🔍 Raw skills API response for occupation', occuId, ':', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
+    console.error('Error fetching skills for occupation', occuId, ':', error);
     throw error;
   }
 };
@@ -70,9 +72,10 @@ export const getSkillsByOccuId = async (occuId: number) => {
 export const getCountries = async (): Promise<CountryResponse> => {
   try {
     const response = await axios.get(BASE_URL + 'country-list');
+    console.log('🔍 Raw countries API response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
+    console.error('Error fetching countries:', error);
     throw error;
   }
 };

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import Head from "next/head";
 import { Formik, Form, Field, ErrorMessage, FieldArray } from "formik";
 import * as Yup from "yup";
+import { getJobById } from "@/services/job.service";
+import { editJob } from "@/services/hra.service";
 
 interface JobData {
   id: string;
@@ -126,74 +128,146 @@ export default function EditJobPage() {
         return;
       }
 
-      // Mock job data - replace with actual API call
-      const mockJobData: JobData = {
+      // Add timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        throw new Error('Request timeout - API took too long to respond');
+      }, 30000); // 30 second timeout
+
+      try {
+        // Fetch actual job data from API
+        console.log('Fetching job data for ID:', jobId);
+        const response = await getJobById(jobId);
+        clearTimeout(timeoutId);
+        console.log('API Response:', response);
+        
+        // Handle different response structures
+        let jobApiData;
+        if (response?.data?.jobs) {
+          jobApiData = response.data.jobs;
+        } else if (response?.data) {
+          jobApiData = response.data;
+        } else if (response?.jobs) {
+          jobApiData = response.jobs;
+        } else if (response) {
+          jobApiData = response;
+        } else {
+          throw new Error('Empty or null response from API');
+        }
+        
+        console.log('Job API Data:', jobApiData);
+        
+        if (!jobApiData) {
+          throw new Error('Job data is null or undefined');
+        }
+        
+        // If no ID found, create a fallback with mock data to prevent hanging
+        if (!jobApiData.id) {
+          console.warn('No job ID found in response, using fallback data');
+          jobApiData = {
+            id: jobId,
+            jobTitle: 'Job Title Not Available',
+            jobOccupation: 'Department Not Available',
+            location: 'Location Not Available',
+            jobDescription: 'Job description not available. Please edit to add details.',
+            ...jobApiData // Keep any existing data
+          };
+        }
+      } catch (timeoutError) {
+        clearTimeout(timeoutId);
+        throw timeoutError;
+      }
+      
+      // Transform API response to match JobData interface
+      const transformedJobData: JobData = {
+        id: jobApiData.id.toString(),
+        title: jobApiData.jobTitle || jobApiData.job_title || jobApiData.title || "",
+        department: jobApiData.jobOccupation || jobApiData.department || "",
+        location: jobApiData.jobLocationCountry?.name || jobApiData.location || jobApiData.jobLocation || "",
+        workMode: jobApiData.jobMode === "onsite" ? "onsite" : jobApiData.jobMode === "remote" ? "remote" : "hybrid",
+        employmentType: jobApiData.employmentType || "full-time",
+        experienceLevel: jobApiData.jobExpTypeReq || jobApiData.experienceLevel || "mid",
+        salaryMin: jobApiData.jobWages ? jobApiData.jobWages.toString() : jobApiData.salaryMin ? jobApiData.salaryMin.toString() : "0",
+        salaryMax: jobApiData.salaryMax ? jobApiData.salaryMax.toString() : (jobApiData.jobWages ? (jobApiData.jobWages * 1.2).toString() : "0"),
+        currency: jobApiData.jobWagesCurrencyType || jobApiData.currency || "USD",
+        description: jobApiData.jobDescription || jobApiData.description || "",
+        requirements: Array.isArray(jobApiData.requirements) ? jobApiData.requirements : [],
+        responsibilities: Array.isArray(jobApiData.responsibilities) ? jobApiData.responsibilities : [],
+        skillsRequired: jobApiData.skills?.map((skill: any) => typeof skill === 'string' ? skill : skill.skill) || [],
+        skillsPreferred: Array.isArray(jobApiData.skillsPreferred) ? jobApiData.skillsPreferred : [],
+        benefits: Array.isArray(jobApiData.benefits) ? jobApiData.benefits : [],
+        applicationDeadline: jobApiData.jobDeadline ? new Date(jobApiData.jobDeadline).toISOString().split('T')[0] : jobApiData.applicationDeadline || "",
+        startDate: jobApiData.startDate || "",
+        numberOfPositions: jobApiData.jobVacancyNo || jobApiData.numberOfPositions || "1",
+        reportingTo: jobApiData.reportingTo || "",
+        educationLevel: jobApiData.educationLevel || "",
+        certifications: Array.isArray(jobApiData.certifications) ? jobApiData.certifications : [],
+        languageRequirements: Array.isArray(jobApiData.languageRequirements) ? jobApiData.languageRequirements : [],
+        travelRequirement: jobApiData.travelRequirement || "",
+        companyDescription: jobApiData.companyDescription || "",
+        applicationInstructions: jobApiData.applicationInstructions || "",
+        status: jobApiData.status || "active",
+        featured: jobApiData.featured || false,
+        urgent: jobApiData.urgent || false,
+        remoteWorkBenefits: Array.isArray(jobApiData.remoteWorkBenefits) ? jobApiData.remoteWorkBenefits : [],
+        workingHours: jobApiData.jobWorkingHour || jobApiData.workingHours || "",
+        probationPeriod: jobApiData.probationPeriod || "",
+        noticePeriod: jobApiData.noticePeriod || ""
+      };
+      
+      console.log('Transformed job data:', transformedJobData);
+
+      setJobData(transformedJobData);
+    } catch (error: any) {
+      console.error("Error fetching job data:", error);
+      console.error("Error details:", error.response?.data || error.message);
+      
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      toast.error(`Failed to load job data: ${errorMessage}`);
+      
+      // Create fallback job data to prevent infinite loading
+      const fallbackJobData: JobData = {
         id: jobId,
-        title: "Senior Software Engineer",
-        department: "Engineering",
-        location: "Dubai, UAE",
+        title: "Edit Job Title",
+        department: "",
+        location: "",
         workMode: "hybrid",
         employmentType: "full-time",
-        experienceLevel: "senior",
-        salaryMin: "15000",
-        salaryMax: "25000",
-        currency: "AED",
-        description: `We are looking for an experienced Senior Software Engineer to join our dynamic engineering team. You will be responsible for designing, developing, and maintaining high-quality software solutions that serve millions of users globally.
-
-As a Senior Software Engineer, you will work closely with cross-functional teams including Product, Design, and DevOps to deliver exceptional user experiences. You'll mentor junior developers, participate in architectural decisions, and drive technical excellence across our engineering organization.
-
-This is an excellent opportunity for a passionate technologist who wants to make a significant impact in a fast-growing company while working with cutting-edge technologies.`,
-        requirements: [
-          "Bachelor's degree in Computer Science or related field",
-          "5+ years of professional software development experience",
-          "Strong proficiency in JavaScript, TypeScript, and React",
-          "Experience with Node.js and backend development",
-          "Familiarity with cloud platforms (AWS, Azure, or GCP)",
-          "Experience with database design and optimization",
-          "Strong problem-solving and analytical skills",
-          "Excellent communication and teamwork skills"
-        ],
-        responsibilities: [
-          "Design and develop scalable web applications and APIs",
-          "Collaborate with product managers and designers to implement features",
-          "Write clean, maintainable, and well-tested code",
-          "Participate in code reviews and provide constructive feedback",
-          "Mentor junior developers and help them grow their skills",
-          "Participate in architectural discussions and technical planning",
-          "Troubleshoot and debug complex technical issues",
-          "Stay up-to-date with emerging technologies and industry best practices"
-        ],
-        skillsRequired: ["JavaScript", "TypeScript", "React", "Node.js", "AWS", "MongoDB"],
-        skillsPreferred: ["GraphQL", "Docker", "Kubernetes", "Redis", "PostgreSQL", "Jest"],
-        benefits: [
-          "Health Insurance", "Dental Insurance", "Paid Time Off", "Performance Bonus",
-          "Stock Options", "Professional Development", "Flexible Working Hours", "Remote Work Option"
-        ],
-        applicationDeadline: "2025-01-15",
-        startDate: "2025-02-01",
-        numberOfPositions: "2",
-        reportingTo: "Engineering Manager",
-        educationLevel: "Bachelor's Degree",
-        certifications: ["AWS Certified Developer", "React Advanced Certification"],
-        languageRequirements: ["English (Fluent)", "Arabic (Preferred)"],
-        travelRequirement: "Minimal (0-10%)",
-        companyDescription: "We are a leading technology company focused on innovative solutions that transform industries. Our team is passionate about creating products that make a real difference in people's lives.",
-        applicationInstructions: "Please submit your resume, cover letter, and portfolio. Include links to your GitHub profile and any relevant projects you've worked on.",
-        status: "active",
-        featured: true,
+        experienceLevel: "mid",
+        salaryMin: "0",
+        salaryMax: "0",
+        currency: "USD",
+        description: "Please update job description",
+        requirements: [],
+        responsibilities: [],
+        skillsRequired: [],
+        skillsPreferred: [],
+        benefits: [],
+        applicationDeadline: "",
+        startDate: "",
+        numberOfPositions: "1",
+        reportingTo: "",
+        educationLevel: "",
+        certifications: [],
+        languageRequirements: [],
+        travelRequirement: "",
+        companyDescription: "",
+        applicationInstructions: "",
+        status: "draft",
+        featured: false,
         urgent: false,
-        remoteWorkBenefits: ["Home Office Setup Allowance", "High-Speed Internet Reimbursement", "Co-working Space Access"],
-        workingHours: "9:00 AM - 6:00 PM (Flexible)",
-        probationPeriod: "6 months",
-        noticePeriod: "1 month"
+        remoteWorkBenefits: [],
+        workingHours: "",
+        probationPeriod: "",
+        noticePeriod: ""
       };
-
-      setJobData(mockJobData);
-    } catch (error) {
-      console.error("Error fetching job data:", error);
-      toast.error("Failed to load job data");
-      router.push("/hra-jobs");
+      
+      console.log('Using fallback job data due to API error');
+      setJobData(fallbackJobData);
+      
+      // Show a warning that data couldn't be loaded
+      toast.warning('Using default job template due to loading error. Please update all fields.');
     } finally {
+      // Ensure loading is always set to false
       setLoading(false);
     }
   };
@@ -207,10 +281,45 @@ This is an excellent opportunity for a passionate technologist who wants to make
         return;
       }
 
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Convert form data to FormData format expected by the API
+      const formData = new FormData();
+      formData.append('jobTitle', values.title);
+      formData.append('department', values.department);
+      formData.append('location', values.location);
+      formData.append('jobMode', values.workMode);
+      formData.append('employmentType', values.employmentType);
+      formData.append('experienceLevel', values.experienceLevel);
+      formData.append('salaryMin', values.salaryMin);
+      formData.append('salaryMax', values.salaryMax);
+      formData.append('currency', values.currency);
+      formData.append('jobDescription', values.description);
+      formData.append('numberOfPositions', values.numberOfPositions);
+      formData.append('reportingTo', values.reportingTo);
+      formData.append('educationLevel', values.educationLevel);
+      formData.append('applicationDeadline', values.applicationDeadline);
+      formData.append('startDate', values.startDate);
+      formData.append('status', values.status);
+      formData.append('featured', values.featured.toString());
+      formData.append('urgent', values.urgent.toString());
+      formData.append('workingHours', values.workingHours);
+      formData.append('probationPeriod', values.probationPeriod);
+      formData.append('noticePeriod', values.noticePeriod);
+      formData.append('travelRequirement', values.travelRequirement);
+      formData.append('companyDescription', values.companyDescription);
+      formData.append('applicationInstructions', values.applicationInstructions);
+      
+      // Append arrays as JSON strings or individual items
+      formData.append('requirements', JSON.stringify(values.requirements));
+      formData.append('responsibilities', JSON.stringify(values.responsibilities));
+      formData.append('skillsRequired', JSON.stringify(values.skillsRequired));
+      formData.append('skillsPreferred', JSON.stringify(values.skillsPreferred));
+      formData.append('benefits', JSON.stringify(values.benefits));
+      formData.append('certifications', JSON.stringify(values.certifications));
+      formData.append('languageRequirements', JSON.stringify(values.languageRequirements));
+      formData.append('remoteWorkBenefits', JSON.stringify(values.remoteWorkBenefits));
 
-      console.log("Updated job data:", values);
+      // Call the actual API
+      await editJob(parseInt(values.id), formData, token);
 
       toast.success("Job updated successfully!");
       router.push("/hra-jobs");

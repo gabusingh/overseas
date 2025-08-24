@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
-import { getAppliedCandidatesList } from "@/services/hra.service";
+import { getJobApplications } from "@/services/hra.service";
 
 interface Application {
   id: string;
@@ -60,42 +60,73 @@ export default function ViewCandidateApplicationsPage() {
         return;
       }
 
-      // Fetch applied candidates list using real API
-      const response = await getAppliedCandidatesList(token, 1);
-      const candidatesData = response?.data || response || [];
-      
-      // Transform API response to match Application interface
-      const transformedApplications: Application[] = (Array.isArray(candidatesData) ? candidatesData : []).map((candidate: any) => ({
-        id: candidate.id?.toString() || Math.random().toString(),
-        candidateName: candidate.empName || candidate.candidateName || "Unknown Candidate",
-        email: candidate.empEmail || candidate.email || "No email provided",
-        phone: candidate.empPhone || candidate.phone || "No phone provided",
-        jobTitle: candidate.jobTitle || "Applied Position",
-        jobId: candidate.jobId?.toString() || jobId || "1",
-        appliedDate: candidate.appliedOn || candidate.created_at || new Date().toISOString().split('T')[0],
-        status: "pending" as Application["status"], // Default status
-        experience: candidate.experience || "Not specified",
-        currentLocation: `${candidate.empDistrict || ""}, ${candidate.empState || "Unknown Location"}`.trim(),
-        expectedSalary: candidate.expectedSalary || "Negotiable",
-        currency: "AED", // Default currency
-        resumeUrl: candidate.resumeUrl || "/resume-placeholder.pdf",
-        coverLetter: candidate.coverLetter || "No cover letter provided",
-        skills: candidate.skills || [],
-        education: candidate.education || "Not specified",
-        availability: candidate.availability || "To be discussed",
-        profilePicture: candidate.empPhoto || undefined,
-        rating: candidate.rating || undefined,
-        notes: candidate.notes || undefined
-      }));
+      // If no jobId is provided, show error and redirect
+      if (!jobId) {
+        toast.error("Job ID is required to view applications");
+        router.push("/hra-jobs");
+        return;
+      }
 
-      setApplications(transformedApplications);
-    } catch (error) {
+      // Add timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        throw new Error('Request timeout - API took too long to respond');
+      }, 30000); // 30 second timeout
+
+      try {
+        // Fetch applications for specific job using real API
+        console.log('Fetching applications for job ID:', jobId);
+        const response = await getJobApplications(parseInt(jobId), token);
+        clearTimeout(timeoutId);
+        console.log('Applications API Response:', response);
+        
+        const candidatesData = response?.data || response || [];
+        console.log('Candidates Data:', candidatesData);
+        
+        // Transform API response to match Application interface
+        const transformedApplications: Application[] = (Array.isArray(candidatesData) ? candidatesData : []).map((candidate: any) => ({
+          id: candidate.id?.toString() || Math.random().toString(),
+          candidateName: candidate.empName || candidate.candidateName || "Unknown Candidate",
+          email: candidate.empEmail || candidate.email || "No email provided",
+          phone: candidate.empPhone || candidate.phone || "No phone provided",
+          jobTitle: candidate.jobTitle || "Applied Position",
+          jobId: candidate.jobId?.toString() || jobId || "1",
+          appliedDate: candidate.appliedOn || candidate.created_at || new Date().toISOString().split('T')[0],
+          status: "pending" as Application["status"], // Default status
+          experience: candidate.experience || "Not specified",
+          currentLocation: `${candidate.empDistrict || ""}, ${candidate.empState || "Unknown Location"}`.trim(),
+          expectedSalary: candidate.expectedSalary || "Negotiable",
+          currency: "AED", // Default currency
+          resumeUrl: candidate.resumeUrl || "/resume-placeholder.pdf",
+          coverLetter: candidate.coverLetter || "No cover letter provided",
+          skills: candidate.skills || [],
+          education: candidate.education || "Not specified",
+          availability: candidate.availability || "To be discussed",
+          profilePicture: candidate.empPhoto || undefined,
+          rating: candidate.rating || undefined,
+          notes: candidate.notes || undefined
+        }));
+
+        setApplications(transformedApplications);
+      } catch (timeoutError) {
+        clearTimeout(timeoutId);
+        throw timeoutError;
+      }
+    } catch (error: any) {
       console.error("Error fetching applications:", error);
-      toast.error("Failed to load applications. Please try again.");
+      console.error("Error details:", error.response?.data || error.message);
       
-      // Set empty array on error
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      toast.error(`Failed to load applications: ${errorMessage}`);
+      
+      // Set empty array on error to show "No applications" message instead of hanging
       setApplications([]);
+      
+      // If timeout error, show specific message
+      if (error.message?.includes('timeout')) {
+        toast.warning('Request took too long. The server might be busy. Please try again later.');
+      }
     } finally {
+      // Ensure loading is always set to false
       setLoading(false);
     }
   };

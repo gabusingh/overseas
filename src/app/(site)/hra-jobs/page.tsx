@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
-import { getAllCreatedJobs } from "@/services/hra.service";
+import { useHraData } from "@/contexts/HraDataProvider";
 
 interface Job {
   id: string;
@@ -28,7 +28,7 @@ interface Job {
 
 export default function HraViewJobsPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const { dashboardData, jobsData, loading, error, fetchHraData, refreshData } = useHraData();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,58 +36,66 @@ export default function HraViewJobsPage() {
   const [sortBy, setSortBy] = useState<string>("newest");
 
   useEffect(() => {
-    fetchJobs();
+    initializeData();
   }, []);
+
+  useEffect(() => {
+    transformAndSetJobs();
+  }, [jobsData]);
 
   useEffect(() => {
     filterJobs();
   }, [jobs, searchQuery, statusFilter, sortBy]);
 
-  const fetchJobs = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      const user = localStorage.getItem("loggedUser");
-      
-      if (!token || !user) {
-        router.push("/login");
-        return;
-      }
+  const initializeData = async () => {
+    const token = localStorage.getItem("access_token");
+    const user = localStorage.getItem("loggedUser");
+    
+    if (!token || !user) {
+      router.push("/login");
+      return;
+    }
 
-      // Fetch all created jobs using the correct API as per hraapi.md
-      const response = await getAllCreatedJobs(token);
-      
-      // Transform API response to match Job interface
-      const jobsData = response?.data || response || [];
-      const transformedJobs: Job[] = (Array.isArray(jobsData) ? jobsData : []).map((job: any) => ({
-        id: job.id?.toString() || job.jobId?.toString() || Math.random().toString(),
-        title: job.jobTitle || job.title || "Untitled Job",
-        company: job.company || job.cmpName || "Company Name",
-        location: job.location || job.jobLocation || job.country_location || "Multiple Locations",
-        country: job.country || job.jobLocationCountry?.name || job.country_location || "Unknown",
-        jobType: job.jobType || job.job_type || "full-time",
-        salaryRange: job.salaryRange || job.jobWages?.toString() || "TBD",
-        currency: job.currency || job.jobWagesCurrencyType || job.jobLocationCountry?.currencyName || "USD",
-        postedDate: job.postedDate || job.created_at || new Date().toISOString().split('T')[0],
-        applicationDeadline: job.applicationDeadline || job.jobDeadline || new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
-        status: job.status || "active" as Job["status"],
-        applicationsCount: job.applicationsCount || job.totalAppliedCandidates || 0,
-        viewsCount: job.viewsCount || 0,
-        shortlistedCount: job.shortlistedCount || 0,
-        experienceLevel: job.experienceLevel || job.jobExpTypeReq || "all",
-        isUrgent: job.isUrgent || false,
-        isFeatured: job.isFeatured || false
-      }));
+    // Use context to fetch data (with caching)
+    await fetchHraData();
+  };
 
-      setJobs(transformedJobs);
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-      toast.error("Failed to load jobs. Please try again.");
-      
-      // Set empty array on error to prevent UI crashes
+  const transformAndSetJobs = () => {
+    if (!jobsData || jobsData.length === 0) {
       setJobs([]);
-    } finally {
-      setLoading(false);
+      return;
+    }
+
+    // Transform jobs data from context to match Job interface
+    const transformedJobs: Job[] = jobsData.map((job: any) => ({
+      id: job.id?.toString() || job.jobId?.toString() || Math.random().toString(),
+      title: job.jobTitle || job.title || "Untitled Job",
+      company: job.company || job.cmpName || "Company Name",
+      location: job.location || job.jobLocation || job.country_location || "Multiple Locations",
+      country: job.country || job.jobLocationCountry?.name || job.country_location || "Unknown",
+      jobType: job.jobType || job.job_type || "full-time",
+      salaryRange: job.salaryRange || job.jobWages?.toString() || "TBD",
+      currency: job.currency || job.jobWagesCurrencyType || job.jobLocationCountry?.currencyName || "USD",
+      postedDate: job.postedDate || job.created_at || new Date().toISOString().split('T')[0],
+      applicationDeadline: job.applicationDeadline || job.jobDeadline || new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+      status: job.status || "active" as Job["status"],
+      applicationsCount: job.applicationsCount || job.totalAppliedCandidates || 0,
+      viewsCount: job.viewsCount || 0,
+      shortlistedCount: job.shortlistedCount || 0,
+      experienceLevel: job.experienceLevel || job.jobExpTypeReq || "all",
+      isUrgent: job.isUrgent || false,
+      isFeatured: job.isFeatured || false
+    }));
+
+    setJobs(transformedJobs);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await refreshData(); // Use context refresh function
+      toast.success("Data refreshed successfully");
+    } catch (error) {
+      toast.error("Failed to refresh data");
     }
   };
 
@@ -272,8 +280,10 @@ export default function HraViewJobsPage() {
                 <i className="fa fa-briefcase textBlue"></i>
               </div>
               <div className="ml-3">
-                <p className="text-2xl font-bold textBlue">{jobs.filter(j => j.status === 'active').length}</p>
-                <p className="text-sm text-gray-600">Active Jobs</p>
+                <p className="text-2xl font-bold textBlue">
+                  {dashboardData?.totalPostedJobs ?? jobs.filter(j => j.status === 'active').length}
+                </p>
+                <p className="text-sm text-gray-600">Total Posted Jobs</p>
               </div>
             </div>
           </div>
@@ -285,7 +295,7 @@ export default function HraViewJobsPage() {
               </div>
               <div className="ml-3">
                 <p className="text-2xl font-bold text-green-600">
-                  {jobs.reduce((sum, job) => sum + job.applicationsCount, 0)}
+                  {dashboardData?.totalAppliedCandidates ?? jobs.reduce((sum, job) => sum + job.applicationsCount, 0)}
                 </p>
                 <p className="text-sm text-gray-600">Total Applications</p>
               </div>
@@ -294,14 +304,14 @@ export default function HraViewJobsPage() {
           
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                <i className="fa fa-eye text-yellow-600"></i>
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                <i className="fa fa-layer-group text-orange-600"></i>
               </div>
               <div className="ml-3">
-                <p className="text-2xl font-bold text-yellow-600">
-                  {jobs.reduce((sum, job) => sum + job.viewsCount, 0)}
+                <p className="text-2xl font-bold text-orange-600">
+                  {dashboardData?.totalPostedBulkHiring ?? 0}
                 </p>
-                <p className="text-sm text-gray-600">Total Views</p>
+                <p className="text-sm text-gray-600">Bulk Hiring Posts</p>
               </div>
             </div>
           </div>
@@ -309,17 +319,89 @@ export default function HraViewJobsPage() {
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <i className="fa fa-star text-purple-600"></i>
+                <i className="fa fa-chart-line text-purple-600"></i>
               </div>
               <div className="ml-3">
                 <p className="text-2xl font-bold text-purple-600">
-                  {jobs.reduce((sum, job) => sum + job.shortlistedCount, 0)}
+                  {jobs.filter(j => j.status === 'active').length}
                 </p>
-                <p className="text-sm text-gray-600">Shortlisted</p>
+                <p className="text-sm text-gray-600">Active Jobs</p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Latest Applied Candidates Section */}
+        {dashboardData?.latestAppliedCandidates && dashboardData.latestAppliedCandidates.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold textBlue">
+                <i className="fa fa-users mr-2"></i>
+                Recent Applications
+              </h2>
+              <span className="text-sm text-gray-500">
+                {dashboardData.latestAppliedCandidates.length} recent candidates
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dashboardData.latestAppliedCandidates.slice(0, 6).map((candidate, index) => (
+                <div key={candidate.id || index} className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="w-12 h-12 rounded-full overflow-hidden mr-3 bg-blue-100 flex items-center justify-center">
+                    {candidate.empPhoto && candidate.empPhoto !== 'https://backend.overseas.ai/placeholder/person.jpg' ? (
+                      <img 
+                        src={candidate.empPhoto} 
+                        alt={candidate.empName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : (
+                      <i className="fa fa-user text-blue-600 text-lg"></i>
+                    )}
+                    <div className="hidden w-full h-full flex items-center justify-center">
+                      <i className="fa fa-user text-blue-600 text-lg"></i>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-gray-800 truncate">
+                      {candidate.empName || 'Unknown Candidate'}
+                    </h3>
+                    <div className="flex items-center text-xs text-gray-600 mt-1">
+                      <i className="fa fa-map-marker mr-1"></i>
+                      <span className="truncate">
+                        {candidate.empDistrict}, {candidate.empState}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-gray-500">
+                        Age: {candidate.age}
+                      </span>
+                      <span className="text-xs text-blue-600">
+                        Applied: {candidate.appliedOn}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {dashboardData.latestAppliedCandidates.length > 6 && (
+              <div className="text-center mt-4">
+                <button 
+                  onClick={() => router.push('/view-candidate-application-list')}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  View All Applications ({dashboardData.latestAppliedCandidates.length})
+                  <i className="fa fa-arrow-right ml-1"></i>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Filters and Search */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
@@ -371,7 +453,7 @@ export default function HraViewJobsPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Actions</label>
               <button
-                onClick={fetchJobs}
+                onClick={handleRefresh}
                 className="w-full border border-gray-300 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
               >
                 <i className="fa fa-refresh mr-2"></i>
