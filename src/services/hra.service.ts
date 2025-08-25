@@ -17,6 +17,60 @@ interface CompanyListResponse {
   success?: boolean;
 };
 
+// Interface for HR Details
+export interface HrDetails {
+  id: number;
+  empId: string;
+  empName: string;
+  empPhoto?: string;
+  empEmail: string;
+  empMobile: string;
+  empDob?: string;
+  empGender?: string;
+  empMaritalStatus?: string;
+  empAddress?: string;
+  empState?: string;
+  empDistrict?: string;
+  empPincode?: string;
+  empExperience?: string;
+  empOccupation?: string;
+  empSkills?: string;
+  empEducation?: string;
+  empLanguages?: string;
+  empStatus?: string;
+  created_at: string;
+  updated_at: string;
+  cmpData?: {
+    id: number;
+    cmpName: string;
+    cmpLogoS3?: string;
+    cmpDescription?: string;
+    cmpEmail?: string;
+    cmpPhone?: string;
+    cmpAddress?: string;
+    cmpWebsite?: string;
+    cmpIndustry?: string;
+    cmpSize?: string;
+    cmpFoundedYear?: string;
+    cmpGstNumber?: string;
+    cmpPanNumber?: string;
+    cmpRegistrationNumber?: string;
+    activeState?: string;
+    created_at?: string;
+    updated_at?: string;
+  };
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    email_verified_at?: string;
+    type: string;
+    phone?: string;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
 // Interface for HRA Dashboard Data
 export interface HraDashboardData {
   totalPostedJobs: number;
@@ -105,7 +159,7 @@ export const getJobsPostedByHra = async (hraId: string, token: string) => {
   }
 };
 
-export const getHrDetails = async (token: string) => {
+export const getHrDetails = async (token: string): Promise<HrDetails> => {
   try {
     const response = await axios.get(`${BASE_URL}get-hr-details`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -114,6 +168,73 @@ export const getHrDetails = async (token: string) => {
   } catch (error) {
     console.error("Error fetching HR details:", error);
     throw error;
+  }
+};
+
+// Enhanced HR details function with data processing
+export const getEnhancedHrDetails = async (token: string): Promise<HrDetails | null> => {
+  try {
+    const response = await getHrDetails(token);
+    const hrData = response.data || response;
+    
+    // Process and validate the HR data
+    const processedHrData: HrDetails = {
+      id: hrData.id || 0,
+      empId: hrData.empId || '',
+      empName: hrData.empName || hrData.name || 'Unknown HR',
+      empPhoto: hrData.empPhoto && hrData.empPhoto !== 'null' ? hrData.empPhoto : undefined,
+      empEmail: hrData.empEmail || hrData.email || '',
+      empMobile: hrData.empMobile || hrData.phone || '',
+      empDob: hrData.empDob,
+      empGender: hrData.empGender,
+      empMaritalStatus: hrData.empMaritalStatus,
+      empAddress: hrData.empAddress,
+      empState: hrData.empState,
+      empDistrict: hrData.empDistrict,
+      empPincode: hrData.empPincode,
+      empExperience: hrData.empExperience,
+      empOccupation: hrData.empOccupation,
+      empSkills: hrData.empSkills,
+      empEducation: hrData.empEducation,
+      empLanguages: hrData.empLanguages,
+      empStatus: hrData.empStatus || 'active',
+      created_at: hrData.created_at || new Date().toISOString(),
+      updated_at: hrData.updated_at || new Date().toISOString(),
+      cmpData: hrData.cmpData ? {
+        id: hrData.cmpData.id || 0,
+        cmpName: hrData.cmpData.cmpName || 'Unknown Company',
+        cmpLogoS3: hrData.cmpData.cmpLogoS3 && hrData.cmpData.cmpLogoS3 !== 'null' ? hrData.cmpData.cmpLogoS3 : undefined,
+        cmpDescription: hrData.cmpData.cmpDescription,
+        cmpEmail: hrData.cmpData.cmpEmail,
+        cmpPhone: hrData.cmpData.cmpPhone,
+        cmpAddress: hrData.cmpData.cmpAddress,
+        cmpWebsite: hrData.cmpData.cmpWebsite,
+        cmpIndustry: hrData.cmpData.cmpIndustry,
+        cmpSize: hrData.cmpData.cmpSize,
+        cmpFoundedYear: hrData.cmpData.cmpFoundedYear,
+        cmpGstNumber: hrData.cmpData.cmpGstNumber,
+        cmpPanNumber: hrData.cmpData.cmpPanNumber,
+        cmpRegistrationNumber: hrData.cmpData.cmpRegistrationNumber,
+        activeState: hrData.cmpData.activeState || 'active',
+        created_at: hrData.cmpData.created_at,
+        updated_at: hrData.cmpData.updated_at
+      } : undefined,
+      user: hrData.user ? {
+        id: hrData.user.id || 0,
+        name: hrData.user.name || hrData.empName || 'Unknown User',
+        email: hrData.user.email || hrData.empEmail || '',
+        email_verified_at: hrData.user.email_verified_at,
+        type: hrData.user.type || 'company',
+        phone: hrData.user.phone || hrData.empMobile,
+        created_at: hrData.user.created_at || new Date().toISOString(),
+        updated_at: hrData.user.updated_at || new Date().toISOString()
+      } : undefined
+    };
+    
+    return processedHrData;
+  } catch (error) {
+    console.error('Error fetching enhanced HR details:', error);
+    return null;
   }
 };
 

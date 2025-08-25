@@ -85,6 +85,175 @@ export const getJobList = async (payload: FormData): Promise<JobListResponse> =>
   }
 };
 
+// Helper function to get HR user ID from localStorage
+const getHrUserIdFromStorage = (): string | null => {
+  try {
+    const loggedUser = localStorage.getItem("loggedUser");
+    const userSimple = localStorage.getItem("user");
+    
+    if (loggedUser) {
+      const userData = JSON.parse(loggedUser);
+      
+      // Try different possible ID fields for HR users
+      const hrId = userData?.user?.id || 
+                   userData?.cmpData?.id || 
+                   userData?.id || 
+                   userData?.hrId || 
+                   userData?.empId;
+      
+      if (hrId) {
+        return hrId.toString();
+      }
+    }
+    
+    if (userSimple) {
+      const userSimpleData = JSON.parse(userSimple);
+      const hrId = userSimpleData?.id;
+      
+      if (hrId) {
+        return hrId.toString();
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error extracting HR user ID:', error);
+    return null;
+  }
+};
+
+// Helper function to get user type from localStorage
+const getUserTypeFromStorage = (): string | null => {
+  try {
+    const loggedUser = localStorage.getItem("loggedUser");
+    const userSimple = localStorage.getItem("user");
+    
+    if (loggedUser) {
+      const userData = JSON.parse(loggedUser);
+      return userData?.user?.type || userData?.type;
+    }
+    
+    if (userSimple) {
+      const userSimpleData = JSON.parse(userSimple);
+      return userSimpleData?.type;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error extracting user type:', error);
+    return null;
+  }
+};
+
+// Import the HR service functions
+import { getJobsPostedByHra, getEnhancedHrDetails, HrDetails } from './hra.service';
+
+// Enhanced interface for user-aware job list response
+interface EnhancedJobListResponse extends JobListResponse {
+  hrDetails?: HrDetails | null;
+  companyInfo?: {
+    name: string;
+    logo?: string;
+    id: number;
+  };
+}
+
+// User-aware job listing function with HR details enhancement
+export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJobListResponse> => {
+  try {
+    const userType = getUserTypeFromStorage();
+    console.log('User type detected for job listing:', userType);
+    
+    // If user is HR/company, show only their posted jobs with enhanced details
+    if (userType === 'company') {
+      const token = localStorage.getItem("access_token");
+      const hrUserId = getHrUserIdFromStorage();
+      
+      if (token && hrUserId) {
+        console.log('Fetching jobs for HR user:', hrUserId);
+        
+        // Get HR details for better data enrichment
+        let hrDetails: HrDetails | null = null;
+        try {
+          hrDetails = await getEnhancedHrDetails(token);
+          console.log('HR details fetched:', hrDetails?.cmpData?.cmpName || 'Unknown Company');
+        } catch (detailsError) {
+          console.warn('Could not fetch HR details:', detailsError);
+        }
+        
+        // Fetch jobs posted by HR
+        const hrJobsResponse = await getJobsPostedByHra(hrUserId, token);
+        
+        // Transform the response to match JobListResponse format
+        const jobs = Array.isArray(hrJobsResponse?.data) ? hrJobsResponse.data : 
+                    Array.isArray(hrJobsResponse) ? hrJobsResponse : [];
+        
+        // Enhance jobs with HR/Company information
+        const enhancedJobs = jobs.map((job: any) => ({
+          ...job,
+          // Add company information if not already present
+          company: job.company || hrDetails?.cmpData?.cmpName || 'Your Company',
+          cmpName: job.cmpName || hrDetails?.cmpData?.cmpName || 'Your Company',
+          companyLogo: job.companyLogo || hrDetails?.cmpData?.cmpLogoS3,
+          // Add HR context flags
+          isOwnJob: true,
+          hrId: hrUserId,
+          companyId: hrDetails?.cmpData?.id
+        }));
+        
+        // Apply basic filtering if search/filter parameters are provided
+        let filteredJobs = enhancedJobs;
+        const searchKey = payload.get('searchKey');
+        if (searchKey) {
+          const searchTerm = searchKey.toString().toLowerCase();
+          filteredJobs = enhancedJobs.filter((job: any) => 
+            job.jobTitle?.toLowerCase().includes(searchTerm) ||
+            job.occupation?.toLowerCase().includes(searchTerm) ||
+            job.country_location?.toLowerCase().includes(searchTerm)
+          );
+        }
+                    
+        return {
+          jobs: filteredJobs,
+          data: filteredJobs,
+          totalJobs: filteredJobs.length,
+          currentPage: 1,
+          lastPage: 1,
+          perPage: filteredJobs.length,
+          hrDetails: hrDetails,
+          companyInfo: hrDetails?.cmpData ? {
+            name: hrDetails.cmpData.cmpName,
+            logo: hrDetails.cmpData.cmpLogoS3,
+            id: hrDetails.cmpData.id
+          } : undefined
+        };
+      } else {
+        console.warn('HR user detected but no token or user ID found, falling back to regular job list');
+      }
+    }
+    
+    // For candidates or when HR user info is not available, show all jobs
+    console.log('Fetching all jobs for candidate or fallback');
+    const regularResponse = await getJobList(payload);
+    
+    return {
+      ...regularResponse,
+      hrDetails: null,
+      companyInfo: undefined
+    };
+    
+  } catch (error) {
+    console.error('Error in getUserAwareJobList:', error);
+    // Fallback to regular job list on error
+    const fallbackResponse = await getJobList(payload);
+    return {
+      ...fallbackResponse,
+      hrDetails: null,
+      companyInfo: undefined
+    };
+  }
+};
+
 export const getJobListForSearch = async (payload: object = {}): Promise<JobListResponse> => {
   try {
     const response = await axios.post(BASE_URL + "search-all-jobs", payload, {

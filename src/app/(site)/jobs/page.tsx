@@ -6,7 +6,7 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import Link from "next/link";
 import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart } from "lucide-react";
-import { getJobList, saveJobById, getOccupations, applyJobApi } from "../../../services/job.service";
+import { getUserAwareJobList, saveJobById, getOccupations, applyJobApi } from "../../../services/job.service";
 import { getCountriesForJobs } from "../../../services/info.service";
 import JobFilter from "../../../components/JobFilter";
 import SearchComponent from "../../../components/SearchComponent";
@@ -227,7 +227,7 @@ export default function JobsPage() {
           formData.append('sortBy', payload.sortBy);
         }
 
-        const response = await getJobList(formData);
+        const response = await getUserAwareJobList(formData);
         const pageJobs = (response as any)?.jobs || (response as any)?.data || [];
         const totalCount = (response as any)?.totalJobs || (response as any)?.total || pageJobs.length;
         const lastPageFromServer = (response as any)?.lastPage || Math.ceil(totalCount / perPage) || 1;

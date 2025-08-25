@@ -7,7 +7,7 @@ import { Badge } from "../../../../components/ui/badge";
 import { Input } from "../../../../components/ui/input";
 import Link from "next/link";
 import { Filter, Search, TrendingUp, Globe, Briefcase, MapPin, DollarSign, Building2, Users, ExternalLink, Heart, Clock, Calendar, Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { searchJobsByKey, getJobList } from "../../../../services/job.service";
+import { searchJobsByKey, getUserAwareJobList } from "../../../../services/job.service";
 import JobFilter from "../../../../components/JobFilter";
 import { toast } from "sonner";
 
@@ -119,7 +119,14 @@ export default function SearchResultsPage() {
         formData.append('sortBy', payload.sortBy);
       }
 
-      const response = await searchJobsByKey(formData);
+      let response;
+      // Try search first, fallback to user-aware job list if search fails
+      try {
+        response = await searchJobsByKey(formData);
+      } catch (searchError) {
+        console.warn('Search API failed, falling back to user-aware job list:', searchError);
+        response = await getUserAwareJobList(formData);
+      }
       
       if (response?.jobs || response?.data) {
         const newJobs = response.jobs || response.data || [];

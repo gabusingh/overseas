@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { getHraDashboardAnalytics, getHraDashboardData, getAllCreatedJobs, HraDashboardData } from '@/services/hra.service';
+import { getHraDashboardAnalytics, getHraDashboardData, getAllCreatedJobs, getJobsPostedByHra, HraDashboardData } from '@/services/hra.service';
 
 interface HraDataContextType {
   dashboardData: HraDashboardData | null;
@@ -22,6 +22,46 @@ interface HraDataProviderProps {
 
 // Cache duration: 5 minutes
 const CACHE_DURATION = 5 * 60 * 1000;
+
+// Helper function to extract HR user ID from stored user data
+function getHrUserIdFromStorage(): string | null {
+  try {
+    const loggedUser = localStorage.getItem("loggedUser");
+    const userSimple = localStorage.getItem("user");
+    
+    if (loggedUser) {
+      const userData = JSON.parse(loggedUser);
+      
+      // Try different possible ID fields
+      const hrId = userData?.user?.id || 
+                   userData?.cmpData?.id || 
+                   userData?.id || 
+                   userData?.hrId || 
+                   userData?.empId;
+      
+      if (hrId) {
+        console.log('HR User ID found:', hrId);
+        return hrId.toString();
+      }
+    }
+    
+    if (userSimple) {
+      const userSimpleData = JSON.parse(userSimple);
+      const hrId = userSimpleData?.id;
+      
+      if (hrId) {
+        console.log('HR User ID found in userSimple:', hrId);
+        return hrId.toString();
+      }
+    }
+    
+    console.warn('HR User ID not found in stored user data');
+    return null;
+  } catch (error) {
+    console.error('Error extracting HR user ID:', error);
+    return null;
+  }
+}
 
 export function HraDataProvider({ children }: HraDataProviderProps) {
   const [dashboardData, setDashboardData] = useState<HraDashboardData | null>(null);
@@ -73,14 +113,23 @@ export function HraDataProvider({ children }: HraDataProviderProps) {
       const analyticsResponse = await getHraDashboardAnalytics(token);
       const analyticsData = analyticsResponse?.data || analyticsResponse;
 
-      // Use jobs from analytics API if available, otherwise fetch separately
+      // Get jobs posted by this specific HR user
       let processedJobsData = [];
+      const hrUserId = getHrUserIdFromStorage();
+      
       if (analyticsData?.latestPostedJobs && analyticsData.latestPostedJobs.length > 0) {
         processedJobsData = analyticsData.latestPostedJobs;
-        console.log('Using jobs data from analytics API');
+        console.log('Using jobs data from analytics API (should be HR-specific)');
+      } else if (hrUserId) {
+        // Fetch jobs posted by this specific HR user
+        console.log('Fetching jobs posted by HR user ID:', hrUserId);
+        const jobsResponse = await getJobsPostedByHra(hrUserId, token);
+        const jobsResponseData = jobsResponse?.data || jobsResponse || [];
+        processedJobsData = Array.isArray(jobsResponseData) ? jobsResponseData : [];
+        console.log(`Found ${processedJobsData.length} jobs for HR user ${hrUserId}`);
       } else {
-        // Fallback: fetch all jobs separately only if analytics doesn't have jobs data
-        console.log('Fetching jobs data separately as fallback');
+        // Fallback: fetch all jobs if we can't get HR user ID (should not happen in normal flow)
+        console.warn('HR User ID not found, falling back to all jobs (this should not happen for company users)');
         const jobsResponse = await getAllCreatedJobs(token);
         const jobsResponseData = jobsResponse?.data || jobsResponse || [];
         processedJobsData = Array.isArray(jobsResponseData) ? jobsResponseData : [];
