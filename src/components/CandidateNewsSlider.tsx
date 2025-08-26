@@ -26,14 +26,14 @@ function CandidateNewsSlider() {
   }, []);
 
   // Function to insert <br> tags after every 3 words
-  function insertBreaks(message: string): (string | JSX.Element)[] {
+  function insertBreaks(message: string): (string | React.ReactElement)[] {
     if (!message) return []; // Handle edge case if message is empty or undefined
 
     // Split the message into words
     const words = message.split(" ");
 
     // Initialize an array to hold parts of the message with breaks
-    const messageWithBreaks: (string | JSX.Element)[] = [];
+    const messageWithBreaks: (string | React.ReactElement)[] = [];
 
     // Loop through words and add breaks after every 3 words
     for (let i = 0; i < words.length; i++) {

@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
+import { getRecommendedCandidates } from "@/services/hra.service";
+import { useHraData } from "@/contexts/HraDataProvider";
 
 interface RecommendedCandidate {
   id: string;
@@ -47,6 +49,7 @@ export default function RecommendedCandidatesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const jobId = searchParams.get('jobId');
+  const { jobsData } = useHraData();
   
   const [loading, setLoading] = useState(true);
   const [candidates, setCandidates] = useState<RecommendedCandidate[]>([]);
@@ -80,39 +83,71 @@ export default function RecommendedCandidatesPage() {
 
   const fetchAvailableJobs = async () => {
     try {
-      // Mock jobs data
-      const mockJobs: JobFilter[] = [
-        {
-          id: "1",
-          title: "Senior Software Engineer",
-          department: "Engineering",
-          location: "Dubai, UAE",
-          experienceLevel: "Senior",
-          skillsRequired: ["React", "Node.js", "AWS", "MongoDB"]
-        },
-        {
-          id: "2", 
-          title: "Frontend Developer",
-          department: "Engineering",
-          location: "Abu Dhabi, UAE",
-          experienceLevel: "Mid-level",
-          skillsRequired: ["React", "TypeScript", "CSS", "JavaScript"]
-        },
-        {
-          id: "3",
-          title: "DevOps Engineer",
-          department: "Infrastructure",
-          location: "Remote",
-          experienceLevel: "Senior",
-          skillsRequired: ["Docker", "Kubernetes", "AWS", "CI/CD"]
-        }
-      ];
-
-      setAvailableJobs(mockJobs);
+      let availableJobsList: JobFilter[] = [];
       
-      // Set selected job based on jobId or default to first
-      const currentJob = mockJobs.find(job => job.id === jobId) || mockJobs[0];
-      setSelectedJob(currentJob);
+      // First try to get jobs from context (already loaded)
+      if (jobsData && jobsData.length > 0) {
+        console.log('📊 Using jobs from HRA context:', jobsData.length);
+        
+        // Transform actual job data to JobFilter format
+        availableJobsList = jobsData.map((job: any) => ({
+          id: (job.id || job.jobID).toString(),
+          title: job.jobTitle || job.title || 'Untitled Job',
+          department: job.jobOccupation || job.department || job.category || 'General',
+          location: `${job.jobLocation || job.location || ''} ${job.jobLocationCountry?.name || job.country || ''}`.trim() || 'Not specified',
+          experienceLevel: job.jobExpTypeReq || job.experienceLevel || 'All levels',
+          skillsRequired: Array.isArray(job.skills) ? job.skills :
+                         typeof job.skills === 'string' ? job.skills.split(',').map((s: string) => s.trim()) :
+                         job.jobSkills ? job.jobSkills.split(',').map((s: string) => s.trim()) : []
+        }));
+      } else {
+        // Fallback to mock data if no real data available
+        console.log('⚠️ No jobs data from context, using fallback');
+        availableJobsList = [
+          {
+            id: "1",
+            title: "Senior Software Engineer",
+            department: "Engineering",
+            location: "Dubai, UAE",
+            experienceLevel: "Senior",
+            skillsRequired: ["React", "Node.js", "AWS", "MongoDB"]
+          },
+          {
+            id: "2", 
+            title: "Frontend Developer",
+            department: "Engineering",
+            location: "Abu Dhabi, UAE",
+            experienceLevel: "Mid-level",
+            skillsRequired: ["React", "TypeScript", "CSS", "JavaScript"]
+          },
+          {
+            id: "3",
+            title: "DevOps Engineer",
+            department: "Infrastructure",
+            location: "Remote",
+            experienceLevel: "Senior",
+            skillsRequired: ["Docker", "Kubernetes", "AWS", "CI/CD"]
+          }
+        ];
+      }
+
+      setAvailableJobs(availableJobsList);
+      
+      // Set selected job based on jobId from URL
+      if (jobId) {
+        const currentJob = availableJobsList.find(job => job.id === jobId);
+        if (currentJob) {
+          console.log('✅ Found and selected job:', currentJob.title);
+          setSelectedJob(currentJob);
+        } else {
+          console.log('⚠️ Job ID not found in list, selecting first job');
+          setSelectedJob(availableJobsList[0] || null);
+        }
+      } else {
+        // No jobId provided, select first available job
+        console.log('ℹ️ No job ID provided, selecting first available job');
+        setSelectedJob(availableJobsList[0] || null);
+      }
     } catch (error) {
       console.error("Error fetching jobs:", error);
       toast.error("Failed to load jobs");
@@ -128,8 +163,121 @@ export default function RecommendedCandidatesPage() {
         return;
       }
 
-      // Mock recommended candidates data with AI matching scores
-      const mockCandidates: RecommendedCandidate[] = [
+      // Try to fetch actual recommended candidates from API
+      let candidatesData: RecommendedCandidate[] = [];
+      
+      try {
+        console.log('🔍 Attempting to fetch recommendations for job ID:', jobId);
+        console.log('🔑 Using token:', token ? 'Present' : 'Missing');
+        
+        const response = await getRecommendedCandidates(
+          jobId ? parseInt(jobId) : undefined,
+          token
+        );
+        
+        console.log('📥 Full API response:', {
+          status: response?.status,
+          statusText: response?.statusText,
+          hasData: !!response?.data,
+          dataKeys: response?.data ? Object.keys(response.data) : [],
+          fullResponse: response
+        });
+        
+        // Handle various API response structures
+        let apiCandidates = [];
+        
+        // Check for the actual API structure with bestMatch, goodMatch, partialMatch
+        if (response?.data?.bestMatch || response?.data?.goodMatch || response?.data?.partialMatch) {
+          console.log('📋 Found match categories in API response');
+          
+          // Combine all match categories
+          const bestMatches = response.data.bestMatch?.data || [];
+          const goodMatches = response.data.goodMatch?.data || [];
+          const partialMatches = response.data.partialMatch?.data || [];
+          
+          // Add match type to each candidate for sorting/display
+          const bestWithType = bestMatches.map((c: any) => ({ ...c, matchType: 'best', matchBoost: 20 }));
+          const goodWithType = goodMatches.map((c: any) => ({ ...c, matchType: 'good', matchBoost: 10 }));
+          const partialWithType = partialMatches.map((c: any) => ({ ...c, matchType: 'partial', matchBoost: 0 }));
+          
+          // Combine all candidates, best matches first
+          apiCandidates = [...bestWithType, ...goodWithType, ...partialWithType];
+          
+          console.log('📊 Match breakdown:', {
+            bestMatches: bestMatches.length,
+            goodMatches: goodMatches.length,
+            partialMatches: partialMatches.length,
+            total: apiCandidates.length
+          });
+        } else if (response?.data?.data) {
+          apiCandidates = response.data.data;
+        } else if (response?.data?.candidates) {
+          apiCandidates = response.data.candidates;
+        } else if (response?.data?.recommendations) {
+          apiCandidates = response.data.recommendations;
+        } else if (response?.data?.recommandations) { // Handle typo in API
+          apiCandidates = response.data.recommandations;
+        } else if (Array.isArray(response?.data)) {
+          apiCandidates = response.data;
+        } else if (response?.data) {
+          // If data is an object with candidates inside
+          apiCandidates = Object.values(response.data).filter(Array.isArray).flat();
+        }
+        
+        console.log('📊 Extracted candidates array:', {
+          count: apiCandidates.length,
+          firstCandidate: apiCandidates[0]
+        });
+        
+        if (Array.isArray(apiCandidates) && apiCandidates.length > 0) {
+          candidatesData = apiCandidates.map((candidate: any) => ({
+            id: candidate.id?.toString() || candidate.empId?.toString() || Math.random().toString(),
+            candidateName: candidate.empName || candidate.candidateName || candidate.name || 'Unknown Candidate',
+            email: candidate.empEmail || candidate.email || 'Not provided',
+            phone: candidate.empPhone || candidate.phone || candidate.mobile || 'Not provided',
+            currentLocation: candidate.empLocation || candidate.location || `${candidate.empDistrict || ''} ${candidate.empState || ''}`.trim() || 'Not specified',
+            experience: candidate.empExperience || candidate.experience || candidate.yearsOfExperience || '0 years',
+            expectedSalary: candidate.expectedSalary || candidate.salary || candidate.empExpectedSalary || 'Negotiable',
+            currency: candidate.currency || candidate.salaryCurrency || 'AED',
+            skills: Array.isArray(candidate.skills) ? candidate.skills : 
+                   typeof candidate.skills === 'string' ? candidate.skills.split(',').map((s: string) => s.trim()) :
+                   candidate.empSkills ? candidate.empSkills.split(',').map((s: string) => s.trim()) : [],
+            education: candidate.education || candidate.empEducation || candidate.qualification || 'Not specified',
+            profilePicture: candidate.empPhoto || candidate.profilePic || candidate.photo,
+            rating: candidate.rating || candidate.empRating || 0,
+            matchScore: candidate.matchScore || candidate.match_score || (candidate.matchBoost ? 70 + candidate.matchBoost : Math.floor(Math.random() * 30 + 70)), // Use matchBoost from API or generate
+            matchReasons: candidate.matchReasons || candidate.match_reasons || [
+              'Skills match job requirements',
+              'Experience level suitable',
+              'Location preference aligned'
+            ],
+            availability: candidate.availability || candidate.empAvailability || 'Not specified',
+            lastActive: candidate.lastActive || candidate.last_active || candidate.updatedAt || new Date().toISOString(),
+            workAuthStatus: candidate.workAuthStatus || candidate.work_auth || 'visa_required',
+            languageSkills: candidate.languages || candidate.languageSkills || ['English'],
+            certifications: candidate.certifications || [],
+            previousCompanies: candidate.previousCompanies || candidate.companies || [],
+            portfolioUrl: candidate.portfolioUrl || candidate.portfolio,
+            linkedinUrl: candidate.linkedinUrl || candidate.linkedin,
+            githubUrl: candidate.githubUrl || candidate.github,
+            isBookmarked: false,
+            responseStatus: 'not_contacted',
+            contactedDate: candidate.contactedDate
+          }));
+          
+          console.log(`✅ Loaded ${candidatesData.length} recommended candidates from API`);
+        } else {
+          console.log('⚠️ No candidates from API, using fallback data');
+        }
+      } catch (apiError) {
+        console.error('❌ API Error fetching recommended candidates:', apiError);
+        console.log('📌 Using fallback mock data');
+      }
+      
+      // If no candidates from API, use mock data as fallback
+      if (candidatesData.length === 0) {
+        console.log('📌 Generating mock candidates for demonstration');
+        const mockCandidates: RecommendedCandidate[] = [
         {
           id: "1",
           candidateName: "Ahmed Hassan",
@@ -350,8 +498,11 @@ export default function RecommendedCandidatesPage() {
           profilePicture: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face"
         }
       ];
+        
+        candidatesData = mockCandidates;
+      }
 
-      setCandidates(mockCandidates);
+      setCandidates(candidatesData);
     } catch (error) {
       console.error("Error fetching recommended candidates:", error);
       toast.error("Failed to load recommended candidates");

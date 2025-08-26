@@ -119,11 +119,26 @@ export function HraDataProvider({ children }: HraDataProviderProps) {
       }
 
       // Fetch jobs posted by this specific HR user ONLY - no fallbacks
+      console.log('🚀 Fetching jobs for HR User ID:', hrUserId);
       const jobsResponse = await getJobsPostedByHra(hrUserId, token);
 
-
+      console.log('📊 Jobs API Response:', {
+        hasResponse: !!jobsResponse,
+        responseType: typeof jobsResponse,
+        isArray: Array.isArray(jobsResponse),
+        hasData: !!jobsResponse?.data,
+        dataIsArray: Array.isArray(jobsResponse?.data),
+        responseKeys: jobsResponse ? Object.keys(jobsResponse) : 'null response'
+      });
 
       const jobsResponseData = jobsResponse?.data || jobsResponse;
+
+      console.log('📋 Jobs Response Data Check:', {
+        type: typeof jobsResponseData,
+        isArray: Array.isArray(jobsResponseData),
+        length: Array.isArray(jobsResponseData) ? jobsResponseData.length : 'not array',
+        sampleData: Array.isArray(jobsResponseData) && jobsResponseData.length > 0 ? jobsResponseData[0] : jobsResponseData
+      });
 
       if (!Array.isArray(jobsResponseData)) {
         console.error('❌ Jobs response is not an array:', {
@@ -131,15 +146,107 @@ export function HraDataProvider({ children }: HraDataProviderProps) {
           responseValue: jobsResponseData,
           fullResponse: jobsResponse
         });
-        throw new Error(`Invalid jobs response format. Expected array, got ${typeof jobsResponseData}. This indicates an API issue.`);
+        
+        // Check if it's a paginated response
+        if (jobsResponseData && typeof jobsResponseData === 'object') {
+          // Check for common pagination response patterns
+          if (jobsResponseData.jobs && Array.isArray(jobsResponseData.jobs)) {
+            console.log('✅ Found jobs array in paginated response');
+            processedJobsData = jobsResponseData.jobs;
+          } else if (jobsResponseData.data && Array.isArray(jobsResponseData.data)) {
+            console.log('✅ Found data array in nested response');
+            processedJobsData = jobsResponseData.data;
+          } else if (jobsResponseData.items && Array.isArray(jobsResponseData.items)) {
+            console.log('✅ Found items array in response');
+            processedJobsData = jobsResponseData.items;
+          } else {
+            // Log all keys to understand the structure
+            console.error('Unable to find jobs array. Response structure:', Object.keys(jobsResponseData));
+            throw new Error(`Invalid jobs response format. Expected array, got object with keys: ${Object.keys(jobsResponseData).join(', ')}`);
+          }
+        } else {
+          throw new Error(`Invalid jobs response format. Expected array, got ${typeof jobsResponseData}. This indicates an API issue.`);
+        }
+      } else {
+        processedJobsData = jobsResponseData;
       }
 
-      processedJobsData = jobsResponseData;
-
+      // If no jobs found or empty response, try the getAllCreatedJobs API as fallback
+      if (processedJobsData.length === 0) {
+        console.warn('⚠️ No jobs found using getJobsPostedByHra. Trying getAllCreatedJobs API...');
+        
+        try {
+          const allJobsResponse = await getAllCreatedJobs(token);
+          console.log('📊 All Created Jobs Response:', {
+            hasResponse: !!allJobsResponse,
+            responseType: typeof allJobsResponse,
+            isArray: Array.isArray(allJobsResponse),
+            hasData: !!allJobsResponse?.data,
+            responseKeys: allJobsResponse ? Object.keys(allJobsResponse) : 'null'
+          });
+          
+          // First check if response itself is directly the jobs array
+          if (Array.isArray(allJobsResponse)) {
+            console.log('✅ getAllCreatedJobs returned an array directly');
+            processedJobsData = allJobsResponse;
+          } else if (allJobsResponse && typeof allJobsResponse === 'object') {
+            // Check various possible field names where jobs might be stored
+            const possibleFields = [
+              'allCreatedJobs',
+              'all_created_jobs',
+              'jobs',
+              'data',
+              'items',
+              'results',
+              'records',
+              'postedJobs',
+              'posted_jobs',
+              'jobList',
+              'job_list'
+            ];
+            
+            for (const field of possibleFields) {
+              if (allJobsResponse[field] && Array.isArray(allJobsResponse[field])) {
+                console.log(`✅ Found jobs array in field '${field}' of getAllCreatedJobs response`);
+                processedJobsData = allJobsResponse[field];
+                break;
+              }
+            }
+            
+            // If still no data found, check if data.data pattern exists
+            if (processedJobsData.length === 0 && allJobsResponse.data) {
+              if (Array.isArray(allJobsResponse.data)) {
+                console.log('✅ Found jobs array in data field');
+                processedJobsData = allJobsResponse.data;
+              } else if (typeof allJobsResponse.data === 'object') {
+                for (const field of possibleFields) {
+                  if (allJobsResponse.data[field] && Array.isArray(allJobsResponse.data[field])) {
+                    console.log(`✅ Found jobs array in data.${field}`);
+                    processedJobsData = allJobsResponse.data[field];
+                    break;
+                  }
+                }
+              }
+            }
+            
+            // Log what we found if still no data
+            if (processedJobsData.length === 0) {
+              console.error('❌ Could not find jobs array in response. Available keys:', Object.keys(allJobsResponse));
+              if (allJobsResponse.data) {
+                console.error('Data field keys:', Object.keys(allJobsResponse.data));
+              }
+            }
+          }
+        } catch (fallbackError) {
+          console.error('❌ Fallback getAllCreatedJobs also failed:', fallbackError);
+          // Keep the empty array if fallback also fails
+        }
+      }
 
       if (processedJobsData.length === 0) {
         console.warn('⚠️ No jobs found for HR user. This might be normal if no jobs have been posted yet.');
       } else {
+        console.log(`📋 Successfully loaded ${processedJobsData.length} jobs`);
         console.log('📋 First job sample:', processedJobsData[0]);
       }
 

@@ -11,11 +11,13 @@ interface DistrictResponse {
 }
 
 interface CountryResponse {
-  data: Array<{ id: number; name: string }>;
+  data?: Array<{ id: number; name: string }>;
+  countries?: Array<{ id: number; name: string }>;
 }
 
 interface OccupationResponse {
-  data: Array<{ id: number; title: string; name: string }>;
+  data?: Array<{ id: number; title?: string; name?: string; occupation?: string }>;
+  occupation?: Array<{ id: number; title?: string; name?: string; occupation?: string }>;
 }
 
 interface HomeDataResponse {

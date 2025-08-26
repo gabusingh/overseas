@@ -253,7 +253,7 @@ function ResizableHeader() {
           <MobileNavHeader>
             <Link href="/" className="flex items-center">
               <Image
-                src="/images/brandlogo.gif"
+                src="/images/overseas.ainewlogo.png"
                 width={120}
                 height={32}
                 alt="Overseas.ai"

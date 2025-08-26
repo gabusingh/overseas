@@ -163,7 +163,7 @@ export default function EditJobPage() {
         setTimeout(() => reject(new Error('Request timeout - API took too long to respond')), 30000)
       );
       
-      const response = await Promise.race([
+      const response: any = await Promise.race([
         getJobById(jobId),
         timeoutPromise
       ]);
@@ -205,11 +205,11 @@ export default function EditJobPage() {
       }
       
       // Transform API response to match JobData interface - validate required fields
-      const jobId = jobApiData.id || jobApiData.jobID;
+      const transformedJobId = jobApiData.id || jobApiData.jobID;
       const jobTitle = jobApiData.jobTitle || jobApiData.job_title || jobApiData.title;
       
       console.log('🔍 Critical job fields:', {
-        id: jobId,
+        id: transformedJobId,
         title: jobTitle,
         department: jobApiData.jobOccupation || jobApiData.department,
         location: jobApiData.jobLocationCountry?.name || jobApiData.location || jobApiData.jobLocation,
@@ -224,7 +224,7 @@ export default function EditJobPage() {
       }
       
       const transformedJobData: JobData = {
-        id: jobId.toString(),
+        id: transformedJobId.toString(),
         title: jobTitle,
         department: jobApiData.jobOccupation || jobApiData.department || "",
         location: jobApiData.jobLocationCountry?.name || jobApiData.location || jobApiData.jobLocation || "",

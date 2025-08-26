@@ -121,7 +121,7 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
         // Get trending categories using the new API
         const trending = await getTrendingCategories(occupationsResponse.data, 6);
         const popularCategoriesData = trending.map(stat => {
-          const category = processedCategories.find(c => c.id === stat.id);
+          const category = processedCategories.find((c: Department) => c.id === stat.id);
           return category ? {
             ...category,
             jobCount: stat.jobCount,

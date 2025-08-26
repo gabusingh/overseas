@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
 import { useHraData } from "@/contexts/HraDataProvider";
+import { getJobApplications, getAppliedCandidatesList } from "@/services/hra.service";
 
 interface Job {
   id: string;
@@ -34,6 +35,9 @@ export default function HraViewJobsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [expandedJobs, setExpandedJobs] = useState<string[]>([]);
+  const [jobApplications, setJobApplications] = useState<Record<string, any[]>>({});
+  const [loadingApplications, setLoadingApplications] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     initializeData();
@@ -56,8 +60,8 @@ export default function HraViewJobsPage() {
       return;
     }
 
-    // Use context to fetch data (with caching)
-    await fetchHraData();
+    // Force refresh to get latest data
+    await fetchHraData(true);
   };
 
   const transformAndSetJobs = () => {
@@ -230,6 +234,10 @@ export default function HraViewJobsPage() {
     router.push(`/view-candidate-application-list?jobId=${jobId}`);
   };
 
+  const handleGetRecommendations = (jobId: string) => {
+    router.push(`/recommended-candidates?jobId=${jobId}`);
+  };
+
   const handleDuplicateJob = async (jobId: string) => {
     try {
       const jobToDuplicate = jobs.find(job => job.id === jobId);
@@ -268,6 +276,177 @@ export default function HraViewJobsPage() {
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "1 day left";
     return `${diffDays} days left`;
+  };
+
+  const toggleJobExpansion = async (jobId: string) => {
+    if (expandedJobs.includes(jobId)) {
+      // Collapse
+      setExpandedJobs(prev => prev.filter(id => id !== jobId));
+    } else {
+      // Expand and fetch applications if not already loaded
+      setExpandedJobs(prev => [...prev, jobId]);
+      
+      if (!jobApplications[jobId] && !loadingApplications[jobId]) {
+        fetchJobApplications(jobId);
+      }
+    }
+  };
+
+  const fetchJobApplications = async (jobId: string) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    // Get the current job to preserve original count if needed
+    const currentJob = jobs.find(job => job.id === jobId);
+    const originalCount = currentJob?.applicationsCount || 0;
+
+    setLoadingApplications(prev => ({ ...prev, [jobId]: true }));
+    
+    try {
+      // Try to fetch applications for this specific job
+      console.log(`🔍 Fetching applications for job ID: ${jobId}`);
+      console.log(`📊 Original application count from job data: ${originalCount}`);
+      
+      const response = await getJobApplications(parseInt(jobId), token);
+      
+      console.log(`📥 Job ${jobId} API Response:`, {
+        status: response?.status,
+        hasData: !!response?.data,
+        dataType: Array.isArray(response?.data) ? 'array' : typeof response?.data,
+        dataLength: Array.isArray(response?.data) ? response.data.length : 'N/A',
+        rawResponse: response?.data
+      });
+      
+      const candidatesData = response?.data || response || [];
+      
+      // Transform the data - handle various response formats
+      let applications = [];
+      if (Array.isArray(candidatesData)) {
+        applications = candidatesData;
+      } else if (candidatesData.candidates) {
+        applications = candidatesData.candidates;
+      } else if (candidatesData.applications) {
+        applications = candidatesData.applications;
+      } else if (candidatesData.data && Array.isArray(candidatesData.data)) {
+        applications = candidatesData.data;
+      }
+      
+      console.log(`✅ Job ${jobId}: Found ${applications.length} job-specific applications`);
+      
+      // If API returns 0 but we had a count before, try the fallback
+      if (applications.length === 0 && originalCount > 0) {
+        console.log(`⚠️ API returned 0 applications but job shows ${originalCount}. Trying alternative methods...`);
+        
+        // Try the dashboard's latest candidates as a source
+        if (dashboardData?.latestAppliedCandidates && dashboardData.latestAppliedCandidates.length > 0) {
+          console.log(`🔍 Using dashboard's latest candidates as fallback (${dashboardData.latestAppliedCandidates.length} total)`);
+          
+          // Use the latest candidates but limit to original count for this job
+          const candidatesToShow = dashboardData.latestAppliedCandidates.slice(0, Math.min(originalCount, 6));
+          
+          // Mark as approximate data since these might not be job-specific
+          (candidatesToShow as any).isApproximate = true;
+          
+          setJobApplications(prev => ({ ...prev, [jobId]: candidatesToShow }));
+          
+          // Keep the original count since we know there are applications
+          console.log(`📌 Preserving original count of ${originalCount} applications`);
+          
+          // Don't update the count - keep it as is
+          setLoadingApplications(prev => ({ ...prev, [jobId]: false }));
+          return;
+        }
+      }
+      
+      // Only update count if we actually got data
+      if (applications.length > 0) {
+        // Update the job's application count to match actual data
+        setJobs(prev => prev.map(job => 
+          job.id === jobId 
+            ? { ...job, applicationsCount: applications.length }
+            : job
+        ));
+      } else {
+        console.log(`📌 Keeping original count of ${originalCount} since API returned empty`);
+      }
+      
+      setJobApplications(prev => ({ ...prev, [jobId]: applications }));
+    } catch (error) {
+      console.error(`❌ Error fetching applications for job ${jobId}:`, error);
+      
+      // Try fallback to general candidates list
+      try {
+        console.log(`🔄 Trying fallback: fetching all candidates`);
+        const fallbackResponse = await getAppliedCandidatesList(token);
+        
+        console.log(`📥 Fallback API Response:`, {
+          hasData: !!fallbackResponse?.data,
+          dataType: Array.isArray(fallbackResponse?.data) ? 'array' : typeof fallbackResponse?.data,
+          dataLength: Array.isArray(fallbackResponse?.data) ? fallbackResponse.data.length : 'N/A'
+        });
+        
+        let candidatesToShow = [];
+        const allCandidates = Array.isArray(fallbackResponse?.data) ? fallbackResponse.data : 
+                              Array.isArray(fallbackResponse) ? fallbackResponse : [];
+        
+        if (allCandidates.length > 0) {
+          // First, try to filter candidates for this specific job
+          const filteredCandidates = allCandidates.filter((candidate: any) => {
+            const candidateJobId = candidate.jobId || candidate.appliedJobId || candidate.job_id || candidate.jobID;
+            return candidateJobId && candidateJobId.toString() === jobId.toString();
+          });
+          
+          if (filteredCandidates.length > 0) {
+            console.log(`✅ Found ${filteredCandidates.length} job-specific candidates in fallback`);
+            candidatesToShow = filteredCandidates;
+          } else if (originalCount > 0) {
+            // If we can't filter but know there are applications, show recent candidates
+            console.log(`📌 Using ${Math.min(originalCount, allCandidates.length)} recent candidates as proxy`);
+            candidatesToShow = allCandidates.slice(0, Math.min(originalCount, 6));
+            // Mark as approximate since these are not job-specific
+            (candidatesToShow as any).isApproximate = true;
+          }
+        }
+        
+        // If still no candidates but original count > 0, use dashboard data
+        if (candidatesToShow.length === 0 && originalCount > 0 && dashboardData?.latestAppliedCandidates) {
+          console.log(`📌 Final fallback: using dashboard candidates`);
+          candidatesToShow = dashboardData.latestAppliedCandidates.slice(0, Math.min(originalCount, 6));
+          // Mark as approximate
+          (candidatesToShow as any).isApproximate = true;
+        }
+        
+        setJobApplications(prev => ({ ...prev, [jobId]: candidatesToShow }));
+        
+        // Preserve original count if we had one and found some candidates to show
+        if (originalCount > 0 && candidatesToShow.length > 0) {
+          console.log(`📌 Preserving original count of ${originalCount}`);
+          // Don't update the count
+        } else if (candidatesToShow.length > 0) {
+          // Update to actual found count
+          setJobs(prev => prev.map(job => 
+            job.id === jobId 
+              ? { ...job, applicationsCount: candidatesToShow.length }
+              : job
+          ));
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+        
+        // Even if API fails, if we have dashboard candidates and original count > 0, show them
+        if (originalCount > 0 && dashboardData?.latestAppliedCandidates && dashboardData.latestAppliedCandidates.length > 0) {
+          const candidatesToShow = dashboardData.latestAppliedCandidates.slice(0, Math.min(originalCount, 6));
+          // Mark as approximate
+          (candidatesToShow as any).isApproximate = true;
+          setJobApplications(prev => ({ ...prev, [jobId]: candidatesToShow }));
+          console.log(`📌 Using dashboard data as final fallback, preserving count of ${originalCount}`);
+        } else {
+          setJobApplications(prev => ({ ...prev, [jobId]: [] }));
+        }
+      }
+    } finally {
+      setLoadingApplications(prev => ({ ...prev, [jobId]: false }));
+    }
   };
 
   if (loading) {
@@ -313,6 +492,20 @@ export default function HraViewJobsPage() {
               </button>
             )}
           </div>
+          
+          {/* Debug information */}
+          {process.env.NODE_ENV === 'development' && (
+            <details className="mt-6 text-left text-xs text-gray-500">
+              <summary className="cursor-pointer">Debug Information</summary>
+              <div className="mt-2 p-3 bg-gray-100 rounded">
+                <p className="mb-1"><strong>Jobs Data:</strong> {jobsData ? `${jobsData.length} items` : 'null'}</p>
+                <p className="mb-1"><strong>Dashboard Data:</strong> {dashboardData ? 'Available' : 'null'}</p>
+                <p className="mb-1"><strong>Error:</strong> {error}</p>
+                <p className="mb-1"><strong>LocalStorage User:</strong> {localStorage.getItem('user') ? 'Present' : 'Missing'}</p>
+                <p className="mb-1"><strong>LocalStorage Token:</strong> {localStorage.getItem('access_token') ? 'Present' : 'Missing'}</p>
+              </div>
+            </details>
+          )}
         </div>
       </div>
     );
@@ -468,6 +661,7 @@ export default function HraViewJobsPage() {
               ))}
             </div>
             
+            {/* Commented out since view applications not giving actual data
             {dashboardData.latestAppliedCandidates.length > 6 && (
               <div className="text-center mt-4">
                 <button 
@@ -479,6 +673,7 @@ export default function HraViewJobsPage() {
                 </button>
               </div>
             )}
+            */}
           </div>
         )}
 
@@ -639,12 +834,30 @@ export default function HraViewJobsPage() {
                   <div className="flex justify-between items-center mt-4 pt-4 border-t">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => handleViewApplications(job.id)}
+                        onClick={() => toggleJobExpansion(job.id)}
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
-                        <i className="fa fa-users mr-1"></i>
-                        View Applications ({job.applicationsCount})
+                        <i className={`fa ${expandedJobs.includes(job.id) ? 'fa-chevron-up' : 'fa-chevron-down'} mr-1`}></i>
+                        {expandedJobs.includes(job.id) ? 'Hide' : 'Show'} Applications ({job.applicationsCount})
                       </button>
+                      
+                      <button
+                        onClick={() => handleGetRecommendations(job.id)}
+                        className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 py-1 rounded text-sm font-medium hover:from-blue-600 hover:to-indigo-700 transition-colors"
+                      >
+                        <i className="fa fa-magic mr-1"></i>
+                        Get AI Recommendations
+                      </button>
+                      
+                      {/* Commented out since view applications not giving actual data
+                      <button
+                        onClick={() => handleViewApplications(job.id)}
+                        className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                      >
+                        <i className="fa fa-external-link mr-1"></i>
+                        Full View
+                      </button>
+                      */}
                       
                       <button
                         onClick={() => handleEditJob(job.id)}
@@ -673,6 +886,128 @@ export default function HraViewJobsPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Expandable Candidates Section */}
+                  {expandedJobs.includes(job.id) && (
+                    <div className="mt-4 pt-4 border-t bg-gray-50 -mx-6 px-6 pb-4">
+                      {loadingApplications[job.id] ? (
+                        <div className="text-center py-8">
+                          <div className="inline-flex items-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+                            <span className="text-gray-600">Loading candidates...</span>
+                          </div>
+                        </div>
+                      ) : jobApplications[job.id] && jobApplications[job.id].length > 0 ? (
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-4">
+                            <i className="fa fa-users mr-2 text-blue-600"></i>
+                            Candidates Applied ({jobApplications[job.id].length})
+                            {(jobApplications[job.id] as any).isApproximate && (
+                              <span className="ml-2 text-xs text-orange-600 font-normal">
+                                <i className="fa fa-info-circle mr-1"></i>
+                                Showing recent candidates (specific data unavailable)
+                              </span>
+                            )}
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {jobApplications[job.id].slice(0, 6).map((candidate: any, index: number) => (
+                              <div key={candidate.id || index} className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div className="flex items-start space-x-3">
+                                  <div className="w-12 h-12 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                    {candidate.empPhoto && candidate.empPhoto !== 'https://backend.overseas.ai/placeholder/person.jpg' ? (
+                                      <img 
+                                        src={candidate.empPhoto} 
+                                        alt={candidate.empName || candidate.name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                        }}
+                                      />
+                                    ) : (
+                                      <i className="fa fa-user text-blue-600 text-lg"></i>
+                                    )}
+                                    <i className="fa fa-user text-blue-600 text-lg hidden"></i>
+                                  </div>
+                                  
+                                  <div className="flex-1 min-w-0">
+                                    <h5 className="font-semibold text-gray-800 truncate">
+                                      {candidate.empName || candidate.name || 'Unknown Candidate'}
+                                    </h5>
+                                    {(candidate.empEmail || candidate.email) && (
+                                      <p className="text-xs text-gray-600 truncate">
+                                        <i className="fa fa-envelope mr-1"></i>
+                                        {candidate.empEmail || candidate.email}
+                                      </p>
+                                    )}
+                                    {(candidate.empPhone || candidate.phone) && (
+                                      <p className="text-xs text-gray-600">
+                                        <i className="fa fa-phone mr-1"></i>
+                                        {candidate.empPhone || candidate.phone}
+                                      </p>
+                                    )}
+                                    {(candidate.empDistrict || candidate.empState || candidate.location) && (
+                                      <p className="text-xs text-gray-600">
+                                        <i className="fa fa-map-marker mr-1"></i>
+                                        {candidate.location || `${candidate.empDistrict || ''} ${candidate.empState || ''}`.trim()}
+                                      </p>
+                                    )}
+                                    {(candidate.experience || candidate.empExperience) && (
+                                      <p className="text-xs text-gray-600">
+                                        <i className="fa fa-briefcase mr-1"></i>
+                                        {candidate.experience || candidate.empExperience} experience
+                                      </p>
+                                    )}
+                                    {candidate.appliedOn && (
+                                      <p className="text-xs text-blue-600 mt-1">
+                                        Applied: {new Date(candidate.appliedOn).toLocaleDateString()}
+                                      </p>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex flex-col space-y-1">
+                                    <button
+                                      onClick={() => router.push(`/candidate-profile/${candidate.id || candidate.empId}`)}
+                                      className="text-xs text-blue-600 hover:text-blue-800"
+                                      title="View Profile"
+                                    >
+                                      <i className="fa fa-eye"></i>
+                                    </button>
+                                    <button
+                                      className="text-xs text-green-600 hover:text-green-800"
+                                      title="Contact"
+                                    >
+                                      <i className="fa fa-comment"></i>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Commented out since view applications not giving actual data
+                          {jobApplications[job.id].length > 6 && (
+                            <div className="mt-4 text-center">
+                              <button
+                                onClick={() => handleViewApplications(job.id)}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                View All {jobApplications[job.id].length} Candidates
+                                <i className="fa fa-arrow-right ml-2"></i>
+                              </button>
+                            </div>
+                          )}
+                          */}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <i className="fa fa-inbox text-3xl mb-3 text-gray-300"></i>
+                          <p>No applications received yet</p>
+                          <p className="text-sm mt-1">Share this job to attract candidates</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

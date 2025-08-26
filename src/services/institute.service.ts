@@ -101,3 +101,16 @@ export const getCourseById = async (id: number) => {
     throw error;
   }
 };
+
+export const applyCourse = async (courseId: number, userId: number) => {
+  try {
+    const response = await axios.post(BASE_URL + 'apply-course', {
+      courseId,
+      userId
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error applying for course:', error);
+    throw error;
+  }
+};

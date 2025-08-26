@@ -68,8 +68,8 @@ export default function Header() {
       if (!detectedType) {
         if (globalState.user?.user?.type) {
           detectedType = globalState.user.user.type;
-        } else if (globalState.user?.type) {
-          detectedType = globalState.user.type;
+        } else if ((globalState.user as any)?.type) {
+          detectedType = (globalState.user as any).type;
         }
       }
       
@@ -104,7 +104,7 @@ export default function Header() {
     console.log('Header Debug - Detected User Type:', userType);
     console.log('Header Debug - Is HR User:', isHrUser);
     console.log('Header Debug - Effective User:', effectiveUser);
-    console.log('Header Debug - Effective User Type:', effectiveUser?.type);
+    console.log('Header Debug - Effective User Type:', (effectiveUser as any)?.type);
     console.log('Header Debug - Dashboard Link Text:', getDashboardLinkText());
     console.log('Header Debug - localStorage loggedUser:', localStorage.getItem('loggedUser'));
     console.log('Header Debug - localStorage user:', localStorage.getItem('user'));
@@ -166,7 +166,7 @@ export default function Header() {
 
   const getUserDashboardLink = () => {
     if (!effectiveUser && !userType) return '/login';
-    const type = userType || effectiveUser?.type;
+    const type = userType || (effectiveUser as any)?.type;
     switch (type) {
       case 'person':
         return '/my-profile';
@@ -181,7 +181,7 @@ export default function Header() {
 
   const getDashboardLinkText = () => {
     if (!effectiveUser && !userType) return 'My Account';
-    const type = userType || effectiveUser?.type;
+    const type = userType || (effectiveUser as any)?.type;
     switch (type) {
       case 'company':
         return 'Dashboard';

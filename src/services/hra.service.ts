@@ -364,7 +364,8 @@ export const getJobApplications = async (jobId: number, accessToken: string) => 
 
 export const getRecommendedCandidates = async (jobId?: number, accessToken?: string) => {
   try {
-    const url = jobId ? `recommended-candidates/${jobId}` : 'recommended-candidates';
+    // Using the correct API endpoint with typo "recommandations" as per backend
+    const url = jobId ? `get-job-wise-recommandations/${jobId}` : 'recommended-candidates';
     const response = await axios.get(BASE_URL + url, {
       headers: accessToken ? {
         Authorization: `Bearer ${accessToken}`
@@ -373,6 +374,21 @@ export const getRecommendedCandidates = async (jobId?: number, accessToken?: str
     return response;
   } catch (error) {
     console.error('Error fetching recommended candidates:', error);
+    throw error;
+  }
+};
+
+// Alternative function name matching the API typo
+export const getJobWiseRecommandations = async (jobId: number, accessToken: string) => {
+  try {
+    const response = await axios.get(BASE_URL + `get-job-wise-recommandations/${jobId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Error fetching job recommendations:', error);
     throw error;
   }
 };
