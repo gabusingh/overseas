@@ -42,7 +42,7 @@ function ResizableHeader() {
             { label: 'Create Jobs', href: '/create-jobs', icon: 'fa fa-plus' },
             { label: 'View Applications', href: '/view-candidate-application-list', icon: 'fa fa-users' },
             { label: 'Job Reports', href: '/hra-jobs', icon: 'fa fa-chart-bar' },
-            { label: 'Bulk Hiring', href: '/create-bulk-hire', icon: 'fa fa-users-cog' },
+            { label: 'Bulk Hiring', href: '/bulk-hire', icon: 'fa fa-users-cog' },
           ]
         };
       case 'institute':
@@ -209,7 +209,7 @@ function ResizableHeader() {
           <div className="flex items-center space-x-4 relative z-20">
             {globalState?.user ? (
               <div className="relative group">
-                <button className="flex items-center text-gray-800 dark:text-white font-medium px-4 py-2 rounded-md bg-transparent shadow-none hover:-translate-y-0.5 transition duration-200">
+                <button className="flex items-center text-gray-800 dark:text-black font-medium px-4 py-2 rounded-md bg-transparent shadow-none hover:-translate-y-0.5 transition duration-200">
                   <i className={`${navData.icon} mr-2`}></i>
                   {navData.label}
                   <i className="fa fa-chevron-down ml-1 text-xs"></i>
@@ -237,7 +237,7 @@ function ResizableHeader() {
               </div>
             ) : (
               <>
-                <Link href="/login" className="px-4 py-2 rounded-md bg-transparent shadow-none text-gray-800 dark:text-white text-sm font-bold relative cursor-pointer hover:-translate-y-0.5 transition duration-200 inline-block text-center">
+                <Link href="/login" className="px-4 py-2 rounded-md bg-transparent shadow-none text-gray-800 dark:text-black text-sm font-bold relative cursor-pointer hover:-translate-y-0.5 transition duration-200 inline-block text-center">
                   Login
                 </Link>
                 <Link href="/register" className="px-4 py-2 rounded-md bg-white text-black text-sm font-bold relative cursor-pointer hover:-translate-y-0.5 transition duration-200 inline-block text-center shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]">

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import Head from "next/head";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
+import { getAppliedCandidatesList, createBulkHire } from "@/services/hra.service";
 
 interface Candidate {
   id: string;
@@ -116,122 +117,69 @@ export default function BulkHirePage() {
         return;
       }
 
-      // Mock data - replace with actual API call
-      const mockCandidates: Candidate[] = [
-        {
-          id: "1",
-          candidateName: "Ahmed Hassan",
-          email: "ahmed.hassan@email.com",
-          phone: "+971-50-123-4567",
-          currentLocation: "Mumbai, India",
-          experience: "5 years",
-          expectedSalary: "12000",
-          currency: "AED",
-          skills: ["React", "Node.js", "MongoDB", "AWS"],
-          education: "Bachelor's in Computer Science",
-          rating: 4.2,
-          jobTitle: "Senior Software Engineer",
-          jobId: "1",
-          appliedDate: "2024-12-10",
-          status: "shortlisted",
-          profilePicture: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-          id: "2",
-          candidateName: "Priya Sharma",
-          email: "priya.sharma@email.com",
-          phone: "+91-98765-43210",
-          currentLocation: "Bangalore, India",
-          experience: "7 years",
-          expectedSalary: "15000",
-          currency: "AED",
-          skills: ["Angular", "Python", "PostgreSQL", "Docker"],
-          education: "Master's in Software Engineering",
-          rating: 4.7,
-          jobTitle: "Senior Software Engineer",
-          jobId: "1",
-          appliedDate: "2024-12-09",
-          status: "shortlisted",
-          profilePicture: "https://images.unsplash.com/photo-1494790108755-2616b612b5ab?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-          id: "3",
-          candidateName: "Mohammad Khan",
-          email: "mohammad.khan@email.com",
-          phone: "+92-300-123-4567",
-          currentLocation: "Karachi, Pakistan",
-          experience: "6 years",
-          expectedSalary: "10000",
-          currency: "AED",
-          skills: ["Vue.js", "Laravel", "MySQL", "Redis"],
-          education: "Bachelor's in Information Technology",
-          rating: 4.0,
-          jobTitle: "Senior Software Engineer",
-          jobId: "1",
-          appliedDate: "2024-12-08",
-          status: "shortlisted",
-          profilePicture: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-          id: "4",
-          candidateName: "Sarah Johnson",
-          email: "sarah.johnson@email.com",
-          phone: "+1-555-123-4567",
-          currentLocation: "New York, USA",
-          experience: "8 years",
-          expectedSalary: "18000",
-          currency: "AED",
-          skills: ["React Native", "TypeScript", "GraphQL", "Kubernetes"],
-          education: "Master's in Computer Engineering",
-          rating: 4.9,
-          jobTitle: "Senior Software Engineer",
-          jobId: "1",
-          appliedDate: "2024-12-07",
-          status: "shortlisted",
-          profilePicture: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-          id: "5",
-          candidateName: "David Chen",
-          email: "david.chen@email.com",
-          phone: "+65-9876-5432",
-          currentLocation: "Singapore",
-          experience: "9 years",
-          expectedSalary: "20000",
-          currency: "AED",
-          skills: ["Java", "Spring Boot", "Microservices", "AWS"],
-          education: "Master's in Computer Science",
-          rating: 4.5,
-          jobTitle: "Senior Software Engineer",
-          jobId: "1",
-          appliedDate: "2024-12-06",
-          status: "shortlisted",
-          profilePicture: "https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-          id: "6",
-          candidateName: "Maria Rodriguez",
-          email: "maria.rodriguez@email.com",
-          phone: "+34-612-345-678",
-          currentLocation: "Madrid, Spain",
-          experience: "4 years",
-          expectedSalary: "11000",
-          currency: "AED",
-          skills: ["Python", "Django", "React", "PostgreSQL"],
-          education: "Bachelor's in Software Engineering",
-          rating: 4.1,
-          jobTitle: "Senior Software Engineer",
-          jobId: "1",
-          appliedDate: "2024-12-05",
-          status: "shortlisted",
-          profilePicture: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face"
-        }
-      ];
+      // Fetch actual applied candidates from API
+      const response = await getAppliedCandidatesList(token, 1);
+      
+      if (response?.data && response.data.length > 0) {
+        // Transform API response to match our Candidate interface
+        const transformedCandidates: Candidate[] = response.data
+          .filter((candidate: any) => candidate.status === 'shortlisted' || candidate.empStatus === 'Shortlisted')
+          .map((candidate: any, index: number) => ({
+            id: candidate.id?.toString() || index.toString(),
+            candidateName: candidate.empName || candidate.candidateName || 'Unknown Candidate',
+            email: candidate.empEmail || candidate.email || 'No email',
+            phone: candidate.empMobile || candidate.phone || 'No phone',
+            currentLocation: candidate.empCurrentLocation || candidate.currentLocation || 'Unknown Location',
+            experience: candidate.experience || candidate.empExperience || '0 years',
+            expectedSalary: candidate.empExpectedSalary || candidate.expectedSalary || '0',
+            currency: candidate.currency || 'AED',
+            skills: candidate.skills ? (typeof candidate.skills === 'string' ? candidate.skills.split(',') : candidate.skills) : [],
+            education: candidate.empEducation || candidate.education || 'Not specified',
+            profilePicture: candidate.empProfilePic || candidate.profilePicture,
+            rating: candidate.rating || 0,
+            jobTitle: candidate.jobTitle || candidate.job_title || candidate.position || 'Applied Position',
+            jobId: candidate.jobId?.toString() || candidate.job_id?.toString() || '0',
+            appliedDate: candidate.appliedOn || candidate.applied_on || new Date().toISOString().split('T')[0],
+            status: candidate.status || candidate.empStatus || 'Applied'
+          }));
 
-      setAvailableCandidates(mockCandidates);
+        setAvailableCandidates(transformedCandidates);
+        
+        // If no shortlisted candidates, show all applied candidates
+        if (transformedCandidates.length === 0) {
+          // Show all applied candidates if no shortlisted ones
+          const allCandidates: Candidate[] = response.data
+            .map((candidate: any, index: number) => ({
+              id: candidate.id?.toString() || index.toString(),
+              candidateName: candidate.empName || candidate.candidateName || 'Unknown Candidate',
+              email: candidate.empEmail || candidate.email || 'No email',
+              phone: candidate.empMobile || candidate.phone || 'No phone',
+              currentLocation: candidate.empCurrentLocation || candidate.currentLocation || 'Unknown Location',
+              experience: candidate.experience || candidate.empExperience || '0 years',
+              expectedSalary: candidate.empExpectedSalary || candidate.expectedSalary || '0',
+              currency: candidate.currency || 'AED',
+              skills: candidate.skills ? (typeof candidate.skills === 'string' ? candidate.skills.split(',') : candidate.skills) : [],
+              education: candidate.empEducation || candidate.education || 'Not specified',
+              profilePicture: candidate.empProfilePic || candidate.profilePicture,
+              rating: candidate.rating || 0,
+              jobTitle: candidate.jobTitle || candidate.job_title || candidate.position || 'Applied Position',
+              jobId: candidate.jobId?.toString() || candidate.job_id?.toString() || '0',
+              appliedDate: candidate.appliedOn || candidate.applied_on || new Date().toISOString().split('T')[0],
+              status: candidate.status || candidate.empStatus || 'Applied'
+            }));
+          
+          setAvailableCandidates(allCandidates);
+          
+          if (allCandidates.length > 0) {
+            toast.info('No shortlisted candidates found. Showing all applied candidates.');
+          }
+        }
+      } else {
+        // No candidates available
+        setAvailableCandidates([]);
+      }
     } catch (error) {
-      console.error("Error fetching candidates:", error);
-      toast.error("Failed to load shortlisted candidates");
+      toast.error("Failed to load candidates. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -279,25 +227,47 @@ export default function BulkHirePage() {
 
     setIsProcessing(true);
     try {
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        toast.error("Session expired. Please login again.");
+        router.push("/login");
+        return;
+      }
 
-      // In real implementation, this would send hire offers to all selected candidates
-      console.log("Bulk hiring:", {
-        candidates: selectedCandidates,
-        hireDetails: values
-      });
+      // Prepare form data for API
+      const formData = new FormData();
+      formData.append("candidateIds", JSON.stringify(selectedCandidates.map(c => c.id)));
+      formData.append("jobTitle", values.jobTitle);
+      formData.append("jobLocation", values.jobLocation);
+      formData.append("contractType", values.contractType);
+      formData.append("startDate", values.startDate);
+      formData.append("salaryOffered", values.salaryOffered);
+      formData.append("currency", values.currency);
+      formData.append("benefits", JSON.stringify(values.benefits));
+      formData.append("workMode", values.workMode);
+      formData.append("probationPeriod", values.probationPeriod);
+      formData.append("joiningBonus", values.joiningBonus || "0");
+      formData.append("additionalNotes", values.additionalNotes);
+      formData.append("sendWelcomeEmail", values.sendWelcomeEmail.toString());
+      formData.append("scheduleOrientation", values.scheduleOrientation.toString());
+      formData.append("createEmployeeProfiles", values.createEmployeeProfiles.toString());
 
-      toast.success(`Successfully initiated hire process for ${selectedCandidates.length} candidates!`);
+      // Call actual bulk hire API
+      const response = await createBulkHire(formData, token);
+
+      if (response?.data?.success || response?.status === 200) {
+        toast.success(`Successfully initiated hire process for ${selectedCandidates.length} candidates!`);
+        
+        // Reset form and redirect
+        setSelectedCandidates([]);
+        setCurrentStep(1);
+        router.push("/hra-jobs");
+      } else {
+        throw new Error(response?.data?.message || "Failed to process bulk hire");
+      }
       
-      // Reset form and redirect
-      setSelectedCandidates([]);
-      setCurrentStep(1);
-      router.push("/hra-jobs");
-      
-    } catch (error) {
-      console.error("Error in bulk hire:", error);
-      toast.error("Failed to process bulk hire. Please try again.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to process bulk hire. Please try again.");
     } finally {
       setIsProcessing(false);
     }

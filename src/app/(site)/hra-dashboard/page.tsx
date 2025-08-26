@@ -28,10 +28,10 @@ export default function HraDashboardPage() {
 
   const navigationItems = [
     { name: "Create Job", path: "/create-jobs", icon: "fa fa-plus" },
-    { name: "Search Candidates", path: "/recommended-candidates", icon: "fa fa-search" },
+    // { name: "Search Candidates", path: "/recommended-candidates", icon: "fa fa-search" },
     { name: "Schedule Interview", path: "/view-candidate-application-list", icon: "fa fa-calendar" },
     { name: "View Reports", path: "/hra-jobs", icon: "fa fa-chart-bar" },
-    { name: "Bulk Hire", path: "/create-bulk-hire", icon: "fa fa-users" },
+    { name: "Bulk Hire", path: "/bulk-hire", icon: "fa fa-users" },
     { name: "Notifications", path: "/notifications", icon: "fa fa-bell" }
   ];
 
