@@ -50,7 +50,6 @@ export const getDistrict = async (stateId: number): Promise<DistrictResponse> =>
 export const getOccupations = async (): Promise<OccupationResponse> => {
   try {
     const response = await axios.get(BASE_URL + 'get-occupations');
-    console.log('🔍 Raw occupations API response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching occupations:', error);

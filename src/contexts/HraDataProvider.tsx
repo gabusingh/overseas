@@ -28,33 +28,31 @@ function getHrUserIdFromStorage(): string | null {
   try {
     const loggedUser = localStorage.getItem("loggedUser");
     const userSimple = localStorage.getItem("user");
-    
+
     if (loggedUser) {
       const userData = JSON.parse(loggedUser);
-      
+
       // Try different possible ID fields
-      const hrId = userData?.user?.id || 
-                   userData?.cmpData?.id || 
-                   userData?.id || 
-                   userData?.hrId || 
-                   userData?.empId;
-      
+      const hrId = userData?.user?.id ||
+        userData?.cmpData?.id ||
+        userData?.id ||
+        userData?.hrId ||
+        userData?.empId;
+
       if (hrId) {
-        console.log('HR User ID found:', hrId);
         return hrId.toString();
       }
     }
-    
+
     if (userSimple) {
       const userSimpleData = JSON.parse(userSimple);
       const hrId = userSimpleData?.id;
-      
+
       if (hrId) {
-        console.log('HR User ID found in userSimple:', hrId);
         return hrId.toString();
       }
     }
-    
+
     console.warn('HR User ID not found in stored user data');
     return null;
   } catch (error) {
@@ -69,7 +67,7 @@ export function HraDataProvider({ children }: HraDataProviderProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<number | null>(null);
-  
+
   // Use ref to prevent multiple simultaneous API calls
   const fetchingRef = useRef<boolean>(false);
 
@@ -81,7 +79,6 @@ export function HraDataProvider({ children }: HraDataProviderProps) {
   const fetchHraData = useCallback(async (force = false) => {
     // Check if data is cached and valid
     if (!force && isCacheValid()) {
-      console.log('Using cached HRA data');
       return;
     }
 
@@ -101,66 +98,87 @@ export function HraDataProvider({ children }: HraDataProviderProps) {
         throw new Error('No authentication token found');
       }
 
-      console.log('Fetching HRA data from API');
-      
+
       // Fetch dashboard analytics data with proper transformation (primary source)
       const transformedData = await getHraDashboardData(token);
-      
-      console.log('Transformed dashboard data:', transformedData);
+
       setDashboardData(transformedData);
-      
+
       // Also get raw analytics data for jobs fallback
       const analyticsResponse = await getHraDashboardAnalytics(token);
       const analyticsData = analyticsResponse?.data || analyticsResponse;
 
-      // Get jobs posted by this specific HR user
+
+      // Get jobs posted by this specific HR user - NO FALLBACKS
       let processedJobsData = [];
       const hrUserId = getHrUserIdFromStorage();
-      
-      if (analyticsData?.latestPostedJobs && analyticsData.latestPostedJobs.length > 0) {
-        processedJobsData = analyticsData.latestPostedJobs;
-        console.log('Using jobs data from analytics API (should be HR-specific)');
-      } else if (hrUserId) {
-        // Fetch jobs posted by this specific HR user
-        console.log('Fetching jobs posted by HR user ID:', hrUserId);
-        const jobsResponse = await getJobsPostedByHra(hrUserId, token);
-        const jobsResponseData = jobsResponse?.data || jobsResponse || [];
-        processedJobsData = Array.isArray(jobsResponseData) ? jobsResponseData : [];
-        console.log(`Found ${processedJobsData.length} jobs for HR user ${hrUserId}`);
+
+
+      if (!hrUserId) {
+        throw new Error('HR User ID not found in localStorage. Cannot fetch HR-specific jobs. Please ensure you are logged in as an HR user.');
+      }
+
+      // Fetch jobs posted by this specific HR user ONLY - no fallbacks
+      const jobsResponse = await getJobsPostedByHra(hrUserId, token);
+
+
+
+      const jobsResponseData = jobsResponse?.data || jobsResponse;
+
+      if (!Array.isArray(jobsResponseData)) {
+        console.error('❌ Jobs response is not an array:', {
+          responseType: typeof jobsResponseData,
+          responseValue: jobsResponseData,
+          fullResponse: jobsResponse
+        });
+        throw new Error(`Invalid jobs response format. Expected array, got ${typeof jobsResponseData}. This indicates an API issue.`);
+      }
+
+      processedJobsData = jobsResponseData;
+
+
+      if (processedJobsData.length === 0) {
+        console.warn('⚠️ No jobs found for HR user. This might be normal if no jobs have been posted yet.');
       } else {
-        // Fallback: fetch all jobs if we can't get HR user ID (should not happen in normal flow)
-        console.warn('HR User ID not found, falling back to all jobs (this should not happen for company users)');
-        const jobsResponse = await getAllCreatedJobs(token);
-        const jobsResponseData = jobsResponse?.data || jobsResponse || [];
-        processedJobsData = Array.isArray(jobsResponseData) ? jobsResponseData : [];
+        console.log('📋 First job sample:', processedJobsData[0]);
       }
 
       setJobsData(processedJobsData);
       setLastFetchTime(Date.now());
-      
-      console.log('HRA data fetched successfully:', {
-        totalJobs: transformedData?.totalPostedJobs,
-        totalCandidates: transformedData?.totalAppliedCandidates,
-        recentApplicationsCount: transformedData?.recentApplications?.length || 0,
-        jobsCount: processedJobsData.length
+
+
+    } catch (error: any) {
+      console.error('❌ HRA Data Fetch Error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        response: error.response?.data,
+        status: error.response?.status
       });
 
-    } catch (error) {
-      console.error('Error fetching HRA data:', error);
-      setError('Failed to load HRA data. Please try again.');
-      
-      // Don't clear existing data on error, just show error
-      if (!dashboardData) {
-        setDashboardData({
-          totalPostedJobs: 0,
-          totalAppliedCandidates: 0,
-          totalPostedBulkHiring: 0,
-          latestPostedJobs: [],
-          latestAppliedCandidates: [],
-          recentApplications: [],
-          recentJobs: []
-        });
+      // Provide specific error messages
+      let errorMessage = 'Failed to load HRA data. ';
+
+      if (error.message.includes('HR User ID not found')) {
+        errorMessage = 'HR User ID not found. Please ensure you are logged in as an HR/Company user.';
+        setError(errorMessage);
+        // Don't set any fallback data for authentication issues
+        return;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please log in again.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Access denied. You may not have HR permissions.';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'HRA data endpoint not found. Please contact support.';
+      } else if (error.message.includes('Invalid jobs response format')) {
+        errorMessage = 'Invalid data format received from server. Please try again or contact support.';
+      } else {
+        errorMessage += error.message || 'Unknown error occurred.';
       }
+
+      setError(errorMessage);
+
+
     } finally {
       setLoading(false);
       fetchingRef.current = false;
@@ -168,12 +186,10 @@ export function HraDataProvider({ children }: HraDataProviderProps) {
   }, [isCacheValid, dashboardData]);
 
   const refreshData = useCallback(async () => {
-    console.log('Force refreshing HRA data');
     await fetchHraData(true);
   }, [fetchHraData]);
 
   const clearCache = useCallback(() => {
-    console.log('Clearing HRA data cache');
     setDashboardData(null);
     setJobsData([]);
     setLastFetchTime(null);
@@ -209,7 +225,7 @@ export function useHraData() {
 // Hook for components that only need dashboard stats
 export function useHraDashboardStats() {
   const { dashboardData, loading, error, fetchHraData } = useHraData();
-  
+
   return {
     totalPostedJobs: dashboardData?.totalPostedJobs ?? 0,
     totalAppliedCandidates: dashboardData?.totalAppliedCandidates ?? 0,

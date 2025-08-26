@@ -85,21 +85,38 @@ export const getJobList = async (payload: FormData): Promise<JobListResponse> =>
   }
 };
 
-// Helper function to get HR user ID from localStorage
+// Helper function to get HR user ID from localStorage with enhanced debugging
 const getHrUserIdFromStorage = (): string | null => {
   try {
     const loggedUser = localStorage.getItem("loggedUser");
     const userSimple = localStorage.getItem("user");
     
+    console.log('🔍 DEBUG - localStorage data:');
+    console.log('- loggedUser exists:', !!loggedUser);
+    console.log('- userSimple exists:', !!userSimple);
+    
     if (loggedUser) {
       const userData = JSON.parse(loggedUser);
+      console.log('📋 DEBUG - loggedUser data structure:', {
+        hasUser: !!userData?.user,
+        hasCmpData: !!userData?.cmpData,
+        hasId: !!userData?.id,
+        hasHrId: !!userData?.hrId,
+        hasEmpId: !!userData?.empId,
+        userType: userData?.user?.type || userData?.type,
+        userData: userData
+      });
       
       // Try different possible ID fields for HR users
       const hrId = userData?.user?.id || 
                    userData?.cmpData?.id || 
                    userData?.id || 
                    userData?.hrId || 
-                   userData?.empId;
+                   userData?.empId ||
+                   userData?.user?.empId ||
+                   userData?.cmpData?.empId;
+      
+      console.log('🎯 DEBUG - Extracted HR ID:', hrId);
       
       if (hrId) {
         return hrId.toString();
@@ -108,16 +125,20 @@ const getHrUserIdFromStorage = (): string | null => {
     
     if (userSimple) {
       const userSimpleData = JSON.parse(userSimple);
+      console.log('📋 DEBUG - userSimple data:', userSimpleData);
       const hrId = userSimpleData?.id;
+      
+      console.log('🎯 DEBUG - UserSimple HR ID:', hrId);
       
       if (hrId) {
         return hrId.toString();
       }
     }
     
+    console.warn('⚠️ DEBUG - No HR ID found in localStorage');
     return null;
   } catch (error) {
-    console.error('Error extracting HR user ID:', error);
+    console.error('❌ Error extracting HR user ID:', error);
     return null;
   }
 };
@@ -164,82 +185,33 @@ export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJo
     const userType = getUserTypeFromStorage();
     console.log('User type detected for job listing:', userType);
     
-    // If user is HR/company, show only their posted jobs with enhanced details
+    // Always show all jobs regardless of user type
+    // Previously this function filtered jobs for HR users to show only their posted jobs
+    // Now HR users will see all available jobs just like candidates
+    
+    console.log('Fetching all jobs for all users');
+    const regularResponse = await getJobList(payload);
+    
+    // Optionally enhance with HR details if user is HR (for UI purposes only)
+    let hrDetails: HrDetails | null = null;
     if (userType === 'company') {
       const token = localStorage.getItem("access_token");
-      const hrUserId = getHrUserIdFromStorage();
-      
-      if (token && hrUserId) {
-        console.log('Fetching jobs for HR user:', hrUserId);
-        
-        // Get HR details for better data enrichment
-        let hrDetails: HrDetails | null = null;
-        try {
-          hrDetails = await getEnhancedHrDetails(token);
-          console.log('HR details fetched:', hrDetails?.cmpData?.cmpName || 'Unknown Company');
-        } catch (detailsError) {
-          console.warn('Could not fetch HR details:', detailsError);
-        }
-        
-        // Fetch jobs posted by HR
-        const hrJobsResponse = await getJobsPostedByHra(hrUserId, token);
-        
-        // Transform the response to match JobListResponse format
-        const jobs = Array.isArray(hrJobsResponse?.data) ? hrJobsResponse.data : 
-                    Array.isArray(hrJobsResponse) ? hrJobsResponse : [];
-        
-        // Enhance jobs with HR/Company information
-        const enhancedJobs = jobs.map((job: any) => ({
-          ...job,
-          // Add company information if not already present
-          company: job.company || hrDetails?.cmpData?.cmpName || 'Your Company',
-          cmpName: job.cmpName || hrDetails?.cmpData?.cmpName || 'Your Company',
-          companyLogo: job.companyLogo || hrDetails?.cmpData?.cmpLogoS3,
-          // Add HR context flags
-          isOwnJob: true,
-          hrId: hrUserId,
-          companyId: hrDetails?.cmpData?.id
-        }));
-        
-        // Apply basic filtering if search/filter parameters are provided
-        let filteredJobs = enhancedJobs;
-        const searchKey = payload.get('searchKey');
-        if (searchKey) {
-          const searchTerm = searchKey.toString().toLowerCase();
-          filteredJobs = enhancedJobs.filter((job: any) => 
-            job.jobTitle?.toLowerCase().includes(searchTerm) ||
-            job.occupation?.toLowerCase().includes(searchTerm) ||
-            job.country_location?.toLowerCase().includes(searchTerm)
-          );
-        }
-                    
-        return {
-          jobs: filteredJobs,
-          data: filteredJobs,
-          totalJobs: filteredJobs.length,
-          currentPage: 1,
-          lastPage: 1,
-          perPage: filteredJobs.length,
-          hrDetails: hrDetails,
-          companyInfo: hrDetails?.cmpData ? {
-            name: hrDetails.cmpData.cmpName,
-            logo: hrDetails.cmpData.cmpLogoS3,
-            id: hrDetails.cmpData.id
-          } : undefined
-        };
-      } else {
-        console.warn('HR user detected but no token or user ID found, falling back to regular job list');
+      try {
+        hrDetails = await getEnhancedHrDetails(token);
+        console.log('HR details fetched for UI enhancement:', hrDetails?.cmpData?.cmpName || 'Unknown Company');
+      } catch (detailsError) {
+        console.warn('Could not fetch HR details:', detailsError);
       }
     }
     
-    // For candidates or when HR user info is not available, show all jobs
-    console.log('Fetching all jobs for candidate or fallback');
-    const regularResponse = await getJobList(payload);
-    
     return {
       ...regularResponse,
-      hrDetails: null,
-      companyInfo: undefined
+      hrDetails: hrDetails,
+      companyInfo: hrDetails?.cmpData ? {
+        name: hrDetails.cmpData.cmpName,
+        logo: hrDetails.cmpData.cmpLogoS3,
+        id: hrDetails.cmpData.id
+      } : undefined
     };
     
   } catch (error) {

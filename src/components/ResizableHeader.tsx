@@ -136,71 +136,74 @@ function ResizableHeader() {
           </Link>
 
           {/* Navigation Items with Custom Dropdowns for Better UX */}
-          <div className="absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-1 text-sm font-medium text-indigo-600 transition duration-200 hover:text-indigo-600 lg:flex lg:space-x-1">
-            {/* Jobs Dropdown */}
-            <div className="relative group">
-              <Link
-                href="/jobs"
-                className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center"
-              >
-                <span className="relative z-20">Jobs</span>
-                <i className="fa fa-chevron-down ml-1 text-xs"></i>
-              </Link>
-              <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-neutral-950 dark:border-neutral-800">
-                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-neutral-800">Find Jobs</div>
-                {jobsDropdown.map((item, index) => (
-                  <Link
-                    key={index}
-                    href={item.href}
-                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-brand-blue/10 hover:text-brand-blue transition-colors dark:text-indigo-400 dark:hover:bg-neutral-800 dark:hover:text-indigo-300"
-                  >
-                    <i className="fa fa-briefcase mr-3 text-brand-blue"></i>
-                    {item.label}
-                  </Link>
-                ))}
+          {/* Hide navigation menu for HR users (company type) */}
+          {userType !== 'company' && (
+            <div className="absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-1 text-sm font-medium text-indigo-600 transition duration-200 hover:text-indigo-600 lg:flex lg:space-x-1">
+              {/* Jobs Dropdown */}
+              <div className="relative group">
+                <Link
+                  href="/jobs"
+                  className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center"
+                >
+                  <span className="relative z-20">Jobs</span>
+                  <i className="fa fa-chevron-down ml-1 text-xs"></i>
+                </Link>
+                <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-neutral-950 dark:border-neutral-800">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-neutral-800">Find Jobs</div>
+                  {jobsDropdown.map((item, index) => (
+                    <Link
+                      key={index}
+                      href={item.href}
+                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-brand-blue/10 hover:text-brand-blue transition-colors dark:text-indigo-400 dark:hover:bg-neutral-800 dark:hover:text-indigo-300"
+                    >
+                      <i className="fa fa-briefcase mr-3 text-brand-blue"></i>
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Companies */}
-            <Link
-              href="/companies"
-              className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-            >
-              <span className="relative z-20">Companies</span>
-            </Link>
-
-            {/* Services Dropdown */}
-            <div className="relative group">
+              {/* Companies */}
               <Link
-                href="/services"
-                className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center"
+                href="/companies"
+                className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
               >
-                <span className="relative z-20">Services</span>
-                <i className="fa fa-chevron-down ml-1 text-xs"></i>
+                <span className="relative z-20">Companies</span>
               </Link>
-              <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-neutral-950 dark:border-neutral-800">
-                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-neutral-800">Our Services</div>
-                {servicesDropdown.map((item, index) => (
-                  <Link
-                    key={index}
-                    href={item.href}
-                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-brand-blue/10 hover:text-brand-blue transition-colors dark:text-indigo-400 dark:hover:bg-neutral-800 dark:hover:text-indigo-300"
-                  >
-                    <i className="fa fa-cog mr-3 text-brand-blue"></i>
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
 
-            {/* For Employers */}
-            <Link
-              href="/for-employers"
-              className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-            >
-              <span className="relative z-20">For Employers</span>
-            </Link>
-          </div>
+              {/* Services Dropdown */}
+              <div className="relative group">
+                <Link
+                  href="/services"
+                  className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center"
+                >
+                  <span className="relative z-20">Services</span>
+                  <i className="fa fa-chevron-down ml-1 text-xs"></i>
+                </Link>
+                <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-neutral-950 dark:border-neutral-800">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-neutral-800">Our Services</div>
+                  {servicesDropdown.map((item, index) => (
+                    <Link
+                      key={index}
+                      href={item.href}
+                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-brand-blue/10 hover:text-brand-blue transition-colors dark:text-indigo-400 dark:hover:bg-neutral-800 dark:hover:text-indigo-300"
+                    >
+                      <i className="fa fa-cog mr-3 text-brand-blue"></i>
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* For Employers */}
+              <Link
+                href="/for-employers"
+                className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              >
+                <span className="relative z-20">For Employers</span>
+              </Link>
+            </div>
+          )}
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4 relative z-20">
@@ -270,91 +273,96 @@ function ResizableHeader() {
             onClose={() => setIsMobileMenuOpen(false)}
           >
             <div className="space-y-4 w-full">
-              {/* Jobs Section */}
-              <div>
-                <button
-                  onClick={() => setActiveDropdown(activeDropdown === 'Jobs' ? null : 'Jobs')}
-                  className="w-full flex items-center justify-between py-3 text-indigo-600 hover:text-indigo-600 font-medium"
-                >
-                  <div className="flex items-center">
-                    <i className="fa fa-search mr-3 text-blue-600"></i>
-                    Jobs
+              {/* Hide navigation menu items for HR users (company type) */}
+              {userType !== 'company' && (
+                <>
+                  {/* Jobs Section */}
+                  <div>
+                    <button
+                      onClick={() => setActiveDropdown(activeDropdown === 'Jobs' ? null : 'Jobs')}
+                      className="w-full flex items-center justify-between py-3 text-indigo-600 hover:text-indigo-600 font-medium"
+                    >
+                      <div className="flex items-center">
+                        <i className="fa fa-search mr-3 text-blue-600"></i>
+                        Jobs
+                      </div>
+                      <i className={`fa fa-chevron-down transition-transform duration-200 ${
+                        activeDropdown === 'Jobs' ? 'rotate-180' : ''
+                      }`}></i>
+                    </button>
+                    {activeDropdown === 'Jobs' && (
+                      <div className="pl-8 py-2 space-y-1">
+                        {jobsDropdown.map((item, index) => (
+                          <Link
+                            key={index}
+                            href={item.href}
+                            className="block px-4 py-2 text-sm text-indigo-600 hover:text-indigo-600 hover:bg-blue-50 rounded-md"
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <i className={`fa fa-chevron-down transition-transform duration-200 ${
-                    activeDropdown === 'Jobs' ? 'rotate-180' : ''
-                  }`}></i>
-                </button>
-                {activeDropdown === 'Jobs' && (
-                  <div className="pl-8 py-2 space-y-1">
-                    {jobsDropdown.map((item, index) => (
-                      <Link
-                        key={index}
-                        href={item.href}
-                        className="block px-4 py-2 text-sm text-indigo-600 hover:text-indigo-600 hover:bg-blue-50 rounded-md"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setActiveDropdown(null);
-                        }}
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
 
-              {/* Companies */}
-              <Link
-                href="/companies"
-                className="flex items-center py-3 text-indigo-600 hover:text-indigo-600 font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <i className="fa fa-building mr-3 text-blue-600"></i>
-                Companies
-              </Link>
+                  {/* Companies */}
+                  <Link
+                    href="/companies"
+                    className="flex items-center py-3 text-indigo-600 hover:text-indigo-600 font-medium"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <i className="fa fa-building mr-3 text-blue-600"></i>
+                    Companies
+                  </Link>
 
-              {/* Services Section */}
-              <div>
-                <button
-                  onClick={() => setActiveDropdown(activeDropdown === 'Services' ? null : 'Services')}
-                  className="w-full flex items-center justify-between py-3 text-indigo-600 hover:text-indigo-600 font-medium"
-                >
-                  <div className="flex items-center">
-                    <i className="fa fa-cog mr-3 text-blue-600"></i>
-                    Services
+                  {/* Services Section */}
+                  <div>
+                    <button
+                      onClick={() => setActiveDropdown(activeDropdown === 'Services' ? null : 'Services')}
+                      className="w-full flex items-center justify-between py-3 text-indigo-600 hover:text-indigo-600 font-medium"
+                    >
+                      <div className="flex items-center">
+                        <i className="fa fa-cog mr-3 text-blue-600"></i>
+                        Services
+                      </div>
+                      <i className={`fa fa-chevron-down transition-transform duration-200 ${
+                        activeDropdown === 'Services' ? 'rotate-180' : ''
+                      }`}></i>
+                    </button>
+                    {activeDropdown === 'Services' && (
+                      <div className="pl-8 py-2 space-y-1">
+                        {servicesDropdown.map((item, index) => (
+                          <Link
+                            key={index}
+                            href={item.href}
+                            className="block px-4 py-2 text-sm text-indigo-600 hover:text-indigo-600 hover:bg-blue-50 rounded-md"
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <i className={`fa fa-chevron-down transition-transform duration-200 ${
-                    activeDropdown === 'Services' ? 'rotate-180' : ''
-                  }`}></i>
-                </button>
-                {activeDropdown === 'Services' && (
-                  <div className="pl-8 py-2 space-y-1">
-                    {servicesDropdown.map((item, index) => (
-                      <Link
-                        key={index}
-                        href={item.href}
-                        className="block px-4 py-2 text-sm text-indigo-600 hover:text-indigo-600 hover:bg-blue-50 rounded-md"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setActiveDropdown(null);
-                        }}
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
 
-              {/* For Employers */}
-              <Link
-                href="/for-employers"
-                className="flex items-center py-3 text-indigo-600 hover:text-indigo-600 font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <i className="fa fa-briefcase mr-3 text-blue-600"></i>
-                For Employers
-              </Link>
+                  {/* For Employers */}
+                  <Link
+                    href="/for-employers"
+                    className="flex items-center py-3 text-indigo-600 hover:text-indigo-600 font-medium"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <i className="fa fa-briefcase mr-3 text-blue-600"></i>
+                    For Employers
+                  </Link>
+                </>
+              )}
 
               {/* Mobile User Menu */}
               <div className="border-t border-gray-200 pt-4 mt-4">

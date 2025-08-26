@@ -39,11 +39,57 @@ export default function Companies() {
   const getHraListFunc = async () => {
     try {
       const response = await getHraList();
-      setHraList(response?.cmpData || []);
-      setFilteredArray(response?.cmpData || []);
+
+
+      // Check different possible response structures
+      let companyData = [];
+
+      if (response?.cmpData && Array.isArray(response.cmpData)) {
+        companyData = response.cmpData;
+        console.log('✅ Found cmpData array with', companyData.length, 'companies');
+      } else if (response?.data && Array.isArray(response.data)) {
+        companyData = response.data;
+        console.log('✅ Found data array with', companyData.length, 'companies');
+      } else if (Array.isArray(response)) {
+        companyData = response;
+        console.log('✅ Response is direct array with', companyData.length, 'companies');
+      } else {
+        console.warn('⚠️ Unknown response structure, trying to find companies...');
+        // Try to find any array in the response
+        for (const [key, value] of Object.entries(response || {})) {
+          if (Array.isArray(value) && value.length > 0 && value[0]?.cmpName) {
+            companyData = value;
+            console.log(`✅ Found companies in ${key} with`, companyData.length, 'items');
+            break;
+          }
+        }
+      }
+
+      console.log('🎯 Final company data:', companyData);
+
+      if (companyData.length > 0) {
+        console.log('✅ Setting', companyData.length, 'companies in state');
+        setHraList(companyData);
+        setFilteredArray(companyData);
+      } else {
+        console.warn('⚠️ No companies found in response');
+        setHraList([]);
+        setFilteredArray([]);
+      }
+
     } catch (error) {
-      console.error("Error fetching HRA list:", error);
+      console.error("❌ Error fetching HRA list:", error);
+      console.error("❌ Error details:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        response: (error as any)?.response?.data || 'No response data'
+      });
+
+      // Set empty arrays on error
+      setHraList([]);
+      setFilteredArray([]);
     } finally {
+      console.log('🏁 Company fetch completed, setting loading to false');
       setLoading(false);
     }
   };
@@ -207,28 +253,46 @@ export default function Companies() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
             {Array.from({ length: 6 }).map((_, idx) => (
-              <Card key={idx} className="p-6">
-                <SkeletonCard />
+              <Card key={idx} className="bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm">
+                <CardContent className="p-6">
+                  <SkeletonCard />
+                </CardContent>
               </Card>
             ))}
           </div>
         ) : filteredArray.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl border">
-            <div className="mx-auto w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-4">
-              <Search className="w-8 h-8 text-blue-600" />
+          <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-lg">
+            <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-6">
+              <Search className="w-10 h-10 text-blue-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No companies found</h3>
-            <p className="text-gray-600 mb-6">Try adjusting your search or filters.</p>
-            <Button onClick={() => { setSearchKey(""); setFilteredArray(hraList); setSortName(""); setSortSince(""); }}>
-              Reset filters
-            </Button>
+            <h3 className="text-2xl font-semibold text-gray-900 mb-3">No companies found</h3>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+              {searchKey ? `No companies match "${searchKey}". Try adjusting your search terms.` : "No companies are currently available. Please check back later."}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button
+                onClick={() => { setSearchKey(""); setFilteredArray(hraList); setSortName(""); setSortSince(""); }}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                Reset Filters
+              </Button>
+              {searchKey && (
+                <Button
+                  variant="outline"
+                  onClick={() => setSearchKey("")}
+                  className="border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-700"
+                >
+                  Clear Search
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
             {filteredArray.map((company, index) => (
               <Card
                 key={company.id || index}
-                className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
+                className="group bg-white/80 backdrop-blur-sm border border-gray-100 hover:border-blue-200 hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden transform hover:scale-[1.02]"
                 onClick={() => router.push(`/company-details/${company.id}`)}
               >
                 <CardContent className="p-6">
@@ -278,8 +342,12 @@ export default function Companies() {
                     {company.cmpDescription}
                   </p>
 
-                  <Button variant="outline" className="w-full mt-4">
-                    View More
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4 border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-700 group-hover:border-blue-300 group-hover:bg-blue-50 group-hover:text-blue-700 transition-all duration-300"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2 group-hover:text-blue-700" />
+                    View Details
                   </Button>
                 </CardContent>
               </Card>

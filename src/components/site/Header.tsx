@@ -17,44 +17,92 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   
   const user = globalState.user?.user;
-  const isAuthenticated = !!user;
+  const isAuthenticated = !!user || !!globalState.user;
   
-  // Fallback: Read user type directly from localStorage if global state is not available
-  const [fallbackUserType, setFallbackUserType] = useState<string | null>(null);
+  // Enhanced user type detection - matching the working debug logic
+  const [userType, setUserType] = useState<string | null>(null);
+  const [isHrUser, setIsHrUser] = useState<boolean>(false);
   
   useEffect(() => {
-    if (!user?.type) {
-      // Try to get user type from localStorage directly
+    // Detection logic that matches the working debug page
+    const detectHRUser = () => {
+      let detectedType: string | null = null;
+      let hrDetected = false;
+      
+      // Priority 1: Check localStorage loggedUser first (most reliable)
       try {
         const loggedUser = localStorage.getItem('loggedUser');
-        const userData = localStorage.getItem('user');
-        
-        if (loggedUser) {
+        if (loggedUser && loggedUser !== 'undefined' && loggedUser !== 'null') {
           const parsed = JSON.parse(loggedUser);
-          const userType = parsed.user?.type || parsed.type;
-          setFallbackUserType(userType);
-        } else if (userData) {
-          const parsed = JSON.parse(userData);
-          setFallbackUserType(parsed.type);
+          
+          // The type is at parsed.user.type based on your debug data
+          if (parsed?.user?.type) {
+            detectedType = parsed.user.type;
+          } else if (parsed?.type) {
+            detectedType = parsed.type;
+          }
+          
+          // Additional check for cmpData presence
+          if (!detectedType && parsed?.cmpData) {
+            detectedType = 'company';
+          }
         }
       } catch (e) {
-        console.error('Error reading fallback user type:', e);
+        console.error('Error parsing loggedUser:', e);
       }
-    } else {
-      setFallbackUserType(null);
-    }
-  }, [user?.type]);
+      
+      // Priority 2: Check localStorage user
+      if (!detectedType) {
+        try {
+          const userData = localStorage.getItem('user');
+          if (userData && userData !== 'undefined' && userData !== 'null') {
+            const parsed = JSON.parse(userData);
+            detectedType = parsed?.type;
+          }
+        } catch (e) {
+          console.error('Error parsing user:', e);
+        }
+      }
+      
+      // Priority 3: Check global state
+      if (!detectedType) {
+        if (globalState.user?.user?.type) {
+          detectedType = globalState.user.user.type;
+        } else if (globalState.user?.type) {
+          detectedType = globalState.user.type;
+        }
+      }
+      
+      // Final detection - check if it's an HR/company user
+      hrDetected = detectedType === 'company' || 
+                   detectedType === 'hr' || 
+                   detectedType === 'employer';
+      
+      console.log('Header HR Detection:', { detectedType, hrDetected });
+      
+      setUserType(detectedType);
+      setIsHrUser(hrDetected);
+    };
+    
+    // Run detection immediately
+    detectHRUser();
+    
+    // Also run after a small delay to catch any async state updates
+    const timer = setTimeout(detectHRUser, 100);
+    
+    return () => clearTimeout(timer);
+  }, [globalState.user, user?.type, isAuthenticated]);
   
-  // Use fallback user type if global state user type is not available
-  const effectiveUser = user || (fallbackUserType ? { type: fallbackUserType } : null);
+  // Use detected user type
+  const effectiveUser = user || globalState.user || (userType ? { type: userType } : null);
   
   // Debug logging for user type issue
   React.useEffect(() => {
     console.log('=== HEADER DEBUG START ===');
     console.log('Header Debug - Global State:', globalState);
     console.log('Header Debug - User Object:', user);
-    console.log('Header Debug - User Type:', user?.type);
-    console.log('Header Debug - Fallback User Type:', fallbackUserType);
+    console.log('Header Debug - Detected User Type:', userType);
+    console.log('Header Debug - Is HR User:', isHrUser);
     console.log('Header Debug - Effective User:', effectiveUser);
     console.log('Header Debug - Effective User Type:', effectiveUser?.type);
     console.log('Header Debug - Dashboard Link Text:', getDashboardLinkText());
@@ -67,7 +115,7 @@ export default function Header() {
       if (loggedUserData) {
         const parsed = JSON.parse(loggedUserData);
         console.log('Header Debug - Parsed loggedUser:', parsed);
-        console.log('Header Debug - Parsed loggedUser type:', parsed.type || parsed.user?.type);
+        console.log('Header Debug - Parsed loggedUser type:', parsed.type || parsed.user?.type || parsed.cmpData?.type);
       }
     } catch (e) {
       console.log('Header Debug - Error parsing loggedUser:', e);
@@ -85,7 +133,7 @@ export default function Header() {
     }
     
     console.log('=== HEADER DEBUG END ===');
-  }, [globalState, user, fallbackUserType, effectiveUser]);
+  }, [globalState, user, userType, isHrUser, effectiveUser]);
 
   const handleLogout = async () => {
     try {
@@ -117,8 +165,9 @@ export default function Header() {
   };
 
   const getUserDashboardLink = () => {
-    if (!effectiveUser) return '/login';
-    switch (effectiveUser.type) {
+    if (!effectiveUser && !userType) return '/login';
+    const type = userType || effectiveUser?.type;
+    switch (type) {
       case 'person':
         return '/my-profile';
       case 'company':
@@ -131,8 +180,9 @@ export default function Header() {
   };
 
   const getDashboardLinkText = () => {
-    if (!effectiveUser) return 'My Account';
-    switch (effectiveUser.type) {
+    if (!effectiveUser && !userType) return 'My Account';
+    const type = userType || effectiveUser?.type;
+    switch (type) {
       case 'company':
         return 'Dashboard';
       case 'institute':
@@ -216,258 +266,273 @@ export default function Header() {
             <span className="font-bold text-xl text-blue-600">Overseas.ai</span>
           </Link>
           
-          {/* Desktop Navigation */}
-          <NavigationMenu className="hidden lg:flex">
-            <NavigationMenuList className="flex items-center space-x-1">
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="flex items-center gap-1 px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
-                  <i className="fa fa-search text-sm"></i>
-                  <span>Find Jobs</span>
-                </NavigationMenuTrigger>
-                <NavigationMenuContent className="p-6 w-[500px]">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Job Search</h3>
-                      <div className="space-y-2">
-                        <Link href="/jobs" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-globe mr-3 text-blue-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">All Jobs</div>
-                            <div className="text-xs text-gray-500">Browse all opportunities</div>
-                          </div>
-                        </Link>
-                        <Link href="/jobs/remote" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-laptop mr-3 text-blue-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Remote Jobs</div>
-                            <div className="text-xs text-gray-500">Work from anywhere</div>
-                          </div>
-                        </Link>
-                        <Link href="/jobs/premium" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-star mr-3 text-orange-500"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Premium Jobs</div>
-                            <div className="text-xs text-gray-500">High-paying opportunities</div>
-                          </div>
-                        </Link>
-                        <Link href="/jobs/last-week" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-clock-o mr-3 text-green-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Fresh Jobs</div>
-                            <div className="text-xs text-gray-500">Latest this week</div>
-                          </div>
-                        </Link>
+          {/* Desktop Navigation - Hide for HR users */}
+          {!isHrUser && (
+            <NavigationMenu className="hidden lg:flex">
+              <NavigationMenuList className="flex items-center space-x-1">
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="flex items-center gap-1 px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
+                    <i className="fa fa-search text-sm"></i>
+                    <span>Find Jobs</span>
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="p-6 w-[500px]">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-3">Job Search</h3>
+                        <div className="space-y-2">
+                          <Link href="/jobs" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-globe mr-3 text-blue-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">All Jobs</div>
+                              <div className="text-xs text-gray-500">Browse all opportunities</div>
+                            </div>
+                          </Link>
+                          <Link href="/jobs/remote" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-laptop mr-3 text-blue-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Remote Jobs</div>
+                              <div className="text-xs text-gray-500">Work from anywhere</div>
+                            </div>
+                          </Link>
+                          <Link href="/jobs/premium" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-star mr-3 text-orange-500"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Premium Jobs</div>
+                              <div className="text-xs text-gray-500">High-paying opportunities</div>
+                            </div>
+                          </Link>
+                          <Link href="/jobs/last-week" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-clock-o mr-3 text-green-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Fresh Jobs</div>
+                              <div className="text-xs text-gray-500">Latest this week</div>
+                            </div>
+                          </Link>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-3">Browse by</h3>
+                        <div className="space-y-2">
+                          <button className="flex items-center p-2 hover:bg-blue-50 rounded group w-full text-left">
+                            <i className="fa fa-map-marker mr-3 text-blue-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Jobs by Location</div>
+                              <div className="text-xs text-gray-500">50+ countries</div>
+                            </div>
+                          </button>
+                          <button className="flex items-center p-2 hover:bg-blue-50 rounded group w-full text-left">
+                            <i className="fa fa-briefcase mr-3 text-blue-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Jobs by Category</div>
+                              <div className="text-xs text-gray-500">All industries</div>
+                            </div>
+                          </button>
+                          <button className="flex items-center p-2 hover:bg-blue-50 rounded group w-full text-left">
+                            <i className="fa fa-cog mr-3 text-blue-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Jobs by Skill</div>
+                              <div className="text-xs text-gray-500">Match your expertise</div>
+                            </div>
+                          </button>
+                          <Link href="/job-alerts" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-bell mr-3 text-red-500"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Job Alerts</div>
+                              <div className="text-xs text-gray-500">Get notified</div>
+                            </div>
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Browse by</h3>
-                      <div className="space-y-2">
-                        <button className="flex items-center p-2 hover:bg-blue-50 rounded group w-full text-left">
-                          <i className="fa fa-map-marker mr-3 text-blue-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Jobs by Location</div>
-                            <div className="text-xs text-gray-500">50+ countries</div>
-                          </div>
-                        </button>
-                        <button className="flex items-center p-2 hover:bg-blue-50 rounded group w-full text-left">
-                          <i className="fa fa-briefcase mr-3 text-blue-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Jobs by Category</div>
-                            <div className="text-xs text-gray-500">All industries</div>
-                          </div>
-                        </button>
-                        <button className="flex items-center p-2 hover:bg-blue-50 rounded group w-full text-left">
-                          <i className="fa fa-cog mr-3 text-blue-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Jobs by Skill</div>
-                            <div className="text-xs text-gray-500">Match your expertise</div>
-                          </div>
-                        </button>
-                        <Link href="/job-alerts" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-bell mr-3 text-red-500"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Job Alerts</div>
-                            <div className="text-xs text-gray-500">Get notified</div>
-                          </div>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="flex items-center gap-1 px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
-                  <i className="fa fa-building text-sm"></i>
-                  <span>Companies</span>
-                </NavigationMenuTrigger>
-                <NavigationMenuContent className="p-6 w-[450px]">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Explore Companies</h3>
-                      <div className="space-y-2">
-                        <Link href="/recruiting-companies" className="flex items-center p-3 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-building mr-3 text-blue-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">All Companies</div>
-                            <div className="text-xs text-gray-500">Browse 50+ recruiting companies</div>
-                          </div>
-                        </Link>
-                        <Link href="/companies/top-recruiters" className="flex items-center p-3 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-trophy mr-3 text-orange-500"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Top Recruiters</div>
-                            <div className="text-xs text-gray-500">Leading employers overseas</div>
-                          </div>
-                        </Link>
-                        <Link href="/companies/mnc" className="flex items-center p-3 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-globe mr-3 text-green-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">MNC Companies</div>
-                            <div className="text-xs text-gray-500">Multinational corporations</div>
-                          </div>
-                        </Link>
-                        <Link href="/companies/startup" className="flex items-center p-3 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-rocket mr-3 text-purple-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Startups</div>
-                            <div className="text-xs text-gray-500">Innovative startups abroad</div>
-                          </div>
-                        </Link>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="flex items-center gap-1 px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
+                    <i className="fa fa-building text-sm"></i>
+                    <span>Companies</span>
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="p-6 w-[450px]">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-3">Explore Companies</h3>
+                        <div className="space-y-2">
+                          <Link href="/recruiting-companies" className="flex items-center p-3 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-building mr-3 text-blue-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">All Companies</div>
+                              <div className="text-xs text-gray-500">Browse 50+ recruiting companies</div>
+                            </div>
+                          </Link>
+                          <Link href="/companies/top-recruiters" className="flex items-center p-3 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-trophy mr-3 text-orange-500"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Top Recruiters</div>
+                              <div className="text-xs text-gray-500">Leading employers overseas</div>
+                            </div>
+                          </Link>
+                          <Link href="/companies/mnc" className="flex items-center p-3 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-globe mr-3 text-green-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">MNC Companies</div>
+                              <div className="text-xs text-gray-500">Multinational corporations</div>
+                            </div>
+                          </Link>
+                          <Link href="/companies/startup" className="flex items-center p-3 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-rocket mr-3 text-purple-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Startups</div>
+                              <div className="text-xs text-gray-500">Innovative startups abroad</div>
+                            </div>
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="flex items-center gap-1 px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
-                  <i className="fa fa-graduation-cap text-sm"></i>
-                  <span>Skills & Learning</span>
-                </NavigationMenuTrigger>
-                <NavigationMenuContent className="p-6 w-[500px]">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Training & Certification</h3>
-                      <div className="space-y-2">
-                        <Link href="/training-institutes" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-university mr-3 text-blue-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Training Institutes</div>
-                            <div className="text-xs text-gray-500">45+ certified institutes</div>
-                          </div>
-                        </Link>
-                        <Link href="/skill-training-institute" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-wrench mr-3 text-orange-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Skill Development</div>
-                            <div className="text-xs text-gray-500">Technical & soft skills</div>
-                          </div>
-                        </Link>
-                        <Link href="/trade-testing-institute" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-certificate mr-3 text-green-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Trade Testing</div>
-                            <div className="text-xs text-gray-500">Get certified</div>
-                          </div>
-                        </Link>
-                        <Link href="/trade-test-center" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-check-circle mr-3 text-purple-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Test Centers</div>
-                            <div className="text-xs text-gray-500">Find test centers</div>
-                          </div>
-                        </Link>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="flex items-center gap-1 px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
+                    <i className="fa fa-graduation-cap text-sm"></i>
+                    <span>Skills & Learning</span>
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="p-6 w-[500px]">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-3">Training & Certification</h3>
+                        <div className="space-y-2">
+                          <Link href="/training-institutes" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-university mr-3 text-blue-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Training Institutes</div>
+                              <div className="text-xs text-gray-500">45+ certified institutes</div>
+                            </div>
+                          </Link>
+                          <Link href="/skill-training-institute" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-wrench mr-3 text-orange-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Skill Development</div>
+                              <div className="text-xs text-gray-500">Technical & soft skills</div>
+                            </div>
+                          </Link>
+                          <Link href="/trade-testing-institute" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-certificate mr-3 text-green-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Trade Testing</div>
+                              <div className="text-xs text-gray-500">Get certified</div>
+                            </div>
+                          </Link>
+                          <Link href="/trade-test-center" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-check-circle mr-3 text-purple-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Test Centers</div>
+                              <div className="text-xs text-gray-500">Find test centers</div>
+                            </div>
+                          </Link>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-3">Career Services</h3>
+                        <div className="space-y-2">
+                          <Link href="/about-resume-building" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-file-text mr-3 text-blue-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Resume Builder</div>
+                              <div className="text-xs text-gray-500">Professional resumes</div>
+                            </div>
+                          </Link>
+                          <Link href="/career-advice" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-lightbulb-o mr-3 text-yellow-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Career Advice</div>
+                              <div className="text-xs text-gray-500">Expert guidance</div>
+                            </div>
+                          </Link>
+                          <Link href="/interview-preparation" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-users mr-3 text-red-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Interview Prep</div>
+                              <div className="text-xs text-gray-500">Practice & improve</div>
+                            </div>
+                          </Link>
+                          <Link href="/salary-calculator" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-calculator mr-3 text-green-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Salary Calculator</div>
+                              <div className="text-xs text-gray-500">Know your worth</div>
+                            </div>
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Career Services</h3>
-                      <div className="space-y-2">
-                        <Link href="/about-resume-building" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-file-text mr-3 text-blue-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Resume Builder</div>
-                            <div className="text-xs text-gray-500">Professional resumes</div>
-                          </div>
-                        </Link>
-                        <Link href="/career-advice" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-lightbulb-o mr-3 text-yellow-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Career Advice</div>
-                            <div className="text-xs text-gray-500">Expert guidance</div>
-                          </div>
-                        </Link>
-                        <Link href="/interview-preparation" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-users mr-3 text-red-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Interview Prep</div>
-                            <div className="text-xs text-gray-500">Practice & improve</div>
-                          </div>
-                        </Link>
-                        <Link href="/salary-calculator" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-calculator mr-3 text-green-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Salary Calculator</div>
-                            <div className="text-xs text-gray-500">Know your worth</div>
-                          </div>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="flex items-center gap-1 px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
-                  <i className="fa fa-compass text-sm"></i>
-                  <span>Career Guide</span>
-                </NavigationMenuTrigger>
-                <NavigationMenuContent className="p-6 w-[400px]">
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Resources</h3>
-                      <div className="space-y-2">
-                        <Link href="/visa-guide" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-plane mr-3 text-blue-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Visa Guide</div>
-                            <div className="text-xs text-gray-500">Work visa information</div>
-                          </div>
-                        </Link>
-                        <Link href="/country-guide" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-map mr-3 text-green-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Country Guide</div>
-                            <div className="text-xs text-gray-500">Living & working abroad</div>
-                          </div>
-                        </Link>
-                        <Link href="/success-stories" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-star mr-3 text-yellow-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Success Stories</div>
-                            <div className="text-xs text-gray-500">Real experiences</div>
-                          </div>
-                        </Link>
-                        <Link href="/blog" className="flex items-center p-2 hover:bg-blue-50 rounded group">
-                          <i className="fa fa-newspaper-o mr-3 text-purple-600"></i>
-                          <div>
-                            <div className="font-medium group-hover:text-blue-600">Career Blog</div>
-                            <div className="text-xs text-gray-500">Tips & insights</div>
-                          </div>
-                        </Link>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="flex items-center gap-1 px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
+                    <i className="fa fa-compass text-sm"></i>
+                    <span>Career Guide</span>
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="p-6 w-[400px]">
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-3">Resources</h3>
+                        <div className="space-y-2">
+                          <Link href="/visa-guide" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-plane mr-3 text-blue-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Visa Guide</div>
+                              <div className="text-xs text-gray-500">Work visa information</div>
+                            </div>
+                          </Link>
+                          <Link href="/country-guide" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-map mr-3 text-green-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Country Guide</div>
+                              <div className="text-xs text-gray-500">Living & working abroad</div>
+                            </div>
+                          </Link>
+                          <Link href="/success-stories" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-star mr-3 text-yellow-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Success Stories</div>
+                              <div className="text-xs text-gray-500">Real experiences</div>
+                            </div>
+                          </Link>
+                          <Link href="/blog" className="flex items-center p-2 hover:bg-blue-50 rounded group">
+                            <i className="fa fa-newspaper-o mr-3 text-purple-600"></i>
+                            <div>
+                              <div className="font-medium group-hover:text-blue-600">Career Blog</div>
+                              <div className="text-xs text-gray-500">Tips & insights</div>
+                            </div>
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
 
-              <NavigationMenuItem>
-                <Link href="/pricing" className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
-                  Pricing
-                </Link>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+                <NavigationMenuItem>
+                  <Link href="/pricing" className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
+                    Pricing
+                  </Link>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          )}
+          
+          {/* HR Dashboard Link for HR users */}
+          {isHrUser && (
+            <div className="hidden lg:flex flex-1 justify-center">
+              <Link 
+                href="/hra-dashboard" 
+                className="flex items-center gap-2 px-6 py-2 text-blue-600 hover:text-blue-700 font-semibold text-lg transition-colors"
+              >
+                <i className="fa fa-dashboard text-lg"></i>
+                <span>HR Dashboard</span>
+              </Link>
+            </div>
+          )}
 
           {/* User Actions */}
           <div className="hidden lg:flex items-center space-x-4">
@@ -501,7 +566,7 @@ export default function Header() {
                         <i className="fa fa-dashboard mr-3 text-blue-600"></i>
                         {getDashboardLinkText()}
                       </Link>
-                      {effectiveUser?.type !== 'company' && (
+                      {!isHrUser && (
                         <>
                           <Link
                             href="/my-profile"
@@ -529,7 +594,7 @@ export default function Header() {
                           </Link>
                         </>
                       )}
-                      {effectiveUser?.type === 'company' && (
+                      {isHrUser && (
                         <>
                           <Link
                             href="/create-jobs"

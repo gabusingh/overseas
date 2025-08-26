@@ -62,31 +62,73 @@ export default function HraViewJobsPage() {
 
   const transformAndSetJobs = () => {
     if (!jobsData || jobsData.length === 0) {
+      console.log('No jobs data available from API');
       setJobs([]);
       return;
     }
 
-    // Transform jobs data from context to match Job interface
-    const transformedJobs: Job[] = jobsData.map((job: any) => ({
-      id: job.id?.toString() || job.jobId?.toString() || Math.random().toString(),
-      title: job.jobTitle || job.title || "Untitled Job",
-      company: job.company || job.cmpName || "Company Name",
-      location: job.location || job.jobLocation || job.country_location || "Multiple Locations",
-      country: job.country || job.jobLocationCountry?.name || job.country_location || "Unknown",
-      jobType: job.jobType || job.job_type || "full-time",
-      salaryRange: job.salaryRange || job.jobWages?.toString() || "TBD",
-      currency: job.currency || job.jobWagesCurrencyType || job.jobLocationCountry?.currencyName || "USD",
-      postedDate: job.postedDate || job.created_at || new Date().toISOString().split('T')[0],
-      applicationDeadline: job.applicationDeadline || job.jobDeadline || new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
-      status: job.status || "active" as Job["status"],
-      applicationsCount: job.applicationsCount || job.totalAppliedCandidates || 0,
-      viewsCount: job.viewsCount || 0,
-      shortlistedCount: job.shortlistedCount || 0,
-      experienceLevel: job.experienceLevel || job.jobExpTypeReq || "all",
-      isUrgent: job.isUrgent || false,
-      isFeatured: job.isFeatured || false
-    }));
+    console.log('📋 DEBUG - Raw jobs data from context:', {
+      jobsCount: jobsData.length,
+      firstJob: jobsData[0],
+      jobFields: jobsData[0] ? Object.keys(jobsData[0]) : 'No jobs'
+    });
 
+    // Transform jobs data from context to match Job interface - stricter validation
+    const validJobs = jobsData.filter((job: any) => {
+      // Only include jobs with required fields
+      const hasId = job.id || job.jobID;
+      const hasTitle = job.jobTitle || job.title;
+      
+      if (!hasId || !hasTitle) {
+        console.warn('⚠️ Skipping invalid job:', { id: hasId, title: hasTitle, job });
+        return false;
+      }
+      
+      return true;
+    });
+
+    console.log(`✅ Found ${validJobs.length} valid jobs out of ${jobsData.length} total`);
+
+    const transformedJobs: Job[] = validJobs.map((job: any, index: number) => {
+      const transformedJob = {
+        id: (job.id || job.jobID).toString(),
+        title: job.jobTitle || job.title,
+        company: job.company || job.cmpName || job.companyName || "Your Company",
+        location: job.location || job.jobLocation || job.country_location || job.jobLocationCountry?.name || "Location TBD",
+        country: job.country || job.jobLocationCountry?.name || job.country_location || "Country TBD",
+        jobType: job.jobType || job.job_type || "full-time",
+        salaryRange: job.salaryRange || (job.jobWages ? job.jobWages.toString() : "Negotiable"),
+        currency: job.currency || job.jobWagesCurrencyType || job.jobLocationCountry?.currencyName || "USD",
+        postedDate: job.postedDate || job.created_at || new Date().toISOString().split('T')[0],
+        applicationDeadline: job.applicationDeadline || job.jobDeadline || "",
+        status: (job.status as Job["status"]) || "active",
+        applicationsCount: job.applicationsCount || job.totalAppliedCandidates || 0,
+        viewsCount: job.viewsCount || 0,
+        shortlistedCount: job.shortlistedCount || 0,
+        experienceLevel: job.experienceLevel || job.jobExpTypeReq || "all",
+        isUrgent: Boolean(job.isUrgent || job.urgent),
+        isFeatured: Boolean(job.isFeatured || job.featured)
+      };
+      
+      console.log(`📋 Job ${index + 1} transformation:`, {
+        original: {
+          id: job.id || job.jobID,
+          title: job.jobTitle || job.title,
+          company: job.company || job.cmpName,
+          applications: job.totalAppliedCandidates
+        },
+        transformed: {
+          id: transformedJob.id,
+          title: transformedJob.title,
+          company: transformedJob.company,
+          applicationsCount: transformedJob.applicationsCount
+        }
+      });
+      
+      return transformedJob;
+    });
+
+    console.log(`✅ Successfully transformed ${transformedJobs.length} jobs`);
     setJobs(transformedJobs);
   };
 
@@ -181,7 +223,7 @@ export default function HraViewJobsPage() {
   };
 
   const handleEditJob = (jobId: string) => {
-    router.push(`/edit-jobs/${jobId}`);
+    router.push(`/edit-job/${jobId}`);
   };
 
   const handleViewApplications = (jobId: string) => {
@@ -234,6 +276,43 @@ export default function HraViewJobsPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#17487f]"></div>
           <p className="mt-4 text-gray-600">Loading your jobs...</p>
+          <p className="mt-2 text-sm text-gray-500">Fetching data from server...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <i className="fa fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Unable to Load Jobs</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="flex flex-col space-y-3">
+            <button
+              onClick={handleRefresh}
+              className="bg-[#17487f] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <i className="fa fa-refresh mr-2"></i>
+              Try Again
+            </button>
+            <button
+              onClick={() => router.push("/hra-dashboard")}
+              className="border border-gray-300 text-gray-600 px-6 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <i className="fa fa-arrow-left mr-2"></i>
+              Back to Dashboard
+            </button>
+            {error.includes('HR User ID not found') && (
+              <button
+                onClick={() => router.push("/login")}
+                className="text-blue-600 hover:text-blue-800 text-sm"
+              >
+                Re-login as HR User
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

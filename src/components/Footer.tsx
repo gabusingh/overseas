@@ -1,10 +1,13 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { getCountriesForJobs, getOccupations } from "../services/info.service";
+import { getOccupations, getCountriesForJobs } from "../services/info.service";
 import { getSkill } from "../services/job.service";
+import { useGlobalState } from "../contexts/GlobalProvider";
+import { toast } from "sonner";
 
 interface Country {
   id: number;
@@ -23,6 +26,7 @@ interface Skill {
 
 function Footer() {
   const router = useRouter();
+  const { globalState } = useGlobalState();
 
   const quickLinks = [
     {
@@ -93,13 +97,15 @@ function Footer() {
   const getOccupationsListFunc = async () => {
     try {
       const response = await getOccupations();
-      const raw = Array.isArray(response?.data)
+      const raw = Array.isArray(response?.occupation)
+        ? response.occupation
+        : Array.isArray(response?.data)
         ? response.data
         : Array.isArray(response)
         ? response
         : [];
-      const occupations = raw.map((item: { id: number; title?: string; name?: string }) => ({
-        label: item.title || item.name || "",
+      const occupations = raw.map((item: { id: number; title?: string; name?: string; occupation?: string }) => ({
+        label: item.title || item.name || item.occupation || "",
         value: item.id,
         img: `/images/occupation-${item.id}.png`,
       }));
@@ -114,7 +120,9 @@ function Footer() {
   const getCountriesForJobsFunc = async () => {
     try {
       const response = await getCountriesForJobs();
-      const countries = Array.isArray(response?.data)
+      const countries = Array.isArray(response?.countries)
+        ? response.countries
+        : Array.isArray(response?.data)
         ? response.data
         : Array.isArray(response)
         ? response
@@ -140,6 +148,26 @@ function Footer() {
       console.log(error);
       setSkillList([]);
     }
+  };
+
+  // Access control handler for restricted links
+  const handleRestrictedAccess = (path: string) => {
+    // Check if user is logged in
+    if (!globalState.user) {
+      // User not logged in - redirect to login
+      router.push('/login');
+      return;
+    }
+    
+    // Check if user is HR (company type)
+    if (globalState.user.user.type !== 'company') {
+      // User logged in but not HR - show error toast
+      toast.error("You are not allowed to access this service");
+      return;
+    }
+    
+    // User is logged in and is HR - navigate normally
+    router.push(path);
   };
 
   // Fetch Data on Component Mount
@@ -204,8 +232,22 @@ function Footer() {
           <div>
             <h3 className="text-gray-900 font-semibold mb-3 text-xs uppercase tracking-wider">Employers</h3>
             <ul className="space-y-1">
-              <li><Link href="/create-jobs" className="hover:text-indigo-700">Post a Job</Link></li>
-              <li><Link href="/hra-dashboard" className="hover:text-indigo-700">Employer Dashboard</Link></li>
+              <li>
+                <button 
+                  onClick={() => handleRestrictedAccess('/create-jobs')}
+                  className="hover:text-indigo-700 cursor-pointer text-left"
+                >
+                  Post a Job
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => handleRestrictedAccess('/hra-dashboard')}
+                  className="hover:text-indigo-700 cursor-pointer text-left"
+                >
+                  Employer Dashboard
+                </button>
+              </li>
               <li><Link href="/companies" className="hover:text-indigo-700">Browse Companies</Link></li>
               <li><Link href="/pricing" className="hover:text-indigo-700">Pricing</Link></li>
             </ul>

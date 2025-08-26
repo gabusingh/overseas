@@ -135,6 +135,19 @@ export const getAllCompanies = async (token: string) => {
   }
 };
 
+// Function to get HRA/Company list for public companies page
+export const getHraList = async () => {
+  try {
+
+    const response = await axios.get(`${BASE_URL}get-all-companies`);
+
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching HRA list:", error);
+    throw error;
+  }
+};
+
 export const getCompanyDetails = async (companyId: string, token: string) => {
   try {
     const response = await axios.get(`${BASE_URL}company/${companyId}`, {
@@ -172,69 +185,52 @@ export const getHrDetails = async (token: string): Promise<HrDetails> => {
 };
 
 // Enhanced HR details function with data processing
-export const getEnhancedHrDetails = async (token: string): Promise<HrDetails | null> => {
+export const getEnhancedHrDetails = async (token: string): Promise<any | null> => {
   try {
+
     const response = await getHrDetails(token);
-    const hrData = response.data || response;
-    
-    // Process and validate the HR data
-    const processedHrData: HrDetails = {
-      id: hrData.id || 0,
-      empId: hrData.empId || '',
-      empName: hrData.empName || hrData.name || 'Unknown HR',
-      empPhoto: hrData.empPhoto && hrData.empPhoto !== 'null' ? hrData.empPhoto : undefined,
-      empEmail: hrData.empEmail || hrData.email || '',
-      empMobile: hrData.empMobile || hrData.phone || '',
-      empDob: hrData.empDob,
-      empGender: hrData.empGender,
-      empMaritalStatus: hrData.empMaritalStatus,
-      empAddress: hrData.empAddress,
-      empState: hrData.empState,
-      empDistrict: hrData.empDistrict,
-      empPincode: hrData.empPincode,
-      empExperience: hrData.empExperience,
-      empOccupation: hrData.empOccupation,
-      empSkills: hrData.empSkills,
-      empEducation: hrData.empEducation,
-      empLanguages: hrData.empLanguages,
-      empStatus: hrData.empStatus || 'active',
-      created_at: hrData.created_at || new Date().toISOString(),
-      updated_at: hrData.updated_at || new Date().toISOString(),
-      cmpData: hrData.cmpData ? {
-        id: hrData.cmpData.id || 0,
-        cmpName: hrData.cmpData.cmpName || 'Unknown Company',
-        cmpLogoS3: hrData.cmpData.cmpLogoS3 && hrData.cmpData.cmpLogoS3 !== 'null' ? hrData.cmpData.cmpLogoS3 : undefined,
-        cmpDescription: hrData.cmpData.cmpDescription,
-        cmpEmail: hrData.cmpData.cmpEmail,
-        cmpPhone: hrData.cmpData.cmpPhone,
-        cmpAddress: hrData.cmpData.cmpAddress,
-        cmpWebsite: hrData.cmpData.cmpWebsite,
-        cmpIndustry: hrData.cmpData.cmpIndustry,
-        cmpSize: hrData.cmpData.cmpSize,
-        cmpFoundedYear: hrData.cmpData.cmpFoundedYear,
-        cmpGstNumber: hrData.cmpData.cmpGstNumber,
-        cmpPanNumber: hrData.cmpData.cmpPanNumber,
-        cmpRegistrationNumber: hrData.cmpData.cmpRegistrationNumber,
-        activeState: hrData.cmpData.activeState || 'active',
-        created_at: hrData.cmpData.created_at,
-        updated_at: hrData.cmpData.updated_at
-      } : undefined,
-      user: hrData.user ? {
-        id: hrData.user.id || 0,
-        name: hrData.user.name || hrData.empName || 'Unknown User',
-        email: hrData.user.email || hrData.empEmail || '',
-        email_verified_at: hrData.user.email_verified_at,
-        type: hrData.user.type || 'company',
-        phone: hrData.user.phone || hrData.empMobile,
-        created_at: hrData.user.created_at || new Date().toISOString(),
-        updated_at: hrData.user.updated_at || new Date().toISOString()
-      } : undefined
+
+
+    // Handle the actual API response structure
+    let hrData;
+    if (response.data && Array.isArray(response.data)) {
+      // API returns an array of HR records, take the first one
+      hrData = response.data[0];
+
+    } else if (response.data) {
+      // If response has a data property but it's not an array
+      hrData = response.data;
+    } else {
+      // Otherwise, use the response directly
+      hrData = response;
+    }
+
+    if (!hrData) {
+
+      return null;
+    }
+
+
+
+    // Map the actual field names from the API response
+    const mappedData = {
+      // Original data
+      data: hrData,
+      // Mapped fields based on actual API response structure
+      name: hrData.hrName || hrData.name || hrData.empName || hrData.full_name,
+      email: hrData.hrEmail || hrData.email || hrData.empEmail || hrData.email_address,
+      phone: hrData.hrContact || hrData.phone || hrData.empMobile || hrData.phone_number || hrData.mobile,
+      company_name: hrData.company_name || hrData.cmpName || hrData.company,
+      // Include all original fields
+      ...hrData
     };
-    
-    return processedHrData;
+
+
+    return mappedData;
+
   } catch (error) {
-    console.error('Error fetching enhanced HR details:', error);
-    return null;
+    console.error('❌ Error fetching enhanced HR details:', error);
+    throw error; // Re-throw to let the calling code handle it
   }
 };
 
@@ -276,7 +272,7 @@ export const getHraDashboardData = async (token: string): Promise<HraDashboardDa
   try {
     const response = await getHraDashboardAnalytics(token);
     const data = response.data || response;
-    
+
     // Transform the API response to include backward compatibility
     const transformedData: HraDashboardData = {
       totalPostedJobs: data.totalPostedJobs || 0,
@@ -284,28 +280,28 @@ export const getHraDashboardData = async (token: string): Promise<HraDashboardDa
       totalPostedBulkHiring: data.totalPostedBulkHiring || 0,
       latestPostedJobs: data.latestPostedJobs || [],
       latestAppliedCandidates: data.latestAppliedCandidates || [],
-      
+
       // Transform new API format to legacy format for backward compatibility
       recentApplications: (data.latestAppliedCandidates || []).map((candidate: any) => {
         // Try to get job title from different possible fields
-        const jobTitle = candidate.jobTitle || 
-                        candidate.job_title || 
-                        candidate.position || 
-                        candidate.jobOccupation ||
-                        'Applied for Position';
-        
+        const jobTitle = candidate.jobTitle ||
+          candidate.job_title ||
+          candidate.position ||
+          candidate.jobOccupation ||
+          'Applied for Position';
+
         // Try to get status from different possible fields
-        const status = candidate.status || 
-                      candidate.applicationStatus ||
-                      candidate.empStatus ||
-                      'Applied';
-        
+        const status = candidate.status ||
+          candidate.applicationStatus ||
+          candidate.empStatus ||
+          'Applied';
+
         // Format the applied date properly
-        const appliedDate = candidate.appliedOn || 
-                           candidate.applied_on || 
-                           candidate.created_at || 
-                           new Date().toISOString().split('T')[0];
-        
+        const appliedDate = candidate.appliedOn ||
+          candidate.applied_on ||
+          candidate.created_at ||
+          new Date().toISOString().split('T')[0];
+
         return {
           candidateName: candidate.empName || candidate.candidateName || 'Unknown Candidate',
           jobTitle,
@@ -319,7 +315,7 @@ export const getHraDashboardData = async (token: string): Promise<HraDashboardDa
         applicationsCount: job.totalAppliedCandidates || 0
       }))
     };
-    
+
     return transformedData;
   } catch (error) {
     console.error('Error fetching HRA dashboard data:', error);
@@ -432,7 +428,7 @@ export const getAppliedCandidatesList = async (token: string, pageNo: number = 1
   try {
     const formData = new FormData();
     formData.append('pageNo', pageNo.toString());
-    
+
     const response = await axios.post(`${BASE_URL}applied-candidates-list`, formData, {
       headers: {
         'Authorization': `Bearer ${token}`,

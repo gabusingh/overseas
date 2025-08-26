@@ -49,15 +49,29 @@ const HeroSection = React.memo(({ data: propData, countryData }: HeroSectionProp
   // Memoize the API call function to prevent recreation on every render
   const getOccupationsListFunc = useCallback(async () => {
     try {
+      console.log('🔄 HeroSection: Fetching occupations...');
       const response = await getOccupations();
-      const occupations = response?.data?.map((item: { id: number; title: string; name: string }) => ({
-        label: item.title || item.name,
+      console.log('📊 HeroSection: Occupations response:', response);
+      
+      const rawData = response?.occupation || response?.data || [];
+      const occupations = rawData.map((item: { id: number; title: string; name: string; occupation?: string }) => ({
+        label: item.title || item.name || item.occupation,
         value: item.id,
         img: `/images/institute.png`,
       }));
       setDepartmentList(occupations || []);
+      console.log('✅ HeroSection: Occupations loaded:', occupations?.length || 0);
     } catch (error) {
-      console.log(error);
+      console.error('❌ HeroSection: Error fetching occupations:', error);
+      // Set fallback data for hero section
+      const fallbackOccupations = [
+        { label: "Construction", value: 1, img: "/images/institute.png" },
+        { label: "Hospitality", value: 2, img: "/images/institute.png" },
+        { label: "Healthcare", value: 3, img: "/images/institute.png" },
+        { label: "Oil & Gas", value: 4, img: "/images/institute.png" },
+        { label: "IT & Software", value: 5, img: "/images/institute.png" },
+      ];
+      setDepartmentList(fallbackOccupations);
     }
   }, []);
 

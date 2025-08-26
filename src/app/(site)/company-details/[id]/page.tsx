@@ -91,20 +91,24 @@ export default function CompanyDetailsPage() {
   const fetchCompanyDetails = async () => {
     setLoading(true);
     try {
+      console.log('🔄 Fetching company details for ID:', companyId);
       const response = await getCompanyById(parseInt(companyId));
-      console.log('Company Details Response:', response);
+      console.log('📊 Company Details Response:', response);
       
       if (response?.data?.company) {
         setCompany(response.data.company);
+        console.log('✅ Company details loaded from nested data structure');
       } else if (response?.data) {
         // Handle case where company data is directly in response.data
         setCompany(response.data);
+        console.log('✅ Company details loaded from direct data structure');
       } else {
+        console.warn('⚠️ Company not found in response');
         toast.error('Company not found');
         router.push('/companies');
       }
     } catch (error: any) {
-      console.error('Error fetching company details:', error);
+      console.error('❌ Error fetching company details:', error);
       if (error?.response?.status === 404) {
         toast.error('Company not found');
       } else {

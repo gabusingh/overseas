@@ -46,7 +46,7 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
       setLoading(true);
       const response = await getOccupations();
       
-      console.log('Full API Response:', response); // Debug log
+
       
       // Handle different response structures - try all possible paths
       let occupationData = [];
@@ -54,23 +54,18 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
       // Try different response structures
       if (response?.occupation && Array.isArray(response.occupation)) {
         occupationData = response.occupation;
-        console.log('Found occupations at response.occupation');
       } else if (response?.data?.occupation && Array.isArray(response.data.occupation)) {
         occupationData = response.data.occupation;
-        console.log('Found occupations at response.data.occupation');
       } else if (response?.data && Array.isArray(response.data)) {
         occupationData = response.data;
-        console.log('Found occupations at response.data');
       } else if (Array.isArray(response)) {
         occupationData = response;
-        console.log('Found occupations at response (direct array)');
       }
       
-      console.log('Final Occupation Data:', occupationData, 'Length:', occupationData.length);
+    
       
       if (occupationData && occupationData.length > 0) {
         const processedOccupations = occupationData.map((item: any, index: number) => {
-          console.log(`Processing item ${index}:`, item);
           return {
             ...item,
             // Only use data from API - no hardcoded values
@@ -80,7 +75,7 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
           };
         });
 
-        console.log('Final Processed Occupations:', processedOccupations);
+
         setOccupations(processedOccupations);
         
         // Fetch real job counts for top departments

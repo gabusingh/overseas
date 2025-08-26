@@ -123,151 +123,186 @@ export default function EditJobPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("access_token");
+      const loggedUser = localStorage.getItem("loggedUser");
+      
+      console.log('🔍 DEBUG - Edit Job Authentication:');
+      console.log('- Token exists:', !!token);
+      console.log('- LoggedUser exists:', !!loggedUser);
+      console.log('- Job ID:', jobId);
+      
       if (!token) {
+        console.error('❌ No access token found, redirecting to login');
+        toast.error('Please log in to edit jobs');
         router.push("/login");
         return;
       }
+      
+      if (loggedUser) {
+        const userData = JSON.parse(loggedUser);
+        console.log('📋 DEBUG - User data for edit job:', {
+          userType: userData?.user?.type || userData?.type,
+          hasUser: !!userData?.user,
+          hasCmpData: !!userData?.cmpData,
+          userId: userData?.user?.id || userData?.id,
+          hrId: userData?.user?.id || userData?.cmpData?.id || userData?.id || userData?.hrId || userData?.empId
+        });
+        
+        // Verify this is a company user
+        const userType = userData?.user?.type || userData?.type;
+        if (userType !== 'company') {
+          console.error('❌ Access denied - user is not a company type:', userType);
+          toast.error('Access denied. You must be logged in as an HR user to edit jobs.');
+          router.push('/login');
+          return;
+        }
+      }
 
-      // Add timeout to prevent hanging
-      const timeoutId = setTimeout(() => {
-        throw new Error('Request timeout - API took too long to respond');
-      }, 30000); // 30 second timeout
-
-      try {
-        // Fetch actual job data from API
-        console.log('Fetching job data for ID:', jobId);
-        const response = await getJobById(jobId);
-        clearTimeout(timeoutId);
-        console.log('API Response:', response);
-        
-        // Handle different response structures
-        let jobApiData;
-        if (response?.data?.jobs) {
-          jobApiData = response.data.jobs;
-        } else if (response?.data) {
-          jobApiData = response.data;
-        } else if (response?.jobs) {
-          jobApiData = response.jobs;
-        } else if (response) {
-          jobApiData = response;
-        } else {
-          throw new Error('Empty or null response from API');
-        }
-        
-        console.log('Job API Data:', jobApiData);
-        
-        if (!jobApiData) {
-          throw new Error('Job data is null or undefined');
-        }
-        
-        // If no ID found, create a fallback with mock data to prevent hanging
-        if (!jobApiData.id) {
-          console.warn('No job ID found in response, using fallback data');
-          jobApiData = {
-            id: jobId,
-            jobTitle: 'Job Title Not Available',
-            jobOccupation: 'Department Not Available',
-            location: 'Location Not Available',
-            jobDescription: 'Job description not available. Please edit to add details.',
-            ...jobApiData // Keep any existing data
-          };
-        }
-      } catch (timeoutError) {
-        clearTimeout(timeoutId);
-        throw timeoutError;
+      // Fetch actual job data from API with timeout
+      console.log('🚀 Fetching job data for ID:', jobId);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout - API took too long to respond')), 30000)
+      );
+      
+      const response = await Promise.race([
+        getJobById(jobId),
+        timeoutPromise
+      ]);
+      
+      console.log('📊 API Response received:', {
+        hasResponse: !!response,
+        hasData: !!response?.data,
+        responseStructure: Object.keys(response || {}),
+        dataStructure: response?.data ? Object.keys(response.data) : 'No data field'
+      });
+      
+      // Handle different response structures - be more strict about data validation
+      let jobApiData;
+      if (response?.data?.jobs) {
+        jobApiData = response.data.jobs;
+        console.log('✓ Using response.data.jobs');
+      } else if (response?.data && typeof response.data === 'object') {
+        jobApiData = response.data;
+        console.log('✓ Using response.data');
+      } else if (response?.jobs) {
+        jobApiData = response.jobs;
+        console.log('✓ Using response.jobs');
+      } else if (response && typeof response === 'object') {
+        jobApiData = response;
+        console.log('✓ Using response directly');
+      } else {
+        throw new Error('Invalid API response structure - no job data found');
       }
       
-      // Transform API response to match JobData interface
+      console.log('📋 Raw job API data:', jobApiData);
+      
+      // Strict validation - no fallback data allowed
+      if (!jobApiData || typeof jobApiData !== 'object') {
+        throw new Error('Job data is null, undefined, or not an object');
+      }
+      
+      if (!jobApiData.id && !jobApiData.jobID) {
+        throw new Error(`Job not found - no valid ID in response. Available fields: ${Object.keys(jobApiData).join(', ')}`);
+      }
+      
+      // Transform API response to match JobData interface - validate required fields
+      const jobId = jobApiData.id || jobApiData.jobID;
+      const jobTitle = jobApiData.jobTitle || jobApiData.job_title || jobApiData.title;
+      
+      console.log('🔍 Critical job fields:', {
+        id: jobId,
+        title: jobTitle,
+        department: jobApiData.jobOccupation || jobApiData.department,
+        location: jobApiData.jobLocationCountry?.name || jobApiData.location || jobApiData.jobLocation,
+        description: jobApiData.jobDescription || jobApiData.description,
+        wages: jobApiData.jobWages,
+        currency: jobApiData.jobWagesCurrencyType,
+        deadline: jobApiData.jobDeadline
+      });
+      
+      if (!jobTitle) {
+        throw new Error('Job title is missing from API response - cannot edit job without title');
+      }
+      
       const transformedJobData: JobData = {
-        id: jobApiData.id.toString(),
-        title: jobApiData.jobTitle || jobApiData.job_title || jobApiData.title || "",
+        id: jobId.toString(),
+        title: jobTitle,
         department: jobApiData.jobOccupation || jobApiData.department || "",
         location: jobApiData.jobLocationCountry?.name || jobApiData.location || jobApiData.jobLocation || "",
         workMode: jobApiData.jobMode === "onsite" ? "onsite" : jobApiData.jobMode === "remote" ? "remote" : "hybrid",
         employmentType: jobApiData.employmentType || "full-time",
         experienceLevel: jobApiData.jobExpTypeReq || jobApiData.experienceLevel || "mid",
-        salaryMin: jobApiData.jobWages ? jobApiData.jobWages.toString() : jobApiData.salaryMin ? jobApiData.salaryMin.toString() : "0",
-        salaryMax: jobApiData.salaryMax ? jobApiData.salaryMax.toString() : (jobApiData.jobWages ? (jobApiData.jobWages * 1.2).toString() : "0"),
+        salaryMin: jobApiData.jobWages ? jobApiData.jobWages.toString() : (jobApiData.salaryMin ? jobApiData.salaryMin.toString() : "0"),
+        salaryMax: jobApiData.salaryMax ? jobApiData.salaryMax.toString() : (jobApiData.jobWages ? (parseFloat(jobApiData.jobWages.toString()) * 1.2).toString() : "0"),
         currency: jobApiData.jobWagesCurrencyType || jobApiData.currency || "USD",
         description: jobApiData.jobDescription || jobApiData.description || "",
         requirements: Array.isArray(jobApiData.requirements) ? jobApiData.requirements : [],
         responsibilities: Array.isArray(jobApiData.responsibilities) ? jobApiData.responsibilities : [],
-        skillsRequired: jobApiData.skills?.map((skill: any) => typeof skill === 'string' ? skill : skill.skill) || [],
+        skillsRequired: jobApiData.skills ? (Array.isArray(jobApiData.skills) ? jobApiData.skills.map((skill: any) => typeof skill === 'string' ? skill : (skill.skill || skill.name || String(skill))) : []) : [],
         skillsPreferred: Array.isArray(jobApiData.skillsPreferred) ? jobApiData.skillsPreferred : [],
         benefits: Array.isArray(jobApiData.benefits) ? jobApiData.benefits : [],
-        applicationDeadline: jobApiData.jobDeadline ? new Date(jobApiData.jobDeadline).toISOString().split('T')[0] : jobApiData.applicationDeadline || "",
+        applicationDeadline: jobApiData.jobDeadline ? new Date(jobApiData.jobDeadline).toISOString().split('T')[0] : (jobApiData.applicationDeadline || ""),
         startDate: jobApiData.startDate || "",
-        numberOfPositions: jobApiData.jobVacancyNo || jobApiData.numberOfPositions || "1",
+        numberOfPositions: (jobApiData.jobVacancyNo || jobApiData.numberOfPositions || "1").toString(),
         reportingTo: jobApiData.reportingTo || "",
         educationLevel: jobApiData.educationLevel || "",
         certifications: Array.isArray(jobApiData.certifications) ? jobApiData.certifications : [],
         languageRequirements: Array.isArray(jobApiData.languageRequirements) ? jobApiData.languageRequirements : [],
-        travelRequirement: jobApiData.travelRequirement || "",
+        travelRequirement: jobApiData.travelRequirement || "None",
         companyDescription: jobApiData.companyDescription || "",
         applicationInstructions: jobApiData.applicationInstructions || "",
-        status: jobApiData.status || "active",
-        featured: jobApiData.featured || false,
-        urgent: jobApiData.urgent || false,
+        status: (jobApiData.status || "active") as JobData['status'],
+        featured: Boolean(jobApiData.featured),
+        urgent: Boolean(jobApiData.urgent),
         remoteWorkBenefits: Array.isArray(jobApiData.remoteWorkBenefits) ? jobApiData.remoteWorkBenefits : [],
         workingHours: jobApiData.jobWorkingHour || jobApiData.workingHours || "",
-        probationPeriod: jobApiData.probationPeriod || "",
+        probationPeriod: jobApiData.probationPeriod || "3 months",
         noticePeriod: jobApiData.noticePeriod || ""
       };
       
-      console.log('Transformed job data:', transformedJobData);
+      console.log('✅ Successfully transformed job data:', {
+        id: transformedJobData.id,
+        title: transformedJobData.title,
+        department: transformedJobData.department,
+        location: transformedJobData.location,
+        hasDescription: !!transformedJobData.description,
+        skillsCount: transformedJobData.skillsRequired.length,
+        benefitsCount: transformedJobData.benefits.length
+      });
 
       setJobData(transformedJobData);
+      console.log('✅ Job data loaded successfully');
+      
     } catch (error: any) {
-      console.error("Error fetching job data:", error);
-      console.error("Error details:", error.response?.data || error.message);
+      console.error("❌ Error fetching job data:", error);
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        stack: error.stack
+      });
       
-      const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
-      toast.error(`Failed to load job data: ${errorMessage}`);
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
       
-      // Create fallback job data to prevent infinite loading
-      const fallbackJobData: JobData = {
-        id: jobId,
-        title: "Edit Job Title",
-        department: "",
-        location: "",
-        workMode: "hybrid",
-        employmentType: "full-time",
-        experienceLevel: "mid",
-        salaryMin: "0",
-        salaryMax: "0",
-        currency: "USD",
-        description: "Please update job description",
-        requirements: [],
-        responsibilities: [],
-        skillsRequired: [],
-        skillsPreferred: [],
-        benefits: [],
-        applicationDeadline: "",
-        startDate: "",
-        numberOfPositions: "1",
-        reportingTo: "",
-        educationLevel: "",
-        certifications: [],
-        languageRequirements: [],
-        travelRequirement: "",
-        companyDescription: "",
-        applicationInstructions: "",
-        status: "draft",
-        featured: false,
-        urgent: false,
-        remoteWorkBenefits: [],
-        workingHours: "",
-        probationPeriod: "",
-        noticePeriod: ""
-      };
+      // Determine the type of error and show appropriate message
+      if (error.message.includes('timeout')) {
+        toast.error('Request timed out. Please check your internet connection and try again.');
+      } else if (error.response?.status === 404) {
+        toast.error('Job not found. It may have been deleted or you may not have permission to access it.');
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        toast.error('Unauthorized access. Please log in again.');
+        router.push('/login');
+        return;
+      } else {
+        toast.error(`Failed to load job data: ${errorMessage}`);
+      }
       
-      console.log('Using fallback job data due to API error');
-      setJobData(fallbackJobData);
+      // DO NOT create fallback data - redirect user instead
+      console.log('❌ Cannot load job data - redirecting to jobs list');
+      setTimeout(() => {
+        router.push('/hra-jobs');
+      }, 3000);
       
-      // Show a warning that data couldn't be loaded
-      toast.warning('Using default job template due to loading error. Please update all fields.');
     } finally {
-      // Ensure loading is always set to false
       setLoading(false);
     }
   };

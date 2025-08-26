@@ -9,11 +9,11 @@ import { Separator } from "./ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { toast } from "sonner";
 import { 
-  getOccupations, 
-  getCountriesForJobs, 
   getState, 
   getDistrict,
-  getSkillsByOccuId 
+  getOccupations,
+  getCountriesForJobs,
+  getSkillsByOccuId
 } from "../services/info.service";
 import { 
   profileCompleteStep2, 
@@ -164,6 +164,7 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
       if (!token) return;
 
       // Load existing profile data and options
+      console.log('🔄 Loading initial data...');
       const [
         profileResponse,
         occupationsResponse,
@@ -175,6 +176,8 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
         getCountriesForJobs(),
         getState()
       ]);
+      console.log('📊 Profile data loaded');
+      
 
       // Handle profile data with better error handling
       if (profileResponse.status === 'fulfilled' && profileResponse.value) {
@@ -250,10 +253,14 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
     
     // Load skills for selected occupation
     try {
+      console.log('🔄 Loading skills for occupation:', occupationId);
       const response = await getSkillsByOccuId(parseInt(occupationId));
+      console.log('📊 Skills loaded:', response?.skills?.length || 0);
       setSkills(response?.skills || []);
     } catch (error) {
-      console.error('Error loading skills:', error);
+      console.error('❌ Error loading skills:', error);
+      // Set empty skills array on error
+      setSkills([]);
     }
   };
 

@@ -6,8 +6,8 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import Link from "next/link";
 import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart } from "lucide-react";
-import { getUserAwareJobList, saveJobById, getOccupations, applyJobApi } from "../../../services/job.service";
-import { getCountriesForJobs } from "../../../services/info.service";
+import { getUserAwareJobList, saveJobById, applyJobApi } from "../../../services/job.service";
+import { getOccupations, getCountries } from "../../../services/info.service";
 import JobFilter from "../../../components/JobFilter";
 import SearchComponent from "../../../components/SearchComponent";
 import ProfileCompletionModal from "../../../components/ProfileCompletionModal";
@@ -250,31 +250,67 @@ export default function JobsPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        console.log('🔄 Fetching occupations...');
         const response = await getOccupations();
-        const occupationData = Array.isArray((response as any)?.data) ? (response as any).data : Array.isArray(response) ? response : [];
-        const categories = occupationData.map((item: any) => ({
-          label: item.occupation || item.title || item.name,
-          value: item.id,
-          count: 0
-        }));
-        setCategories(categories);
+        console.log('📊 Occupations response:', response);
+        
+        const occupationData = response?.occupation || response?.data || [];
+        if (Array.isArray(occupationData) && occupationData.length > 0) {
+          const categories = occupationData.map((item: any) => ({
+            label: item.occupation || item.title || item.name,
+            value: item.id,
+            count: 0
+          }));
+          setCategories(categories);
+          console.log('✅ Categories loaded:', categories.length);
+        } else {
+          throw new Error('No valid categories found');
+        }
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        console.error('❌ Error fetching categories:', error);
+        // Fallback categories
+        const fallbackCategories = [
+          { label: "Construction", value: 1, count: 0 },
+          { label: "Hospitality", value: 2, count: 0 },
+          { label: "Healthcare", value: 3, count: 0 },
+          { label: "Oil & Gas", value: 4, count: 0 },
+          { label: "IT & Software", value: 5, count: 0 },
+        ];
+        setCategories(fallbackCategories);
+        toast.info('Using offline categories. Some features may be limited.');
       }
     };
 
     const fetchCountries = async () => {
       try {
-        const response = await getCountriesForJobs();
-        const countryData = Array.isArray((response as any)?.countries) ? (response as any).countries : Array.isArray((response as any)?.data) ? (response as any).data : Array.isArray(response) ? response : [];
-        const countries = countryData.map((item: any) => ({
-          label: item.name,
-          value: item.id,
-          count: 0
-        }));
-        setCountries(countries);
+        console.log('🔄 Fetching countries...');
+        const response = await getCountries();
+        console.log('📊 Countries response:', response);
+        
+        const countryData = response?.countries || response?.data || [];
+        if (Array.isArray(countryData) && countryData.length > 0) {
+          const countries = countryData.map((item: any) => ({
+            label: item.name,
+            value: item.id,
+            count: 0
+          }));
+          setCountries(countries);
+          console.log('✅ Countries loaded:', countries.length);
+        } else {
+          throw new Error('No valid countries found');
+        }
       } catch (error) {
-        console.error('Error fetching countries:', error);
+        console.error('❌ Error fetching countries:', error);
+        // Fallback countries
+        const fallbackCountries = [
+          { label: "United Arab Emirates", value: 1, count: 0 },
+          { label: "Saudi Arabia", value: 2, count: 0 },
+          { label: "Qatar", value: 3, count: 0 },
+          { label: "Kuwait", value: 4, count: 0 },
+          { label: "Singapore", value: 7, count: 0 },
+        ];
+        setCountries(fallbackCountries);
+        toast.info('Using offline countries. Some features may be limited.');
       }
     };
 

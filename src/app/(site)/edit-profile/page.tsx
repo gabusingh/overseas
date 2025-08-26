@@ -49,24 +49,83 @@ export default function EditProfilePage() {
       return;
     }
     
+    console.log('EditProfile: Loading profile data...');
     loadProfileData(token);
   }, [router]);
 
+  // Utility function to normalize profile data
+  const normalizeProfileData = (data: any): ProfileData => {
+    return {
+      name: data.name || data.empName || "",
+      email: data.email || data.empEmail || "",
+      phone: data.phone || data.empWhatsapp || "",
+      date_of_birth: data.date_of_birth || data.dob || data.empDob || "",
+      gender: data.gender || data.empGender || "",
+      occupation: data.occupation || data.empOccuId || "",
+      skills: data.skills || data.empSkill || "",
+      state: data.state || data.empState || "",
+      city: data.city || data.district || data.empDistrict || "",
+      postal_code: data.postal_code || data.pin_code || data.empPin || "",
+      emergency_contact_name: data.emergency_contact_name || data.reference_name || data.empRefName || "",
+      emergency_contact_phone: data.emergency_contact_phone || data.reference_phone || data.empRefPhone || "",
+      location: data.location || "",
+      experience_years: data.experience_years || 0,
+      about: data.about || "",
+      profile_image: data.profile_image || "",
+      nationality: data.nationality || "",
+      address: data.address || ""
+    };
+  };
+
   const loadProfileData = async (token: string) => {
     try {
+      // Initialize with empty data first
+      let initialProfileData: ProfileData = {
+        email: "",
+        phone: "",
+        name: "",
+        location: "",
+        occupation: "",
+        experience_years: 0,
+        about: "",
+        skills: "",
+        profile_image: "",
+        date_of_birth: "",
+        gender: "",
+        nationality: "",
+        address: "",
+        city: "",
+        state: "",
+        postal_code: "",
+        emergency_contact_name: "",
+        emergency_contact_phone: ""
+      };
+      
       // Load user data from localStorage first
       const localUser = localStorage.getItem("loggedUser") || localStorage.getItem("user");
       if (localUser) {
         const userData = JSON.parse(localUser);
-        setProfileData({
+        initialProfileData = {
+          ...initialProfileData,
           email: userData.email || "",
           phone: userData.phone || "",
           name: userData.name || "",
           location: userData.location || "",
           occupation: userData.occupation || "",
           experience_years: userData.experience_years || 0,
-          profile_image: userData.profile_image || ""
-        });
+          about: userData.about || "",
+          skills: userData.skills || "",
+          profile_image: userData.profile_image || "",
+          date_of_birth: userData.date_of_birth || userData.dob || "",
+          gender: userData.gender || "",
+          nationality: userData.nationality || "",
+          address: userData.address || "",
+          city: userData.city || userData.district || "",
+          state: userData.state || "",
+          postal_code: userData.postal_code || userData.pin_code || "",
+          emergency_contact_name: userData.emergency_contact_name || userData.reference_name || "",
+          emergency_contact_phone: userData.emergency_contact_phone || userData.reference_phone || ""
+        };
         if (userData.profile_image) {
           setImagePreview(userData.profile_image);
         }
@@ -76,25 +135,44 @@ export default function EditProfilePage() {
       try {
         const empData = await getEmpDataForEdit(token);
         if (empData) {
+          // Create complete profile data with backend data taking precedence over localStorage
           const completeProfileData: ProfileData = {
-            name: empData.empName || profileData.name,
-            email: empData.empEmail || profileData.email,
-            phone: empData.empWhatsapp || profileData.phone,
-            date_of_birth: empData.empDob || "",
-            gender: empData.empGender || "",
-            occupation: empData.empOccuId || profileData.occupation,
-            skills: empData.empSkill || "",
-            state: empData.empState || "",
-            city: empData.empDistrict || "",
-            postal_code: empData.empPin || "",
-            location: empData.empState && empData.empDistrict ? `${empData.empDistrict}, ${empData.empState}` : profileData.location,
-            emergency_contact_name: empData.empRefName || "",
-            emergency_contact_phone: empData.empRefPhone || ""
+            name: empData.empName || initialProfileData.name,
+            email: empData.empEmail || initialProfileData.email,
+            phone: empData.empWhatsapp || initialProfileData.phone,
+            date_of_birth: empData.empDob || initialProfileData.date_of_birth,
+            gender: empData.empGender || initialProfileData.gender,
+            occupation: empData.empOccuId || initialProfileData.occupation,
+            skills: empData.empSkill || initialProfileData.skills,
+            state: empData.empState || initialProfileData.state,
+            city: empData.empDistrict || initialProfileData.city,
+            postal_code: empData.empPin || initialProfileData.postal_code,
+            location: empData.empState && empData.empDistrict ? `${empData.empDistrict}, ${empData.empState}` : initialProfileData.location,
+            emergency_contact_name: empData.empRefName || initialProfileData.emergency_contact_name,
+            emergency_contact_phone: empData.empRefPhone || initialProfileData.emergency_contact_phone,
+            // Keep existing fields that might not be in backend
+            about: initialProfileData.about,
+            experience_years: initialProfileData.experience_years,
+            profile_image: initialProfileData.profile_image,
+            nationality: initialProfileData.nationality,
+            address: initialProfileData.address
           };
           setProfileData(completeProfileData);
+          
+          // Update localStorage with the most complete data
+          if (localUser) {
+            const userData = JSON.parse(localUser);
+            const updatedUser = { ...userData, ...completeProfileData };
+            localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+          }
+        } else {
+          // No backend data, use localStorage data
+          setProfileData(initialProfileData);
         }
       } catch (empDataError) {
-        console.warn("Could not load complete profile data, using basic data:", empDataError);
+        console.warn("Could not load complete profile data, using localStorage data:", empDataError);
+        setProfileData(initialProfileData);
       }
       
     } catch (error) {
@@ -152,11 +230,53 @@ export default function EditProfilePage() {
     try {
       const formData = new FormData();
       
-      // Add all form fields
+      // Add all form fields with proper mapping for backend
       Object.keys(profileData).forEach(key => {
         const value = profileData[key as keyof ProfileData];
         if (value !== undefined && value !== null && value !== "") {
-          formData.append(key, value.toString());
+          // Map frontend field names to backend expected names
+          let backendKey = key;
+          switch (key) {
+            case 'name':
+              backendKey = 'empName';
+              break;
+            case 'email':
+              backendKey = 'empEmail';
+              break;
+            case 'phone':
+              backendKey = 'empWhatsapp';
+              break;
+            case 'date_of_birth':
+              backendKey = 'empDob';
+              break;
+            case 'gender':
+              backendKey = 'empGender';
+              break;
+            case 'occupation':
+              backendKey = 'empOccuId';
+              break;
+            case 'skills':
+              backendKey = 'empSkill';
+              break;
+            case 'state':
+              backendKey = 'empState';
+              break;
+            case 'city':
+              backendKey = 'empDistrict';
+              break;
+            case 'postal_code':
+              backendKey = 'empPin';
+              break;
+            case 'emergency_contact_name':
+              backendKey = 'empRefName';
+              break;
+            case 'emergency_contact_phone':
+              backendKey = 'empRefPhone';
+              break;
+            default:
+              backendKey = key;
+          }
+          formData.append(backendKey, value.toString());
         }
       });
       
@@ -165,26 +285,44 @@ export default function EditProfilePage() {
         formData.append("profile_image", profileImage);
       }
 
+      console.log('Saving profile data:', Object.fromEntries(formData));
       const response = await editProfile(formData, token);
       
       if (response) {
         toast.success("Profile updated successfully!");
         
-        // Update local storage user data
-        const userData = localStorage.getItem("loggedUser") || localStorage.getItem("user");
-        if (userData) {
-          const user = JSON.parse(userData);
-          const updatedUser = { ...user, ...profileData };
-          localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
-          // Keep both for backward compatibility
-          localStorage.setItem("user", JSON.stringify(updatedUser));
+        // Create updated user object with all current form data
+        const currentUserData = localStorage.getItem("loggedUser") || localStorage.getItem("user");
+        let updatedUser = profileData;
+        
+        if (currentUserData) {
+          const existingUser = JSON.parse(currentUserData);
+          updatedUser = { 
+            ...existingUser, 
+            ...profileData,
+            // Ensure important fields are properly mapped
+            dob: profileData.date_of_birth,
+            district: profileData.city,
+            pin_code: profileData.postal_code,
+            reference_name: profileData.emergency_contact_name,
+            reference_phone: profileData.emergency_contact_phone
+          };
         }
         
-        router.push("/my-profile");
+        // Update localStorage with complete updated data
+        localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        
+        console.log('Profile data saved to localStorage:', updatedUser);
+        
+        // Add a small delay to ensure localStorage is updated before navigation
+        setTimeout(() => {
+          router.push("/my-profile");
+        }, 100);
       }
     } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error(error.response?.data?.message || "Failed to update profile");
+      toast.error(error.response?.data?.message || error.message || "Failed to update profile");
     } finally {
       setSaving(false);
     }

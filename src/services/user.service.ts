@@ -186,15 +186,39 @@ export const submitContactQuery = async (formData: FormData) => {
 
 export const editProfile = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "user-complete-profile-edit", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
+    console.log('Attempting to update profile with enhanced API client...');
+    const response = await apiRequest.post(
+      "user-complete-profile-edit", 
+      formData, 
+      accessToken, 
+      'multipart/form-data',
+      2 // Allow 2 retries for network issues
+    );
+    console.log('Profile update successful:', response.status);
     return response;
-  } catch (error) {
-    console.error('Error fetching data:', error);
+  } catch (error: any) {
+    console.error('Error updating profile:', {
+      message: error.message,
+      status: error.status,
+      data: error.data,
+      originalError: error.originalError
+    });
+    
+    // Provide more specific error messages
+    if (error.message?.includes('Network Error') || !navigator.onLine) {
+      const networkError = new Error('Network connection failed. Please check your internet connection and try again.');
+      (networkError as any).isNetworkError = true;
+      throw networkError;
+    }
+    
+    if (error.status === 413) {
+      throw new Error('File size too large. Please reduce image size and try again.');
+    }
+    
+    if (error.status === 422) {
+      throw new Error(error.data?.message || 'Invalid data provided. Please check your inputs.');
+    }
+    
     throw error;
   }
 };

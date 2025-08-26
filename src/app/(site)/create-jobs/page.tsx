@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createJobByHr } from "@/services/hra.service";
-import {
-  getCountries,
-  getOccupations,
-  getSkillsByOccuId,
+import { createJobByHr, getEnhancedHrDetails } from "@/services/hra.service";
+import { 
+  getCountries, 
+  getOccupations, 
+  getSkillsByOccuId 
 } from "@/services/info.service";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -156,6 +156,7 @@ const CreateJobs = () => {
   const [currencyList, setCurrencyList] = useState<SelectOption[]>([]);
   const [occupations, setOccupations] = useState<SelectOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hrDetailsLoading, setHrDetailsLoading] = useState(false);
   const [formData, setFormData] = useState<FormDataValues>({} as FormDataValues);
   const [errors, setErrors] = useState<Partial<Record<keyof FormDataType, string>>>({});
 
@@ -442,19 +443,19 @@ const CreateJobs = () => {
     },
     { 
       name: "hrName" as keyof FormDataType, 
-      label: "HR Name", 
+      label: "HR Name (Auto-filled)", 
       type: "text",
       containerClassName: "min-h-[4.5rem]"
     },
     { 
       name: "hrEmail" as keyof FormDataType, 
-      label: "HR Email", 
+      label: "HR Email (Auto-filled)", 
       type: "email",
       containerClassName: "min-h-[4.5rem]"
     },
     { 
       name: "hrNumber" as keyof FormDataType, 
-      label: "HR Number", 
+      label: "HR Number (Auto-filled)", 
       type: "text",
       containerClassName: "min-h-[4.5rem]"
     },
@@ -599,8 +600,9 @@ const CreateJobs = () => {
         // First try to load data from the backend
         console.log('🔄 Fetching data from API...');
         
-        // Attempt to fetch from API
+        // Attempt to fetch from cached API
         try {
+          console.log('🚀 Using cached API calls for better performance...');
           const [countriesRes, occupationsRes] = await Promise.all([
             getCountries().catch(err => {
               console.error('Error fetching countries:', err);
@@ -614,9 +616,10 @@ const CreateJobs = () => {
           
           console.log('📊 Raw API responses:', { countriesRes, occupationsRes });
           
-          // 1. Handle countries data (expecting { data: [...] } structure)
-          if (countriesRes?.data && Array.isArray(countriesRes.data)) {
-            const validCountries = countriesRes.data.filter((country: any) => 
+          // 1. Handle countries data (expecting { countries: [...] } or { data: [...] } structure)
+          const countriesData = countriesRes?.countries || countriesRes?.data || [];
+          if (Array.isArray(countriesData) && countriesData.length > 0) {
+            const validCountries = countriesData.filter((country: any) => 
               country && typeof country === 'object' && country.name && country.id
             );
             
@@ -635,9 +638,10 @@ const CreateJobs = () => {
             throw new Error('Countries API response format invalid');
           }
 
-          // 2. Handle occupations data (expecting { data: [...] } structure)
-          if (occupationsRes?.data && Array.isArray(occupationsRes.data)) {
-            const validOccupations = occupationsRes.data.filter((occupation: any) => 
+          // 2. Handle occupations data (expecting { occupation: [...] } or { data: [...] } structure)
+          const occupationsData = occupationsRes?.occupation || occupationsRes?.data || [];
+          if (Array.isArray(occupationsData) && occupationsData.length > 0) {
+            const validOccupations = occupationsData.filter((occupation: any) => 
               occupation && typeof occupation === 'object' && 
               (occupation.occupation || occupation.name || occupation.title) && occupation.id
             );
@@ -716,6 +720,134 @@ const CreateJobs = () => {
     };
 
     fetchInitialData();
+  }, []);
+
+  // Effect to fetch and prefill HR details
+  useEffect(() => {
+    const fetchHrDetails = async () => {
+      try {
+        setHrDetailsLoading(true);
+        console.log('🔄 STARTING HR Details fetch for auto-fill...');
+        
+        // Get access token with detailed logging
+        const accessToken = localStorage.getItem('accessToken');
+        console.log('🔑 Access token check:', accessToken ? 'Found' : 'Not found', accessToken ? `(Length: ${accessToken.length})` : '');
+        
+        if (!accessToken) {
+          console.warn('⚠️ No access token found, skipping HR details fetch');
+          toast.info('Please log in to auto-fill HR details.');
+          return;
+        }
+        
+        console.log('🚀 Calling getEnhancedHrDetails API...');
+        
+        // Call HR details API
+        const hrDetailsResponse = await getEnhancedHrDetails(accessToken);
+        console.log('📊 FULL HR Details Response:', JSON.stringify(hrDetailsResponse, null, 2));
+        console.log('🔍 Response type:', typeof hrDetailsResponse);
+        console.log('🔍 Response keys:', hrDetailsResponse ? Object.keys(hrDetailsResponse) : 'null');
+        
+        // Check if response has valid data
+        if (hrDetailsResponse && typeof hrDetailsResponse === 'object') {
+          console.log('🔍 Processing HR details response...');
+          
+          // Extract HR details with ALL possible field combinations
+          const hrName = hrDetailsResponse.name || hrDetailsResponse.hrName || hrDetailsResponse.empName || hrDetailsResponse.full_name || '';
+          const hrEmail = hrDetailsResponse.email || hrDetailsResponse.hrEmail || hrDetailsResponse.empEmail || hrDetailsResponse.email_address || '';
+          const hrNumber = hrDetailsResponse.phone || hrDetailsResponse.hrContact || hrDetailsResponse.empMobile || hrDetailsResponse.phone_number || hrDetailsResponse.mobile || '';
+          const companyName = hrDetailsResponse.company_name || hrDetailsResponse.cmpName || hrDetailsResponse.company || '';
+          
+          console.log('🎯 ALL FIELD EXTRACTION ATTEMPTS:');
+          console.log('  - hrName attempts:', {
+            name: hrDetailsResponse.name,
+            hrName: hrDetailsResponse.hrName,
+            empName: hrDetailsResponse.empName,
+            full_name: hrDetailsResponse.full_name,
+            final: hrName
+          });
+          console.log('  - hrEmail attempts:', {
+            email: hrDetailsResponse.email,
+            hrEmail: hrDetailsResponse.hrEmail,
+            empEmail: hrDetailsResponse.empEmail,
+            email_address: hrDetailsResponse.email_address,
+            final: hrEmail
+          });
+          console.log('  - hrNumber attempts:', {
+            phone: hrDetailsResponse.phone,
+            hrContact: hrDetailsResponse.hrContact,
+            empMobile: hrDetailsResponse.empMobile,
+            phone_number: hrDetailsResponse.phone_number,
+            mobile: hrDetailsResponse.mobile,
+            final: hrNumber
+          });
+          console.log('  - companyName attempts:', {
+            company_name: hrDetailsResponse.company_name,
+            cmpName: hrDetailsResponse.cmpName,
+            company: hrDetailsResponse.company,
+            final: companyName
+          });
+          
+          // Update form data with HR details
+          if (hrName || hrEmail || hrNumber) {
+            const updateData: any = {};
+            if (hrName) {
+              updateData.hrName = hrName;
+              console.log('✅ Setting hrName:', hrName);
+            }
+            if (hrEmail) {
+              updateData.hrEmail = hrEmail;
+              console.log('✅ Setting hrEmail:', hrEmail);
+            }
+            if (hrNumber) {
+              updateData.hrNumber = hrNumber;
+              console.log('✅ Setting hrNumber:', hrNumber);
+            }
+            if (companyName) {
+              updateData.cmpNameACT = companyName;
+              console.log('✅ Setting company name:', companyName);
+            }
+            
+            console.log('🚀 UPDATING FORM DATA with:', updateData);
+            
+            setFormData(prev => {
+              const newData = {
+                ...prev,
+                ...updateData
+              };
+              console.log('🔄 Form data before update:', prev);
+              console.log('🔄 Form data after update:', newData);
+              return newData;
+            });
+            
+            console.log('✅ HR details auto-filled successfully!');
+            toast.success('HR details loaded automatically!');
+          } else {
+            console.warn('⚠️ No valid HR details found in response');
+            console.warn('⚠️ Available fields:', Object.keys(hrDetailsResponse));
+            console.warn('⚠️ Full response for debugging:', hrDetailsResponse);
+            toast.info('HR details could not be auto-filled. Please enter manually.');
+          }
+        } else {
+          console.warn('⚠️ Invalid HR details response format:', hrDetailsResponse);
+          toast.info('HR details could not be auto-filled. Please enter manually.');
+        }
+        
+      } catch (error) {
+        console.error('❌ FULL ERROR in fetchHrDetails:', error);
+        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        toast.error('Failed to load HR details automatically. Please enter manually.');
+      } finally {
+        console.log('🏁 HR details fetch completed, setting loading to false');
+        setHrDetailsLoading(false);
+      }
+    };
+
+    // Add a small delay to ensure the component is fully mounted
+    const timer = setTimeout(() => {
+      fetchHrDetails();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Handle skill list updates when occupation changes
@@ -1020,6 +1152,10 @@ const CreateJobs = () => {
     const isRequired = ['jobTitle', 'cmpNameACT', 'jobOccupation', 'jobLocationCountry', 
                        'jobDeadline', 'jobVacancyNo', 'jobWages', 'jobWagesCurrencyType',
                        'hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
+    
+    // Check if this is an HR field that should show loading state
+    const isHrField = ['hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
+    const showLoading = isHrField && hrDetailsLoading;
 
     return (
       <div key={fieldName} className="space-y-2">
@@ -1151,16 +1287,27 @@ const CreateJobs = () => {
         )}
         
         {(field.type === "text" || field.type === "number" || field.type === "email" || field.type === "date") && (
-          <Input
-            id={field.name}
-            type={field.type}
-            value={String(getFormValue(formData, field.name as keyof FormDataType))}
-            onChange={(e) =>
-              setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.value))
-            }
-            placeholder={getPlaceholder(field.name)}
-            className={`h-11 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
-          />
+          <div className="relative">
+            <Input
+              id={field.name}
+              type={field.type}
+              value={String(getFormValue(formData, field.name as keyof FormDataType))}
+              onChange={(e) =>
+                setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.value))
+              }
+              placeholder={showLoading ? "Loading..." : getPlaceholder(field.name)}
+              disabled={showLoading}
+              className={`h-11 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${showLoading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+            />
+            {showLoading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <svg className="animate-spin h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+              </div>
+            )}
+          </div>
         )}
         
         {field.type === "file" && (

@@ -129,30 +129,62 @@ export default function MyProfilePage() {
         const currentUser = JSON.parse(localStorage.getItem("loggedUser") || localStorage.getItem("user") || '{}');
         const updatedUser = {
           ...currentUser,
+          // Basic information
           name: empData.empName || currentUser.name,
           email: empData.empEmail || currentUser.email,
           phone: empData.empWhatsapp || currentUser.phone,
-          gender: empData.empGender,
-          dob: empData.empDob,
-          education: empData.empEdu,
-          technical_education: empData.empTechEdu,
-          skills: empData.empSkill,
-          occupation_id: empData.empOccuId,
-          daily_wage: empData.empDailyWage,
-          expected_income: empData.empExpectedMonthlyIncome,
-          state: empData.empState,
-          district: empData.empDistrict,
-          pin_code: empData.empPin,
-          passport_status: empData.empPassportQ,
-          migration_experience: empData.empInternationMigrationExp,
-          relocation_interest: empData.empRelocationIntQ,
-          reference_name: empData.empRefName,
-          reference_phone: empData.empRefPhone,
-          location: empData.empState && empData.empDistrict ? `${empData.empDistrict}, ${empData.empState}` : currentUser.location
+          
+          // Personal details
+          gender: empData.empGender || currentUser.gender,
+          dob: empData.empDob || currentUser.dob,
+          date_of_birth: empData.empDob || currentUser.date_of_birth || currentUser.dob,
+          nationality: empData.empNationality || currentUser.nationality,
+          
+          // Professional information
+          education: empData.empEdu || currentUser.education,
+          technical_education: empData.empTechEdu || currentUser.technical_education,
+          skills: empData.empSkill || currentUser.skills,
+          occupation: empData.empOccuId || currentUser.occupation,
+          occupation_id: empData.empOccuId || currentUser.occupation_id,
+          experience_years: currentUser.experience_years || 0,
+          
+          // Contact and location information
+          state: empData.empState || currentUser.state,
+          district: empData.empDistrict || currentUser.district,
+          city: empData.empDistrict || currentUser.city || currentUser.district,
+          pin_code: empData.empPin || currentUser.pin_code,
+          postal_code: empData.empPin || currentUser.postal_code || currentUser.pin_code,
+          address: currentUser.address || "",
+          location: empData.empState && empData.empDistrict ? `${empData.empDistrict}, ${empData.empState}` : currentUser.location,
+          
+          // Employment details
+          daily_wage: empData.empDailyWage || currentUser.daily_wage,
+          expected_income: empData.empExpectedMonthlyIncome || currentUser.expected_income,
+          
+          // Migration and relocation
+          passport_status: empData.empPassportQ || currentUser.passport_status,
+          migration_experience: empData.empInternationMigrationExp || currentUser.migration_experience,
+          relocation_interest: empData.empRelocationIntQ || currentUser.relocation_interest,
+          
+          // Emergency contacts
+          reference_name: empData.empRefName || currentUser.reference_name,
+          reference_phone: empData.empRefPhone || currentUser.reference_phone,
+          emergency_contact_name: empData.empRefName || currentUser.emergency_contact_name || currentUser.reference_name,
+          emergency_contact_phone: empData.empRefPhone || currentUser.emergency_contact_phone || currentUser.reference_phone,
+          
+          // Additional fields that might exist
+          about: currentUser.about || "",
+          profile_image: currentUser.profile_image || empData.empProfileImage || ""
         };
+        
+        console.log('MyProfile: Updated user data with backend info:', updatedUser);
         setUser(updatedUser);
-        // Update localStorage with complete data
+        
+        // Update localStorage with complete data for both keys
         localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        
+        console.log('MyProfile: Saved complete user data to localStorage');
       }
       
       // Handle applied jobs count and data
@@ -443,46 +475,150 @@ export default function MyProfilePage() {
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold text-gray-900">Personal Information</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">User Type</p>
-                      <Badge variant={user.type === "person" ? "default" : "secondary"}>
-                        {user.type}
-                      </Badge>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Email</p>
-                      <p className="text-gray-900">{user.email}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Phone</p>
-                      <p className="text-gray-900">{user.phone}</p>
-                    </div>
-                    
-                    {user.name && (
+                <CardContent className="space-y-6">
+                  {/* Basic Information */}
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-800 mb-3">Basic Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm font-medium text-gray-500">Name</p>
-                        <p className="text-gray-900">{user.name}</p>
+                        <p className="text-sm font-medium text-gray-500">User Type</p>
+                        <Badge variant={user.type === "person" ? "default" : "secondary"}>
+                          {user.type}
+                        </Badge>
                       </div>
-                    )}
-
-                    {user.location && (
+                      
                       <div>
-                        <p className="text-sm font-medium text-gray-500">Location</p>
-                        <p className="text-gray-900">{user.location}</p>
+                        <p className="text-sm font-medium text-gray-500">Full Name</p>
+                        <p className="text-gray-900">{user.name || "Not provided"}</p>
                       </div>
-                    )}
-
-                    {user.occupation && (
+                      
                       <div>
-                        <p className="text-sm font-medium text-gray-500">Occupation</p>
-                        <p className="text-gray-900">{user.occupation}</p>
+                        <p className="text-sm font-medium text-gray-500">Email</p>
+                        <p className="text-gray-900">{user.email}</p>
                       </div>
-                    )}
+                      
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Phone</p>
+                        <p className="text-gray-900">{user.phone}</p>
+                      </div>
+                      
+                      {(user as any).date_of_birth && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Date of Birth</p>
+                          <p className="text-gray-900">{(user as any).date_of_birth}</p>
+                        </div>
+                      )}
+                      
+                      {user.gender && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Gender</p>
+                          <p className="text-gray-900 capitalize">{user.gender}</p>
+                        </div>
+                      )}
+                      
+                      {(user as any).nationality && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Nationality</p>
+                          <p className="text-gray-900">{(user as any).nationality}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Professional Information */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-base font-semibold text-gray-800 mb-3">Professional Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {user.occupation && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Current Occupation</p>
+                          <p className="text-gray-900">{user.occupation}</p>
+                        </div>
+                      )}
+                      
+                      {user.experience_years && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Years of Experience</p>
+                          <p className="text-gray-900">{user.experience_years} years</p>
+                        </div>
+                      )}
+                      
+                      {user.skills && (
+                        <div className="md:col-span-2">
+                          <p className="text-sm font-medium text-gray-500">Skills</p>
+                          <p className="text-gray-900">{user.skills}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contact Information */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-base font-semibold text-gray-800 mb-3">Contact Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {user.location && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Location</p>
+                          <p className="text-gray-900">{user.location}</p>
+                        </div>
+                      )}
+                      
+                      {user.state && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">State</p>
+                          <p className="text-gray-900">{user.state}</p>
+                        </div>
+                      )}
+                      
+                      {(user.district || (user as any).city) && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">City</p>
+                          <p className="text-gray-900">{user.district || (user as any).city}</p>
+                        </div>
+                      )}
+                      
+                      {(user.pin_code || (user as any).postal_code) && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Postal Code</p>
+                          <p className="text-gray-900">{user.pin_code || (user as any).postal_code}</p>
+                        </div>
+                      )}
+                      
+                      {(user as any).address && (
+                        <div className="md:col-span-2">
+                          <p className="text-sm font-medium text-gray-500">Address</p>
+                          <p className="text-gray-900">{(user as any).address}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Emergency Contact */}
+                  {(user.reference_name || (user as any).emergency_contact_name) && (
+                    <div className="pt-4 border-t">
+                      <h4 className="text-base font-semibold text-gray-800 mb-3">Emergency Contact</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Contact Name</p>
+                          <p className="text-gray-900">{user.reference_name || (user as any).emergency_contact_name}</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Contact Phone</p>
+                          <p className="text-gray-900">{user.reference_phone || (user as any).emergency_contact_phone}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* About Me */}
+                  {(user as any).about && (
+                    <div className="pt-4 border-t">
+                      <h4 className="text-base font-semibold text-gray-800 mb-3">About Me</h4>
+                      <p className="text-gray-900">{(user as any).about}</p>
+                    </div>
+                  )}
+                  
                   <div className="pt-4 border-t">
                     <Button onClick={() => router.push('/edit-profile')} className="bg-blue-600 hover:bg-blue-700">
                       Edit Profile
