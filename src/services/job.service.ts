@@ -79,8 +79,22 @@ export const getJobList = async (payload: FormData): Promise<JobListResponse> =>
     // Let axios set the proper multipart boundary automatically
     const response = await axios.post(BASE_URL + "filter-all-jobs", payload);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error posting data:", error);
+    
+    // Handle 500 errors gracefully
+    if (error?.response?.status === 500) {
+      console.error('Backend server error (500). Using empty response as fallback.');
+      // Return empty but valid response structure
+      return {
+        jobs: [],
+        totalJobs: 0,
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10
+      };
+    }
+    
     throw error;
   }
 };

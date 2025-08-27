@@ -729,14 +729,22 @@ const CreateJobs = () => {
         setHrDetailsLoading(true);
         console.log('🔄 STARTING HR Details fetch for auto-fill...');
         
-        // Get access token with detailed logging
-        const accessToken = localStorage.getItem('accessToken');
+        // Get access token with detailed logging - use correct key 'access_token'
+        let accessToken = localStorage.getItem('access_token');
         console.log('🔑 Access token check:', accessToken ? 'Found' : 'Not found', accessToken ? `(Length: ${accessToken.length})` : '');
         
         if (!accessToken) {
-          console.warn('⚠️ No access token found, skipping HR details fetch');
-          toast.info('Please log in to auto-fill HR details.');
-          return;
+          // Try legacy keys as fallback
+          const legacyToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
+          if (legacyToken) {
+            console.warn('Found token with legacy key, migrating to access_token');
+            localStorage.setItem('access_token', legacyToken);
+            accessToken = legacyToken;
+          } else {
+            console.warn('⚠️ No access token found, skipping HR details fetch');
+            toast.info('Please log in to auto-fill HR details.');
+            return;
+          }
         }
         
         console.log('🚀 Calling getEnhancedHrDetails API...');
@@ -995,10 +1003,18 @@ const CreateJobs = () => {
     setLoading(true);
 
     try {
-      // Get access token with fallback
-      const accessToken = localStorage.getItem('accessToken');
+      // Get access token with fallback - use correct key 'access_token'
+      let accessToken = localStorage.getItem('access_token');
       if (!accessToken) {
-        throw new Error('Authentication token not found. Please log in again.');
+        // Try legacy keys as fallback
+        const legacyToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
+        if (legacyToken) {
+          console.warn('Found token with legacy key, migrating to access_token');
+          localStorage.setItem('access_token', legacyToken);
+          accessToken = legacyToken; // Use the migrated token
+        } else {
+          throw new Error('Authentication token not found. Please log in again.');
+        }
       }
       
       // Convert formData object to FormData instance

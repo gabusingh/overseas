@@ -235,9 +235,24 @@ export default function JobsPage() {
         setJobs(Array.isArray(pageJobs) ? pageJobs : []);
         setTotalJobs(totalCount);
         setTotalPages(lastPageFromServer);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching jobs:', error);
-        toast.error('Failed to load jobs. Please try again.');
+        
+        // Check for specific error types
+        if (error?.response?.status === 500) {
+          toast.error('Server is temporarily unavailable. Showing offline mode.');
+          // Set empty jobs but don't crash
+          setJobs([]);
+          setTotalJobs(0);
+          setTotalPages(1);
+        } else if (error?.response?.status === 503) {
+          toast.error('Service is under maintenance. Please try again later.');
+          setJobs([]);
+          setTotalJobs(0);
+          setTotalPages(1);
+        } else {
+          toast.error('Failed to load jobs. Please check your connection and try again.');
+        }
       } finally {
         setLoading(false);
       }
