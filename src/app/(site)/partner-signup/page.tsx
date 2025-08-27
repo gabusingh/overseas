@@ -661,7 +661,7 @@ export default function PartnerSignupPage() {
               <div className="text-center text-sm text-gray-600 space-y-1">
                 <p>Register as:</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-                  <Link href="/candidate-register" className="text-[#17487f] hover:underline font-medium">
+                  <Link href="/candidate-signup" className="text-[#17487f] hover:underline font-medium">
                     Job Seeker
                   </Link>
                   <Link href="/employer-signup" className="text-[#17487f] hover:underline font-medium">

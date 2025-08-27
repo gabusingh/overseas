@@ -28,7 +28,7 @@ export default function SelectUserType({ onSelect, showTitle = true }: SelectUse
       title: "Job Seeker",
       description: "Looking for overseas job opportunities",
       icon: User,
-      route: "/candidate-register",
+      route: "/candidate-signup",
       color: "bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-800",
       iconColor: "text-blue-600"
     },

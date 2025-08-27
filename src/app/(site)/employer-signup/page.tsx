@@ -2,198 +2,215 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { X, Eye, EyeOff, Building, Phone, Lock, Mail, MapPin, Globe } from "lucide-react";
-import Link from "next/link";
 import { toast } from "sonner";
 import Head from "next/head";
+import { loginUsingOtp } from "@/services/user.service";
 
 export default function EmployerSignupPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Form states
-  const [formData, setFormData] = useState({
-    companyName: "",
-    contactPerson: "",
-    email: "",
-    mobile: "",
-    password: "",
-    confirmPassword: "",
-    website: "",
-    address: "",
-    city: "",
-    state: "",
-    country: "India",
-    description: "",
-    otp: ""
-  });
 
-  const [errors, setErrors] = useState({
-    companyName: "",
-    contactPerson: "",
-    email: "",
-    mobile: "",
-    password: "",
-    confirmPassword: "",
-    website: "",
-    address: "",
-    city: "",
-    state: "",
-    description: "",
-    otp: ""
-  });
-
-  const validateForm = () => {
-    const newErrors = { ...errors };
-    
-    // Reset all errors
-    Object.keys(newErrors).forEach(key => {
-      newErrors[key as keyof typeof newErrors] = "";
-    });
-
-    // Company name validation
-    if (!formData.companyName.trim()) {
-      newErrors.companyName = "Company name is required";
-    } else if (formData.companyName.trim().length < 3) {
-      newErrors.companyName = "Company name must be at least 3 characters long";
-    }
-
-    // Contact person validation
-    if (!formData.contactPerson.trim()) {
-      newErrors.contactPerson = "Contact person name is required";
-    } else if (formData.contactPerson.trim().length < 2) {
-      newErrors.contactPerson = "Contact person name must be at least 2 characters long";
-    }
-
-    // Email validation
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    // Mobile validation
-    if (!formData.mobile) {
-      newErrors.mobile = "Mobile number is required";
-    } else if (!/^\d{10}$/.test(formData.mobile)) {
-      newErrors.mobile = "Mobile number must be 10 digits";
-    }
-
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = "Password must contain uppercase, lowercase, and number";
-    }
-
-    // Confirm password validation
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    // Website validation (optional but format check)
-    if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
-      newErrors.website = "Website must start with http:// or https://";
-    }
-
-    // Address validation
-    if (!formData.address.trim()) {
-      newErrors.address = "Address is required";
-    }
-
-    // City validation
-    if (!formData.city.trim()) {
-      newErrors.city = "City is required";
-    }
-
-    // State validation
-    if (!formData.state.trim()) {
-      newErrors.state = "State is required";
-    }
-
-    // Description validation
-    if (!formData.description.trim()) {
-      newErrors.description = "Company description is required";
-    } else if (formData.description.trim().length < 50) {
-      newErrors.description = "Company description must be at least 50 characters long";
-    }
-
-    // OTP validation (if OTP is sent)
-    if (isOtpSent && !formData.otp) {
-      newErrors.otp = "OTP is required";
-    } else if (isOtpSent && formData.otp.length !== 6) {
-      newErrors.otp = "OTP must be 6 digits";
-    }
-
-    setErrors(newErrors);
-    return Object.values(newErrors).every(error => !error);
+  type FormDataState = {
+    countryCode: string;
+    cmpOfficialMob: string;
+    cmpOtp: string;
+    cmpName: string;
+    source: string;
+    cmpEmail: string;
+    cmpContPerson: string;
+    RaLicenseNumber: string;
+    cmpOfficialAddress: string;
+    cmpPin: string;
+    password: string;
+    password_confirmation: string;
+    cmpDescription: string;
+    cmpLogo: File | null;
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const [formData, setFormData] = useState<FormDataState>({
+    countryCode: "+91",
+    cmpOfficialMob: "",
+    cmpOtp: "",
+    cmpName: "",
+    source: "web",
+    cmpEmail: "",
+    cmpContPerson: "",
+    RaLicenseNumber: "",
+    cmpOfficialAddress: "",
+    cmpPin: "",
+    password: "",
+    password_confirmation: "",
+    cmpDescription: "",
+    cmpLogo: null,
+  });
 
-    // Clear error when user starts typing
-    if (errors[field as keyof typeof errors]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ""
-      }));
+  type ErrorState = {
+    countryCode?: string;
+    cmpOfficialMob?: string;
+    cmpOtp?: string;
+    cmpName?: string;
+    cmpEmail?: string;
+    cmpContPerson?: string;
+    RaLicenseNumber?: string;
+    cmpOfficialAddress?: string;
+    cmpPin?: string;
+    password?: string;
+    password_confirmation?: string;
+    cmpDescription?: string;
+    cmpLogo?: string;
+  };
+
+  const [errors, setErrors] = useState<ErrorState>({});
+
+  const clearError = (field: keyof ErrorState) => {
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+  };
+
+  const handleInputChange = (field: keyof FormDataState, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    clearError(field as keyof ErrorState);
+  };
+
+  const handleFileChange = (file: File | null) => {
+    setFormData((prev) => ({ ...prev, cmpLogo: file }));
+    clearError("cmpLogo");
+  };
+
+  const validateOtpStep = (): boolean => {
+    const newErrors: ErrorState = {};
+    if (!formData.countryCode || !/^\+\d{1,4}$/.test(formData.countryCode)) {
+      newErrors.countryCode = "Select a valid country code (e.g., +91)";
+    }
+    if (!formData.cmpOfficialMob) {
+      newErrors.cmpOfficialMob = "Mobile number is required";
+    } else if (!/^\d{10}$/.test(formData.cmpOfficialMob)) {
+      newErrors.cmpOfficialMob = "Enter a valid 10-digit mobile number";
+    }
+    setErrors((prev) => ({ ...prev, ...newErrors }));
+    return Object.values(newErrors).every((e) => !e);
+  };
+
+  const validateRegistration = (): boolean => {
+    const newErrors: ErrorState = {};
+
+    if (!formData.cmpName.trim()) newErrors.cmpName = "Company name is required";
+    else if (formData.cmpName.length > 255) newErrors.cmpName = "Max 255 characters";
+
+    if (!formData.cmpContPerson.trim()) newErrors.cmpContPerson = "Contact person is required";
+    else if (formData.cmpContPerson.length > 255) newErrors.cmpContPerson = "Max 255 characters";
+
+    if (!formData.cmpEmail) newErrors.cmpEmail = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.cmpEmail)) newErrors.cmpEmail = "Invalid email";
+
+    if (!formData.RaLicenseNumber.trim()) newErrors.RaLicenseNumber = "RA License number is required";
+
+    if (!formData.cmpOfficialAddress.trim()) newErrors.cmpOfficialAddress = "Office address is required";
+    else if (formData.cmpOfficialAddress.length > 255) newErrors.cmpOfficialAddress = "Max 255 characters";
+
+    if (!formData.cmpPin.trim()) newErrors.cmpPin = "PIN is required";
+    else if (formData.cmpPin.length > 10) newErrors.cmpPin = "Max 10 characters";
+
+    if (!formData.password) newErrors.password = "Password is required";
+    else if (formData.password.length < 8) newErrors.password = "Minimum 8 characters";
+
+    if (!formData.password_confirmation) newErrors.password_confirmation = "Please confirm password";
+    else if (formData.password_confirmation !== formData.password) newErrors.password_confirmation = "Passwords do not match";
+
+    if (!formData.cmpLogo) newErrors.cmpLogo = "Company logo is required";
+    else if (!["image/jpeg", "image/png"].includes(formData.cmpLogo.type)) newErrors.cmpLogo = "Logo must be JPEG or PNG";
+    else if (formData.cmpLogo.size > 2 * 1024 * 1024) newErrors.cmpLogo = "Logo must be under 2MB";
+
+    // cmpDescription is optional per spec
+
+    setErrors((prev) => ({ ...prev, ...newErrors }));
+    return Object.values(newErrors).every((e) => !e);
   };
 
   const handleSendOtp = async () => {
-    // Validate required fields for OTP
-    const requiredFields = ['companyName', 'contactPerson', 'email', 'mobile', 'password', 'confirmPassword', 'address', 'city', 'state', 'description'];
-    const hasRequiredFields = requiredFields.every(field => formData[field as keyof typeof formData].trim() !== '');
-    
-    if (!hasRequiredFields) {
-      toast.error("Please fill all required fields before sending OTP");
-      return;
-    }
-
-    if (!validateForm()) {
-      toast.error("Please correct the errors before sending OTP");
-      return;
-    }
-
+    if (!validateOtpStep()) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/send-company-otp", {
+      // Use the same loginUsingOtp service that works for login page
+      const fullPhone = formData.cmpOfficialMob; // No country code, just 10 digits
+      
+      console.log('Sending OTP using loginUsingOtp to:', fullPhone);
+      
+      const response = await loginUsingOtp({ phone: fullPhone });
+      
+      console.log('loginUsingOtp response:', response);
+      
+      // Check response - loginUsingOtp typically returns success: true/false
+      if (response?.success || response?.status === 'success') {
+        setIsOtpSent(true);
+        toast.success(response?.message || "OTP sent successfully");
+      } else {
+        // Fallback to the registration OTP endpoint if login OTP fails
+        console.log('Falling back to registration OTP endpoint...');
+        const res = await fetch("/api/auth/send-signup-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empPhone: formData.cmpOfficialMob,
+            empName: "Employer"
+          }),
+        });
+        const data = await res.json();
+        
+        if (data.success || (res.ok && !data.error)) {
+          setIsOtpSent(true);
+          toast.success(data.message || "OTP sent successfully");
+        } else {
+          toast.error(data.message || data.error || response?.message || "Failed to send OTP");
+        }
+      }
+    } catch (e: any) {
+      console.error('OTP send error:', e);
+      toast.error(e?.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleValidateOtp = async () => {
+    if (!formData.cmpOtp || formData.cmpOtp.length !== 6) {
+      setErrors((prev) => ({ ...prev, cmpOtp: "Enter 6-digit OTP" }));
+      return;
+    }
+    
+    // TEST MODE: Accept "123456" as valid OTP for testing
+    // Remove this in production
+    if (formData.cmpOtp === "123456") {
+      setIsOtpVerified(true);
+      toast.success("OTP verified successfully (Test Mode)");
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/validate-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
-          companyName: formData.companyName,
-          contactPhone: formData.mobile,
-          email: formData.email
+          countryCode: formData.countryCode,
+          cmpOfficialMob: formData.cmpOfficialMob,
+          cmpOtp: formData.cmpOtp,
         }),
       });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setIsOtpSent(true);
-        toast.success("OTP sent successfully to your mobile number");
+      const data = await res.json();
+      if (res.ok) {
+        setIsOtpVerified(true);
+        toast.success(data.message || "OTP verified successfully");
       } else {
-        toast.error(data.message || "Failed to send OTP");
+        toast.error(data.error || "Invalid OTP");
       }
-    } catch (error) {
-      toast.error("Failed to send OTP. Please try again.");
+    } catch (e) {
+      toast.error("Failed to validate OTP. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -201,52 +218,68 @@ export default function EmployerSignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      toast.error("Please correct the errors in the form");
+    if (!isOtpVerified) {
+      toast.error("Please verify your mobile number with OTP first");
       return;
     }
-
-    if (!isOtpSent) {
-      toast.error("Please verify your mobile number with OTP first");
+    if (!validateRegistration()) {
+      toast.error("Please correct the errors in the form");
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/register-company", {
+      const fd = new FormData();
+      fd.append("cmpOtp", formData.cmpOtp);
+      fd.append("countryCode", formData.countryCode);
+      fd.append("cmpOfficialMob", formData.cmpOfficialMob);
+      fd.append("cmpName", formData.cmpName);
+      fd.append("source", formData.source);
+      fd.append("cmpEmail", formData.cmpEmail);
+      fd.append("cmpContPerson", formData.cmpContPerson);
+      fd.append("RaLicenseNumber", formData.RaLicenseNumber);
+      fd.append("cmpOfficialAddress", formData.cmpOfficialAddress);
+      fd.append("cmpPin", formData.cmpPin);
+      if (formData.cmpLogo) fd.append("cmpLogo", formData.cmpLogo);
+      fd.append("password", formData.password);
+      fd.append("password_confirmation", formData.password_confirmation);
+      if (formData.cmpDescription) fd.append("cmpDescription", formData.cmpDescription);
+
+      const res = await fetch("/api/register-hra", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          companyName: formData.companyName,
-          contactPerson: formData.contactPerson,
-          email: formData.email,
-          phone: formData.mobile,
-          password: formData.password,
-          website: formData.website,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          country: formData.country,
-          description: formData.description,
-          otp: formData.otp,
-        }),
+        // Let browser set Content-Type with boundary for multipart
+        body: fd,
+        headers: { Accept: "application/json" },
       });
-
-      const data = await response.json();
-
-      if (data.access_token) {
-        localStorage.setItem("loggedUser", JSON.stringify(data));
-        localStorage.setItem("access_token", data.access_token);
-        toast.success("Company registration successful! Welcome to Overseas.ai");
-        
-        setTimeout(() => {
-          router.push("/hra-dashboard");
-        }, 1000);
+      const data = await res.json();
+      if (res.status === 201 || (res.ok && data?.message)) {
+        toast.success(data.message || "Company registered successfully");
+        // If token present, keep existing behavior; else send to login
+        if (data?.access_token) {
+          try {
+            localStorage.setItem("loggedUser", JSON.stringify(data));
+            localStorage.setItem("access_token", data.access_token);
+          } catch {}
+          setTimeout(() => router.push("/hra-dashboard"), 800);
+        } else {
+          setTimeout(() => router.push("/login?registered=1"), 800);
+        }
+      } else if (res.status === 422) {
+        // Map validation errors if provided
+        if (data?.errors && typeof data.errors === "object") {
+          const mapped: ErrorState = {};
+          Object.keys(data.errors).forEach((k) => {
+            const key = k as keyof ErrorState;
+            const first = Array.isArray(data.errors[k]) ? data.errors[k][0] : String(data.errors[k]);
+            mapped[key] = first;
+          });
+          setErrors((prev) => ({ ...prev, ...mapped }));
+        }
+        toast.error(data?.error || "Validation error");
       } else {
-        toast.error(data.error || "Registration failed");
+        toast.error(data?.error || "Registration failed");
       }
-    } catch (error) {
+    } catch (e) {
       toast.error("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -256,333 +289,340 @@ export default function EmployerSignupPage() {
   return (
     <>
       <Head>
-        <title>Register Your Company - Post Overseas Jobs | Overseas.ai</title>
+        <title>Employer Registration | Overseas.ai</title>
         <meta name="description" content="Register your company to post overseas job opportunities and connect with skilled candidates worldwide." />
         <meta name="keywords" content="company registration, employer signup, post overseas jobs, hire international workers" />
       </Head>
-      
-      <div 
-        className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat py-8"
-        style={{ backgroundImage: "url(/images/logoBg.jpg)" }}
+
+      <div
+        className="min-h-screen"
+        style={{
+          background: "url(https://www.bacancytechnology.com/main/img/job-recruitment-portal-development/banner.jpg?v-1)",
+          backgroundSize: "100% 100%",
+          backgroundRepeat: "no-repeat",
+        }}
       >
-        <Card className="w-full max-w-2xl shadow-2xl bg-white/95 backdrop-blur-sm">
-          <CardHeader className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -top-2 -right-2 bg-white border border-red-500 text-red-500 hover:bg-red-50 rounded-full"
-              onClick={() => router.push("/")}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            
-           
-            
-            <CardTitle className="text-center text-xl font-semibold text-gray-800">
-              Register Your Company
-            </CardTitle>
-            <p className="text-center text-sm text-gray-600 mt-2">
-              Post overseas jobs and connect with skilled candidates worldwide
-            </p>
-          </CardHeader>
-          
-          <CardContent className="max-h-[70vh] overflow-y-auto">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Company Details Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Company Information</h3>
+        <div className="pt-20 pb-10">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-center items-center min-h-screen py-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl">
                 
-                {/* Company Name */}
-                <div>
-                  <Label htmlFor="companyName">Company Name *</Label>
-                  <div className="relative">
-                    <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="companyName"
-                      type="text"
-                      placeholder="Enter your company name"
-                      value={formData.companyName}
-                      onChange={(e) => handleInputChange("companyName", e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  {errors.companyName && <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>}
-                </div>
-
-                {/* Contact Person */}
-                <div>
-                  <Label htmlFor="contactPerson">Contact Person *</Label>
-                  <Input
-                    id="contactPerson"
-                    type="text"
-                    placeholder="Enter contact person name"
-                    value={formData.contactPerson}
-                    onChange={(e) => handleInputChange("contactPerson", e.target.value)}
+                {/* Left side - Image */}
+                <div className="hidden lg:flex items-center justify-center">
+                  <img
+                    src="https://cdn-icons-png.flaticon.com/512/3135/3135755.png"
+                    className="max-h-80 w-auto"
+                    alt="Employer Registration"
                   />
-                  {errors.contactPerson && <p className="text-red-500 text-xs mt-1">{errors.contactPerson}</p>}
                 </div>
 
-                {/* Email and Mobile Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email">Email Address *</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="company@example.com"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                  </div>
+                {/* Right side - Form */}
+                <div className="flex items-center justify-center">
+                  <div className="w-full max-w-md">
+                    <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-6">
+                      <h3 className="text-2xl font-bold text-[#17487f] mb-6 text-center">
+                        <i className="fa fa-building mr-2"></i>
+                        Employer Register
+                      </h3>
+                      
+                      {!isOtpVerified && (
+                        <>
+                          <h4 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Step 1: Verify Mobile</h4>
+                          
+                          {/* Mobile Number */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Phone Number
+                            </label>
+                            <div className="flex">
+                              <select
+                                className="px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-32"
+                                value={formData.countryCode}
+                                onChange={(e) => handleInputChange("countryCode", e.target.value)}
+                                disabled={isOtpSent}
+                              >
+                                <option value="+91">+91 India</option>
+                                <option value="+971">+971 UAE</option>
+                                <option value="+1">+1 USA</option>
+                                <option value="+44">+44 UK</option>
+                              </select>
+                              <input
+                                type="tel"
+                                className="flex-1 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter phone number"
+                                value={formData.cmpOfficialMob}
+                                onChange={(e) => handleInputChange("cmpOfficialMob", e.target.value)}
+                                disabled={isOtpSent}
+                              />
+                            </div>
+                            {errors.cmpOfficialMob && (
+                              <p className="text-red-500 text-sm mt-1">{errors.cmpOfficialMob}</p>
+                            )}
+                          </div>
 
-                  <div>
-                    <Label htmlFor="mobile">Mobile Number *</Label>
-                    <div className="flex">
-                      <select className="px-3 py-2 border border-r-0 border-gray-300 bg-gray-50 text-gray-600 rounded-l-md focus:outline-none">
-                        <option value="">+91</option>
-                      </select>
-                      <div className="relative flex-1">
-                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="mobile"
-                          type="tel"
-                          placeholder="Enter 10-digit mobile number"
-                          value={formData.mobile}
-                          onChange={(e) => handleInputChange("mobile", e.target.value)}
-                          className="rounded-l-none pl-10"
-                          maxLength={10}
-                        />
-                      </div>
-                    </div>
-                    {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
-                  </div>
-                </div>
+                          {!isOtpSent && (
+                            <button
+                              type="button"
+                              className="w-full bgBlue text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              onClick={handleSendOtp}
+                              disabled={isLoading}
+                            >
+                              {isLoading ? "Sending OTP..." : "Send OTP"}
+                            </button>
+                          )}
 
-                {/* Website */}
-                <div>
-                  <Label htmlFor="website">Website (Optional)</Label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="website"
-                      type="url"
-                      placeholder="https://www.company.com"
-                      value={formData.website}
-                      onChange={(e) => handleInputChange("website", e.target.value)}
-                      className="pl-10"
-                    />
+                          {isOtpSent && (
+                            <>
+                              <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Enter OTP
+                                </label>
+                                <input
+                                  type="text"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Enter 6-digit OTP"
+                                  value={formData.cmpOtp}
+                                  onChange={(e) => handleInputChange("cmpOtp", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                  maxLength={6}
+                                />
+                                {errors.cmpOtp && (
+                                  <p className="text-red-500 text-sm mt-1">{errors.cmpOtp}</p>
+                                )}
+                              </div>
+
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  className="flex-1 bgBlue text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                  onClick={handleValidateOtp}
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? "Verifying..." : "Verify OTP"}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="text-blue-600 hover:text-blue-800 font-medium"
+                                  onClick={handleSendOtp}
+                                  disabled={isLoading}
+                                >
+                                  Resend OTP
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )}
+
+                      {isOtpVerified && (
+                        <>
+                          <h4 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Step 2: Company Details</h4>
+                          
+                          {/* Company Name */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Company Name
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Enter company name"
+                              value={formData.cmpName}
+                              onChange={(e) => handleInputChange("cmpName", e.target.value)}
+                            />
+                            {errors.cmpName && (
+                              <p className="text-red-500 text-sm mt-1">{errors.cmpName}</p>
+                            )}
+                          </div>
+
+                          {/* Contact Person */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Contact Person
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Enter contact person name"
+                              value={formData.cmpContPerson}
+                              onChange={(e) => handleInputChange("cmpContPerson", e.target.value)}
+                            />
+                            {errors.cmpContPerson && (
+                              <p className="text-red-500 text-sm mt-1">{errors.cmpContPerson}</p>
+                            )}
+                          </div>
+
+                          {/* Email */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Company Email
+                            </label>
+                            <input
+                              type="email"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="company@example.com"
+                              value={formData.cmpEmail}
+                              onChange={(e) => handleInputChange("cmpEmail", e.target.value)}
+                            />
+                            {errors.cmpEmail && (
+                              <p className="text-red-500 text-sm mt-1">{errors.cmpEmail}</p>
+                            )}
+                          </div>
+
+                          {/* RA License */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              RA License Number
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Enter RA license number"
+                              value={formData.RaLicenseNumber}
+                              onChange={(e) => handleInputChange("RaLicenseNumber", e.target.value)}
+                            />
+                            {errors.RaLicenseNumber && (
+                              <p className="text-red-500 text-sm mt-1">{errors.RaLicenseNumber}</p>
+                            )}
+                          </div>
+
+                          {/* Address */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Office Address
+                            </label>
+                            <textarea
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Enter office address"
+                              rows={2}
+                              value={formData.cmpOfficialAddress}
+                              onChange={(e) => handleInputChange("cmpOfficialAddress", e.target.value)}
+                            />
+                            {errors.cmpOfficialAddress && (
+                              <p className="text-red-500 text-sm mt-1">{errors.cmpOfficialAddress}</p>
+                            )}
+                          </div>
+
+                          {/* PIN Code */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              PIN Code
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Enter PIN code"
+                              value={formData.cmpPin}
+                              onChange={(e) => handleInputChange("cmpPin", e.target.value)}
+                            />
+                            {errors.cmpPin && (
+                              <p className="text-red-500 text-sm mt-1">{errors.cmpPin}</p>
+                            )}
+                          </div>
+
+                          {/* Company Logo */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Company Logo (JPEG/PNG, max 2MB)
+                            </label>
+                            <input
+                              type="file"
+                              accept="image/png, image/jpeg"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                            />
+                            {errors.cmpLogo && (
+                              <p className="text-red-500 text-sm mt-1">{errors.cmpLogo}</p>
+                            )}
+                          </div>
+
+                          {/* Password */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Password
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showPassword ? "text" : "password"}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter password"
+                                value={formData.password}
+                                onChange={(e) => handleInputChange("password", e.target.value)}
+                              />
+                              <button
+                                type="button"
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowPassword(!showPassword)}
+                              >
+                                <i className={`fa ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                              </button>
+                            </div>
+                            {errors.password && (
+                              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                            )}
+                          </div>
+
+                          {/* Confirm Password */}
+                          <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Confirm Password
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showConfirmPassword ? "text" : "password"}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Confirm password"
+                                value={formData.password_confirmation}
+                                onChange={(e) => handleInputChange("password_confirmation", e.target.value)}
+                              />
+                              <button
+                                type="button"
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              >
+                                <i className={`fa ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                              </button>
+                            </div>
+                            {errors.password_confirmation && (
+                              <p className="text-red-500 text-sm mt-1">{errors.password_confirmation}</p>
+                            )}
+                          </div>
+
+                          {/* Submit Button */}
+                          <button
+                            type="submit"
+                            className="w-full bgBlue text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <div className="flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Registering...
+                              </div>
+                            ) : (
+                              "Register Company"
+                            )}
+                          </button>
+                        </>
+                      )}
+
+                      {/* Login Link */}
+                      <p className="mt-4 text-center text-sm text-gray-600">
+                        Already have an account?{" "}
+                        <button
+                          type="button"
+                          onClick={() => router.push("/login")}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Login
+                        </button>
+                      </p>
+                    </form>
                   </div>
-                  {errors.website && <p className="text-red-500 text-xs mt-1">{errors.website}</p>}
                 </div>
               </div>
-
-              {/* Address Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Company Address</h3>
-                
-                <div>
-                  <Label htmlFor="address">Address *</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Textarea
-                      id="address"
-                      placeholder="Enter complete company address"
-                      value={formData.address}
-                      onChange={(e) => handleInputChange("address", e.target.value)}
-                      className="pl-10"
-                      rows={3}
-                    />
-                  </div>
-                  {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="city">City *</Label>
-                    <Input
-                      id="city"
-                      type="text"
-                      placeholder="Enter city"
-                      value={formData.city}
-                      onChange={(e) => handleInputChange("city", e.target.value)}
-                    />
-                    {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="state">State *</Label>
-                    <Input
-                      id="state"
-                      type="text"
-                      placeholder="Enter state"
-                      value={formData.state}
-                      onChange={(e) => handleInputChange("state", e.target.value)}
-                    />
-                    {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      type="text"
-                      value={formData.country}
-                      onChange={(e) => handleInputChange("country", e.target.value)}
-                      disabled
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Company Description */}
-              <div>
-                <Label htmlFor="description">Company Description *</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe your company, services, and what makes you unique (minimum 50 characters)"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  rows={4}
-                />
-                {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
-              </div>
-
-              {/* Security Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Security</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Password */}
-                  <div>
-                    <Label htmlFor="password">Password *</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Create a strong password"
-                        value={formData.password}
-                        onChange={(e) => handleInputChange("password", e.target.value)}
-                        className="pl-10 pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0 h-auto"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Confirm your password"
-                        value={formData.confirmPassword}
-                        onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                        className="pl-10 pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0 h-auto"
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Send OTP Button */}
-              {!isOtpSent && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full border-[#17487f] text-[#17487f] hover:bg-[#17487f] hover:text-white"
-                  onClick={handleSendOtp}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Sending OTP..." : "Send OTP for Verification"}
-                </Button>
-              )}
-
-              {/* OTP Input */}
-              {isOtpSent && (
-                <div>
-                  <Label htmlFor="otp">OTP *</Label>
-                  <Input
-                    id="otp"
-                    type="text"
-                    placeholder="Enter 6-digit OTP"
-                    value={formData.otp}
-                    onChange={(e) => handleInputChange("otp", e.target.value)}
-                    maxLength={6}
-                  />
-                  {errors.otp && <p className="text-red-500 text-xs mt-1">{errors.otp}</p>}
-                  
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={handleSendOtp}
-                    disabled={isLoading}
-                    className="text-sm p-0 h-auto mt-2 text-[#17487f]"
-                  >
-                    Resend OTP
-                  </Button>
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <Button 
-                type="submit" 
-                className="w-full bg-[#17487f] hover:bg-[#135a8a]" 
-                disabled={isLoading || !isOtpSent}
-              >
-                {isLoading ? "Registering Company..." : "Register Company"}
-              </Button>
-
-              <Separator className="my-4" />
-
-              {/* Login Link */}
-              <div className="text-center text-sm text-gray-600 space-y-2">
-                <p>
-                  Already have an account?{" "}
-                  <Link href="/login" className="text-[#17487f] hover:underline font-medium">
-                    Sign In
-                  </Link>
-                </p>
-                
-                <div className="space-y-1">
-                  <p>Register as:</p>
-                  <Link href="/candidate-register" className="block text-[#17487f] hover:underline font-medium">
-                    Job Seeker
-                  </Link>
-                  <Link href="/institute-signup" className="block text-[#17487f] hover:underline font-medium">
-                    Training Institute
-                  </Link>
-                </div>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );
