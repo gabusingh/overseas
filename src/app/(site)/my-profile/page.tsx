@@ -188,10 +188,13 @@ export default function MyProfilePage() {
       }
       
       // Handle applied jobs count and data
-      if (appliedJobsResponse.status === 'fulfilled' && appliedJobsResponse.value?.data) {
-        const appliedJobsData = Array.isArray(appliedJobsResponse.value.data) ? appliedJobsResponse.value.data : [];
-        setAppliedJobs(appliedJobsData);
-        dashboardData.applied_jobs_count = appliedJobsData.length || 0;
+      if (appliedJobsResponse.status === 'fulfilled') {
+        // Check for the correct response structure: response?.data?.jobs
+        const appliedJobsData = appliedJobsResponse.value?.data?.jobs || appliedJobsResponse.value?.data || [];
+        const safeAppliedJobsData = Array.isArray(appliedJobsData) ? appliedJobsData : [];
+        console.log('Applied jobs data extracted:', safeAppliedJobsData.length, 'jobs');
+        setAppliedJobs(safeAppliedJobsData);
+        dashboardData.applied_jobs_count = safeAppliedJobsData.length || 0;
       } else if (appliedJobsResponse.status === 'rejected') {
         console.warn('Applied jobs API failed:', appliedJobsResponse.reason);
         setAppliedJobs([]);
@@ -200,10 +203,13 @@ export default function MyProfilePage() {
       }
       
       // Handle saved jobs count and data
-      if (savedJobsResponse.status === 'fulfilled' && savedJobsResponse.value?.data) {
-        const savedJobsData = Array.isArray(savedJobsResponse.value.data) ? savedJobsResponse.value.data : [];
-        setSavedJobs(savedJobsData);
-        dashboardData.saved_jobs_count = savedJobsData.length || 0;
+      if (savedJobsResponse.status === 'fulfilled') {
+        // Check for the correct response structure: response?.data?.jobs
+        const savedJobsData = savedJobsResponse.value?.data?.jobs || savedJobsResponse.value?.data || [];
+        const safeSavedJobsData = Array.isArray(savedJobsData) ? savedJobsData : [];
+        console.log('Saved jobs data extracted:', safeSavedJobsData.length, 'jobs');
+        setSavedJobs(safeSavedJobsData);
+        dashboardData.saved_jobs_count = safeSavedJobsData.length || 0;
       } else if (savedJobsResponse.status === 'rejected') {
         console.warn('Saved jobs API failed:', savedJobsResponse.reason);
         setSavedJobs([]);
@@ -673,32 +679,267 @@ export default function MyProfilePage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold text-gray-900">Recent Notifications</CardTitle>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg font-semibold text-gray-900">Notifications</CardTitle>
+                    <div className="flex items-center gap-2">
+                      {notifications.filter(n => !n.is_read && !n.isRead && !n.read_at).length > 0 && (
+                        <Badge variant="destructive" className="text-xs px-2 py-1">
+                          {notifications.filter(n => !n.is_read && !n.isRead && !n.read_at).length} New
+                        </Badge>
+                      )}
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={async () => {
+                          const token = localStorage.getItem('access_token');
+                          if (token && notifications.some(n => !n.is_read && !n.isRead)) {
+                            try {
+                              // Mark all as read
+                              setNotifications(prev => prev.map(n => ({ ...n, is_read: true, isRead: true })));
+                              toast.success('All notifications marked as read');
+                            } catch (error) {
+                              console.error('Error marking notifications as read:', error);
+                            }
+                          }
+                        }}
+                      >
+                        Mark All Read
+                      </Button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {notifications.length > 0 ? (
-                    <div className="space-y-3">
-                      {notifications.slice(0, 10).map((notification, index) => (
-                        <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                            <p className="text-sm text-gray-600">{notification.message}</p>
-                            <p className="text-xs text-gray-500 mt-1">{notification.created_at}</p>
+                    <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                      {notifications.map((notification) => {
+                        // Extract notification details with proper field mapping
+                        const notificationId = notification.id || notification.notification_id || Math.random();
+                        const title = notification.title || notification.subject || notification.heading || 'Notification';
+                        const message = notification.message || notification.body || notification.content || notification.description || '';
+                        const createdAt = notification.created_at || notification.createdAt || notification.date || '';
+                        const isRead = notification.is_read || notification.isRead || notification.read_at ? true : false;
+                        const type = notification.type || notification.notification_type || 'system';
+                        const priority = notification.priority || 'medium';
+                        const actionUrl = notification.action_url || notification.actionUrl || notification.link || '';
+                        
+                        // Determine notification type and icon
+                        const getNotificationIcon = (type: string) => {
+                          switch(type?.toLowerCase()) {
+                            case 'job':
+                            case 'job_alert':
+                            case 'new_job':
+                              return '💼';
+                            case 'application':
+                            case 'application_status':
+                            case 'applied':
+                              return '📝';
+                            case 'interview':
+                            case 'interview_scheduled':
+                              return '📅';
+                            case 'document':
+                            case 'document_verification':
+                              return '📄';
+                            case 'profile':
+                            case 'profile_update':
+                              return '👤';
+                            case 'message':
+                            case 'chat':
+                              return '💬';
+                            case 'alert':
+                            case 'warning':
+                              return '⚠️';
+                            case 'success':
+                            case 'approved':
+                              return '✅';
+                            case 'rejected':
+                            case 'error':
+                              return '❌';
+                            default:
+                              return '🔔';
+                          }
+                        };
+                        
+                        // Determine priority styling
+                        const getPriorityColor = (priority: string) => {
+                          switch(priority?.toLowerCase()) {
+                            case 'high':
+                            case 'urgent':
+                              return 'border-l-4 border-l-red-500';
+                            case 'medium':
+                            case 'normal':
+                              return 'border-l-4 border-l-yellow-500';
+                            case 'low':
+                              return 'border-l-4 border-l-gray-300';
+                            default:
+                              return 'border-l-4 border-l-blue-500';
+                          }
+                        };
+                        
+                        // Format date
+                        const formatDate = (dateString: string) => {
+                          if (!dateString) return '';
+                          const date = new Date(dateString);
+                          const now = new Date();
+                          const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+                          
+                          if (diffInHours < 1) {
+                            return 'Just now';
+                          } else if (diffInHours < 24) {
+                            return `${Math.floor(diffInHours)} hours ago`;
+                          } else if (diffInHours < 48) {
+                            return 'Yesterday';
+                          } else if (diffInHours < 168) {
+                            return `${Math.floor(diffInHours / 24)} days ago`;
+                          } else {
+                            return date.toLocaleDateString();
+                          }
+                        };
+                        
+                        return (
+                          <div 
+                            key={notificationId}
+                            className={`
+                              p-4 rounded-lg transition-all duration-200 cursor-pointer
+                              ${isRead ? 'bg-gray-50 hover:bg-gray-100' : 'bg-blue-50 hover:bg-blue-100'}
+                              ${getPriorityColor(priority)}
+                            `}
+                            onClick={() => {
+                              // Mark as read
+                              if (!isRead) {
+                                setNotifications(prev => 
+                                  prev.map(n => 
+                                    n.id === notificationId ? { ...n, is_read: true, isRead: true } : n
+                                  )
+                                );
+                              }
+                              // Navigate if there's an action URL
+                              if (actionUrl) {
+                                router.push(actionUrl);
+                              }
+                            }}
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Icon */}
+                              <div className="text-2xl flex-shrink-0">
+                                {getNotificationIcon(type)}
+                              </div>
+                              
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1">
+                                    <h4 className={`text-sm font-semibold ${isRead ? 'text-gray-700' : 'text-gray-900'}`}>
+                                      {title}
+                                    </h4>
+                                    {message && (
+                                      <p className={`text-sm mt-1 ${isRead ? 'text-gray-500' : 'text-gray-600'} line-clamp-2`}>
+                                        {message}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center gap-3 mt-2">
+                                      <span className="text-xs text-gray-400">
+                                        {formatDate(createdAt)}
+                                      </span>
+                                      {!isRead && (
+                                        <Badge variant="default" className="text-xs px-2 py-0">
+                                          New
+                                        </Badge>
+                                      )}
+                                      {type && type !== 'system' && (
+                                        <Badge variant="outline" className="text-xs px-2 py-0 capitalize">
+                                          {type.replace(/_/g, ' ')}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Actions */}
+                                  <div className="flex-shrink-0">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // Remove notification
+                                        setNotifications(prev => 
+                                          prev.filter(n => (n.id || n.notification_id) !== notificationId)
+                                        );
+                                        toast.success('Notification removed');
+                                      }}
+                                    >
+                                      ×
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
+                        );
+                      })}
+                      
+                      {/* Load More or View All */}
+                      {notifications.length > 10 && (
+                        <div className="text-center pt-4">
+                          <Button asChild variant="outline">
+                            <Link href="/notifications">
+                              View All {notifications.length} Notifications
+                            </Link>
+                          </Button>
                         </div>
-                      ))}
-                      <div className="text-center pt-4">
-                        <Button asChild variant="outline">
-                          <Link href="/notifications">View All Notifications</Link>
-                        </Button>
-                      </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">No notifications yet</p>
+                    <div className="text-center py-12">
+                      <div className="text-6xl mb-4">🔔</div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No Notifications</h3>
+                      <p className="text-gray-500 mb-2">You're all caught up!</p>
+                      <p className="text-sm text-gray-400">We'll notify you when something important happens.</p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+              
+              {/* Notification Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-gray-900">Notification Preferences</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Job Alerts</p>
+                        <p className="text-xs text-gray-500">Get notified about new job opportunities</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Application Updates</p>
+                        <p className="text-xs text-gray-500">Updates on your job applications</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Email Notifications</p>
+                        <p className="text-xs text-gray-500">Receive notifications via email</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -710,51 +951,149 @@ export default function MyProfilePage() {
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-lg font-semibold text-gray-900">Applied Jobs</CardTitle>
-                    <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
-                      <Link href="/jobs">Find More Jobs</Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-sm px-3 py-1">
+                        Total: {appliedJobs.length}
+                      </Badge>
+                      <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <Link href="/jobs">Find More Jobs</Link>
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {appliedJobs.length > 0 ? (
                     <div className="space-y-4">
-                      <div className="text-sm text-gray-600 mb-4">
-                        <p>Total Applications: {appliedJobs.length}</p>
-                      </div>
-                      {appliedJobs.slice(0, 5).map((job, index) => (
-                        <div key={job.id || index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-semibold text-gray-900">{job.jobTitle || job.title}</h4>
-                            <Badge className={`text-xs ${
-                              job.applicationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              job.applicationStatus === 'shortlisted' ? 'bg-green-100 text-green-800' :
-                              job.applicationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {job.applicationStatus || 'Pending'}
-                            </Badge>
-                          </div>
-                          <p className="text-gray-600 text-sm mb-2">{job.companyName || job.company}</p>
-                          <div className="flex justify-between items-center text-sm text-gray-500">
-                            <span>Applied: {new Date(job.appliedOn || job.applied_date).toLocaleDateString()}</span>
-                            <Button asChild size="sm" variant="outline">
-                              <Link href={`/applied-jobs`}>View Details</Link>
-                            </Button>
+                      {appliedJobs.map((job) => (
+                        <div key={job.id} className="border rounded-lg hover:shadow-lg transition-all duration-200">
+                          <div className="p-4">
+                            {/* Job Header with Company Info */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                                  {job.jobTitle || job.title || 'Job Position'}
+                                </h4>
+                                <p className="text-gray-700 font-medium">
+                                  {job.companyName || job.company || 'Company Name'}
+                                </p>
+                              </div>
+                              <Badge 
+                                className={`text-xs px-3 py-1 ${
+                                  job.applicationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                                  job.applicationStatus === 'approved' || job.applicationStatus === 'accepted' ? 'bg-green-100 text-green-800 border-green-300' :
+                                  job.applicationStatus === 'shortlisted' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                  job.applicationStatus === 'interview' ? 'bg-purple-100 text-purple-800 border-purple-300' :
+                                  job.applicationStatus === 'rejected' ? 'bg-red-100 text-red-800 border-red-300' :
+                                  'bg-gray-100 text-gray-800 border-gray-300'
+                                }`}
+                                variant="outline"
+                              >
+                                {job.applicationStatus || 'Pending'}
+                              </Badge>
+                            </div>
+
+                            {/* Job Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 text-sm">
+                              {/* Location */}
+                              {job.jobLocationCountry && (
+                                <div className="flex items-center text-gray-600">
+                                  <span className="mr-2">📍</span>
+                                  <span>{job.jobLocationCountry.name || job.location || 'Location not specified'}</span>
+                                </div>
+                              )}
+                              
+                              {/* Salary */}
+                              {job.jobWages && (
+                                <div className="flex items-center text-gray-600">
+                                  <span className="mr-2">💰</span>
+                                  <span>
+                                    {job.jobWages} {job.jobWagesCurrencyType || 'USD'}
+                                    {job.givenCurrencyValue && ` (≈ ${Math.round(job.jobWages * job.givenCurrencyValue)} INR)`}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* Applied Date */}
+                              <div className="flex items-center text-gray-600">
+                                <span className="mr-2">📅</span>
+                                <span>Applied: {job.appliedOn || job.appliedDate || new Date(job.created_at || Date.now()).toLocaleDateString()}</span>
+                              </div>
+                              
+                              {/* Deadline */}
+                              {job.jobDeadline && (
+                                <div className="flex items-center text-gray-600">
+                                  <span className="mr-2">⏰</span>
+                                  <span>Deadline: {job.jobDeadline}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Additional Info */}
+                            {(job.occupation || job.contractPeriod) && (
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {job.occupation && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {job.occupation}
+                                  </Badge>
+                                )}
+                                {job.contractPeriod && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Contract: {job.contractPeriod} months
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Status Message */}
+                            {job.applicationStatus && (
+                              <div className="text-sm text-gray-500 italic mb-3">
+                                {job.applicationStatus === 'pending' && '⏳ Your application is being reviewed'}
+                                {job.applicationStatus === 'shortlisted' && '🎉 Congratulations! You have been shortlisted'}
+                                {job.applicationStatus === 'interview' && '📞 Interview scheduled - check your email for details'}
+                                {(job.applicationStatus === 'approved' || job.applicationStatus === 'accepted') && '✅ Great news! Your application has been approved'}
+                                {job.applicationStatus === 'rejected' && '❌ Unfortunately, your application was not successful this time'}
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-2 pt-3 border-t">
+                              <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                <Link href={`/job-description/${job.id}`}>
+                                  <span className="mr-1">👁️</span>
+                                  View Job Details
+                                </Link>
+                              </Button>
+                              
+                              {job.applicationStatus === 'interview' && (
+                                <Button size="sm" variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
+                                  <span className="mr-1">📋</span>
+                                  Interview Info
+                                </Button>
+                              )}
+                              
+                              {(job.applicationStatus === 'approved' || job.applicationStatus === 'accepted') && (
+                                <Button size="sm" variant="outline" className="border-green-300 text-green-700 hover:bg-green-50">
+                                  <span className="mr-1">📄</span>
+                                  View Offer
+                                </Button>
+                              )}
+                              
+                              <Button size="sm" variant="ghost" className="text-gray-600">
+                                <span className="mr-1">📊</span>
+                                Track Status
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
-                      <div className="text-center pt-4">
-                        <Button asChild variant="outline">
-                          <Link href="/applied-jobs">View All Applications</Link>
-                        </Button>
-                      </div>
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="text-gray-400 text-4xl mb-4">📝</div>
-                      <p className="text-gray-500 mb-4">No job applications yet</p>
+                    <div className="text-center py-12">
+                      <div className="text-6xl mb-4">🔍</div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No Applications Yet</h3>
+                      <p className="text-gray-500 mb-6">You haven't applied to any jobs yet. Start exploring opportunities!</p>
                       <Button asChild className="bg-blue-600 hover:bg-blue-700">
-                        <Link href="/jobs">Start Applying</Link>
+                        <Link href="/jobs">Browse Available Jobs</Link>
                       </Button>
                     </div>
                   )}
@@ -769,52 +1108,165 @@ export default function MyProfilePage() {
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-lg font-semibold text-gray-900">Saved Jobs</CardTitle>
-                    <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
-                      <Link href="/jobs">Find More Jobs</Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-sm px-3 py-1">
+                        Total: {savedJobs.length}
+                      </Badge>
+                      <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <Link href="/jobs">Find More Jobs</Link>
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {savedJobs.length > 0 ? (
                     <div className="space-y-4">
-                      <div className="text-sm text-gray-600 mb-4">
-                        <p>Total Saved: {savedJobs.length}</p>
-                      </div>
-                      {savedJobs.slice(0, 5).map((job, index) => (
-                        <div key={job.id || index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-semibold text-gray-900">{job.job_title || job.title}</h4>
-                            <Badge variant="outline" className="text-xs">
-                              💾 Saved
-                            </Badge>
-                          </div>
-                          <p className="text-gray-600 text-sm mb-2">{job.company_name || job.company}</p>
-                          <div className="flex justify-between items-center text-sm text-gray-500">
-                            <span>📍 {job.location}{job.country && `, ${job.country}`}</span>
-                            <div className="space-x-2">
-                              <Button asChild size="sm" variant="outline">
-                                <Link href={`/job-description/${job.id}`}>View Job</Link>
-                              </Button>
-                              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                                Apply Now
-                              </Button>
+                      {savedJobs.map((job) => {
+                        // Debug logging to see what data is available
+                        console.log('Saved job data:', job);
+                        
+                        // Extract job details with proper field mapping
+                        const jobTitle = job.jobTitle || job.job_title || job.title || 'Job Position';
+                        const companyName = job.companyName || job.company_name || job.cmpName || job.company || 'Company';
+                        const location = job.location || job.jobLocation || '';
+                        const country = job.country || job.jobLocationCountry?.name || '';
+                        const fullLocation = location && country ? `${location}, ${country}` : (location || country || 'Location not specified');
+                        const salary = job.jobWages || job.salary || '';
+                        const currency = job.jobWagesCurrencyType || job.currency || '';
+                        const savedDate = job.saved_date || job.savedDate || job.created_at || '';
+                        const jobType = job.jobType || job.job_type || job.employmentType || '';
+                        const deadline = job.jobDeadline || job.deadline || '';
+                        const occupation = job.occupation || job.jobOccupation || '';
+                        
+                        return (
+                          <div key={job.id} className="border rounded-lg hover:shadow-lg transition-all duration-200">
+                            <div className="p-4">
+                              {/* Job Header */}
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                  <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                                    {jobTitle}
+                                  </h4>
+                                  <p className="text-gray-700 font-medium">
+                                    {companyName}
+                                  </p>
+                                </div>
+                                <Badge variant="outline" className="text-xs px-3 py-1">
+                                  <span className="mr-1">💾</span>
+                                  Saved
+                                </Badge>
+                              </div>
+
+                              {/* Job Details */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 text-sm">
+                                {/* Location */}
+                                <div className="flex items-center text-gray-600">
+                                  <span className="mr-2">📍</span>
+                                  <span>{fullLocation}</span>
+                                </div>
+                                
+                                {/* Salary if available */}
+                                {salary && (
+                                  <div className="flex items-center text-gray-600">
+                                    <span className="mr-2">💰</span>
+                                    <span>{salary} {currency}</span>
+                                  </div>
+                                )}
+                                
+                                {/* Saved Date */}
+                                {savedDate && (
+                                  <div className="flex items-center text-gray-600">
+                                    <span className="mr-2">📅</span>
+                                    <span>Saved: {new Date(savedDate).toLocaleDateString()}</span>
+                                  </div>
+                                )}
+                                
+                                {/* Deadline if available */}
+                                {deadline && (
+                                  <div className="flex items-center text-gray-600">
+                                    <span className="mr-2">⏰</span>
+                                    <span>Deadline: {new Date(deadline).toLocaleDateString()}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Additional Info */}
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {jobType && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {jobType}
+                                  </Badge>
+                                )}
+                                {occupation && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {occupation}
+                                  </Badge>
+                                )}
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex flex-wrap gap-2 pt-3 border-t">
+                                <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                  <Link href={`/job-description/${job.id}`}>
+                                    <span className="mr-1">👁️</span>
+                                    View Details
+                                  </Link>
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="border-green-300 text-green-700 hover:bg-green-50"
+                                  onClick={() => {
+                                    // Navigate to job description page to apply
+                                    router.push(`/job-description/${job.id}`);
+                                  }}
+                                >
+                                  <span className="mr-1">📝</span>
+                                  Apply Now
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="text-red-600 hover:text-red-700"
+                                  onClick={async () => {
+                                    // Handle unsave functionality
+                                    const token = localStorage.getItem('access_token');
+                                    if (token) {
+                                      try {
+                                        // You can add unsave API call here if needed
+                                        toast.info('Please go to the job details page to unsave this job');
+                                      } catch (error) {
+                                        console.error('Error unsaving job:', error);
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <span className="mr-1">❤️</span>
+                                  Unsave
+                                </Button>
+                              </div>
                             </div>
                           </div>
+                        );
+                      })}
+                      
+                      {/* View All Button - only show if more than 5 jobs */}
+                      {savedJobs.length > 5 && (
+                        <div className="text-center pt-4">
+                          <Button asChild variant="outline">
+                            <Link href="/saved-jobs">View All {savedJobs.length} Saved Jobs</Link>
+                          </Button>
                         </div>
-                      ))}
-                      <div className="text-center pt-4">
-                        <Button asChild variant="outline">
-                          <Link href="/saved-jobs">View All Saved Jobs</Link>
-                        </Button>
-                      </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="text-gray-400 text-4xl mb-4">💾</div>
-                      <p className="text-gray-500 mb-4">No saved jobs yet</p>
-                      <p className="text-sm text-gray-400 mb-4">Save jobs you're interested in by clicking the heart icon</p>
+                    <div className="text-center py-12">
+                      <div className="text-6xl mb-4">💔</div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No Saved Jobs</h3>
+                      <p className="text-gray-500 mb-2">You haven't saved any jobs yet.</p>
+                      <p className="text-sm text-gray-400 mb-6">Click the heart icon on job listings to save them for later.</p>
                       <Button asChild className="bg-blue-600 hover:bg-blue-700">
-                        <Link href="/jobs">Browse Jobs</Link>
+                        <Link href="/jobs">Explore Jobs</Link>
                       </Button>
                     </div>
                   )}
