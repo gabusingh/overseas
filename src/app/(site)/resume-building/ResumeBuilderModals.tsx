@@ -114,19 +114,19 @@ const InputField = ({ icon, label, type = "text", placeholder, value, onChange, 
   options?: Array<{ value: string; label: string }> | null;
   disabled?: boolean;
 }) => (
-  <div className="space-y-2">
-    <label className="block text-xs sm:text-sm font-medium text-gray-700">
+  <div className="space-y-1">
+    <label className="block text-xs font-medium text-gray-700">
       {label}{required && <span className="text-red-500">*</span>}
     </label>
     <div className="relative">
       {icon && (
-        <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-          <i className={`${icon} text-gray-400 text-xs sm:text-sm`}></i>
+        <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+          <i className={`${icon} text-gray-400 text-xs`}></i>
         </div>
       )}
       {type === 'select' && options ? (
         <select
-          className={`w-full ${icon ? 'pl-8 sm:pl-10' : 'pl-3 sm:pl-4'} pr-3 sm:pr-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200 bg-white text-gray-900 text-sm sm:text-base ${disabled ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+          className={`w-full ${icon ? 'pl-7' : 'pl-3'} pr-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-all duration-200 bg-white text-gray-900 text-sm ${disabled ? 'bg-gray-50 cursor-not-allowed' : ''}`}
           value={value || ''}
           onChange={onChange}
           disabled={disabled}
@@ -140,7 +140,7 @@ const InputField = ({ icon, label, type = "text", placeholder, value, onChange, 
         <input
           type={type}
           placeholder={placeholder}
-          className={`w-full ${icon ? 'pl-8 sm:pl-10' : 'pl-3 sm:pl-4'} pr-3 sm:pr-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200 text-gray-900 placeholder-gray-500 text-sm sm:text-base ${disabled ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'}`}
+          className={`w-full ${icon ? 'pl-7' : 'pl-3'} pr-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-all duration-200 text-gray-900 placeholder-gray-500 text-sm ${disabled ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'}`}
           value={value || ''}
           onChange={onChange}
           disabled={disabled}
@@ -203,23 +203,23 @@ const ActionButton = ({ onClick, children, variant = 'primary', loading = false,
   disabled?: boolean;
   fullWidth?: boolean;
 }) => {
-  const baseClasses = "px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 text-sm sm:text-base";
+  const baseClasses = "px-3 py-2 rounded-md font-medium transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-offset-1 text-sm";
   const variantClasses = {
-    primary: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white focus:ring-blue-500 shadow-lg hover:shadow-xl",
-    secondary: "bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white focus:ring-gray-500",
-    success: "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white focus:ring-green-500 shadow-lg hover:shadow-xl"
+    primary: "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500",
+    secondary: "bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500",
+    success: "bg-green-600 hover:bg-green-700 text-white focus:ring-green-500"
   };
 
   return (
     <button
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${baseClasses} ${variantClasses[variant]} ${fullWidth ? 'w-full' : ''} ${disabled || loading ? 'opacity-50 cursor-not-allowed transform-none hover:scale-100' : ''}`}
+      className={`${baseClasses} ${variantClasses[variant]} ${fullWidth ? 'w-full' : ''} ${disabled || loading ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       {loading ? (
         <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2"></div>
-          <span className="text-sm sm:text-base">Processing...</span>
+          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+          <span className="text-sm">Processing...</span>
         </div>
       ) : (
         children
@@ -235,18 +235,17 @@ const ModalHeader = ({ icon, title, subtitle, gradient = "from-blue-600 to-indig
   gradient?: string;
 }) => (
   <div className="relative overflow-hidden">
-    <div className={`bg-gradient-to-r ${gradient} px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-white`}>
-      <div className="flex items-center justify-center mb-3 sm:mb-4">
-        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-          <i className={`${icon} text-lg sm:text-2xl`}></i>
+    <div className={`bg-gradient-to-r ${gradient} px-4 py-3 text-white`}>
+      <div className="flex items-center justify-center mb-2">
+        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+          <i className={`${icon} text-sm`}></i>
         </div>
       </div>
       <div className="text-center">
-        <h2 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">{title}</h2>
-        <p className="text-white/80 text-sm sm:text-base">{subtitle}</p>
+        <h2 className="text-lg font-bold mb-1">{title}</h2>
+        <p className="text-white/80 text-xs">{subtitle}</p>
       </div>
     </div>
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
   </div>
 );
 
@@ -362,7 +361,7 @@ const ResumeBuilderModals: React.FC<ModalsProps> = ({
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-lg sm:rounded-2xl overflow-hidden shadow-2xl max-w-sm sm:max-w-md lg:max-w-2xl w-full mx-4 sm:mx-0"
+            className="bg-white rounded-lg overflow-hidden shadow-xl max-w-lg w-full mx-2"
           >
             <ModalHeader 
               icon="fa fa-user-circle" 
@@ -370,8 +369,8 @@ const ResumeBuilderModals: React.FC<ModalsProps> = ({
               subtitle="Build your professional profile"
               gradient="from-purple-600 to-pink-600"
             />
-            <div className="p-4 sm:p-6 lg:p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div className="p-4">
+              <div className="grid grid-cols-1 gap-3">
                 <div className="lg:col-span-2">
                   <ImageUploadField
                     label="Profile Photo"
