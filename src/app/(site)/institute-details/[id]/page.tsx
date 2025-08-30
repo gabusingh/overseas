@@ -184,11 +184,11 @@ export default function InstituteDetailsPage() {
 
         {/* Institute Header - More Compact Design */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-4">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white">
+          <div className="bgBlue p-4 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Building className="w-6 h-6 text-white" />
+                  <GraduationCap className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold mb-1">{institute.instituteName}</h1>
@@ -218,138 +218,193 @@ export default function InstituteDetailsPage() {
           </div>
         </div>
         
-        {/* Compact 3-Card Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Institute Information Card */}
-          <Card className="flex flex-col">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center text-lg">
-                <Building className="w-5 h-5 mr-2 text-blue-600" />
+        {/* Modern Stats & Info Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+          {/* Available Courses */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="w-8 h-8 bgBlue rounded-lg flex items-center justify-center">
+                    <BookOpen className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="font-semibold text-gray-900 text-sm">Available Courses</span>
+                </div>
+                <div className="text-2xl font-bold textBlue">{institute.course_count || '0'}</div>
+                <p className="text-xs text-gray-500 mt-1">Training programs</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Establishment Year */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="font-semibold text-gray-900 text-sm">Established</span>
+                </div>
+                <div className="text-2xl font-bold text-green-600">{institute.insSince || 'N/A'}</div>
+                <p className="text-xs text-gray-500 mt-1">Years of excellence</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Accreditation Status */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="font-semibold text-gray-900 text-sm">Accredited</span>
+                </div>
+                <div className="text-2xl font-bold text-purple-600">✓</div>
+                <p className="text-xs text-gray-500 mt-1">Authorized institute</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Contact */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
+            <div className="text-center">
+              <div className="w-10 h-10 bgBlue rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Phone className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-semibold textBlue text-sm mb-2">Get In Touch</h3>
+              <Button 
+                size="sm"
+                className="w-full bgBlue hover:bg-blue-700 h-8 text-xs"
+                onClick={() => setShowContactModal(true)}
+              >
+                Contact Now
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Detailed Information Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Institute Details */}
+          <Card className="shadow-sm border-0 bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-lg font-semibold">
+                <Building className="w-5 h-5 mr-3 textBlue" />
                 Institute Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              <div className="space-y-3 text-sm mb-4">
-                <div>
-                  <span className="font-medium text-gray-900">Registration:</span>
-                  <span className="ml-2 text-gray-600">{institute.insRegNo || 'N/A'}</span>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Registration No.</span>
+                    <span className="text-sm text-gray-600 font-mono">{institute.insRegNo || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Affiliated By</span>
+                    <span className="text-sm text-gray-600">{institute.affilatedBy || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Established</span>
+                    <span className="text-sm text-gray-600">{institute.insSince || 'N/A'}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-900">Affiliated By:</span>
-                  <span className="ml-2 text-gray-600">{institute.affilatedBy || 'N/A'}</span>
+                <div className="pt-4 border-t border-gray-200">
+                  <Button 
+                    className="w-full bgBlue hover:bg-blue-700 h-10" 
+                    onClick={() => setSelectedTab('courses')}
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    View Available Courses
+                  </Button>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-900">Established:</span>
-                  <span className="ml-2 text-gray-600">{institute.insSince || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-900">Courses:</span>
-                  <span className="ml-2 text-blue-600 font-medium">{institute.course_count || '0'}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Button 
-                  className="w-full h-9 bg-blue-600 hover:bg-blue-700" 
-                  onClick={() => setSelectedTab('courses')}
-                >
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  View Courses
-                </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Contact Information Card */}
-          <Card className="flex flex-col">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center text-lg">
-                <Phone className="w-5 h-5 mr-2 text-blue-600" />
-                Contact Information
+          {/* Contact & Location */}
+          <Card className="shadow-sm border-0 bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-lg font-semibold">
+                <MapPin className="w-5 h-5 mr-3 textBlue" />
+                Contact & Location
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              <div className="space-y-3 text-sm mb-4">
-                {institute.phone && (
-                  <div className="flex items-center">
-                    <Phone className="w-4 h-4 text-blue-600 mr-2" />
-                    <a href={`tel:${institute.phone}`} className="text-blue-600 hover:underline">
-                      {institute.phone}
-                    </a>
-                  </div>
-                )}
-                {institute.email && (
-                  <div className="flex items-center">
-                    <Mail className="w-4 h-4 text-blue-600 mr-2" />
-                    <a href={`mailto:${institute.email}`} className="text-blue-600 hover:underline text-xs break-all">
-                      {institute.email}
-                    </a>
-                  </div>
-                )}
-                {institute.insWebsite && (
-                  <div className="flex items-center">
-                    <Globe className="w-4 h-4 text-blue-600 mr-2" />
-                    <a href={institute.insWebsite} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center text-sm">
-                      Website
-                      <ExternalLink className="w-3 h-3 ml-1" />
-                    </a>
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Button 
-                  className="w-full h-9 bg-blue-600 hover:bg-blue-700" 
-                  onClick={() => setShowContactModal(true)}
-                >
-                  <Phone className="w-4 h-4 mr-2" />
-                  Contact Institute
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Address & Features Card */}
-          <Card className="flex flex-col">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center text-lg">
-                <MapPin className="w-5 h-5 mr-2 text-blue-600" />
-                Location & Features
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              <div className="space-y-3 mb-4">
+            <CardContent>
+              <div className="space-y-4">
+                {/* Address */}
                 {institute.insAddress && (
-                  <div>
-                    <p className="text-gray-600 text-sm leading-relaxed">{institute.insAddress}</p>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <MapPin className="w-4 h-4 textBlue mt-1 flex-shrink-0" />
+                      <div>
+                        <div className="text-xs font-medium text-gray-700 mb-1">Address</div>
+                        <p className="text-sm text-gray-600 leading-relaxed">{institute.insAddress}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                  <div className="flex items-center p-2 bg-blue-50 rounded text-xs">
-                    <Shield className="w-3 h-3 text-blue-600 mr-2" />
-                    <span>Certified</span>
-                  </div>
-                  <div className="flex items-center p-2 bg-green-50 rounded text-xs">
-                    <CheckCircle className="w-3 h-3 text-green-600 mr-2" />
-                    <span>Approved</span>
-                  </div>
-                  <div className="flex items-center p-2 bg-purple-50 rounded text-xs">
-                    <Users className="w-3 h-3 text-purple-600 mr-2" />
-                    <span>Expert Staff</span>
-                  </div>
-                  <div className="flex items-center p-2 bg-orange-50 rounded text-xs">
-                    <Clock className="w-3 h-3 text-orange-600 mr-2" />
-                    <span>Flexible</span>
-                  </div>
+                
+                {/* Contact Methods */}
+                <div className="space-y-2">
+                  {institute.phone && (
+                    <div className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="flex items-center space-x-2">
+                        <Phone className="w-4 h-4 textBlue" />
+                        <span className="text-sm font-medium text-gray-700">Phone</span>
+                      </div>
+                      <a href={`tel:${institute.phone}`} className="textBlue hover:underline text-sm font-medium">
+                        {institute.phone}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {institute.email && (
+                    <div className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="flex items-center space-x-2">
+                        <Mail className="w-4 h-4 textBlue" />
+                        <span className="text-sm font-medium text-gray-700">Email</span>
+                      </div>
+                      <a href={`mailto:${institute.email}`} className="textBlue hover:underline text-xs break-all">
+                        {institute.email}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {institute.insWebsite && (
+                    <div className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="flex items-center space-x-2">
+                        <Globe className="w-4 h-4 textBlue" />
+                        <span className="text-sm font-medium text-gray-700">Website</span>
+                      </div>
+                      <a href={institute.insWebsite} target="_blank" rel="noopener noreferrer" className="textBlue hover:underline flex items-center text-sm">
+                        Visit Site
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full h-9 border-blue-600 text-blue-600 hover:bg-blue-50" 
-                  onClick={() => router.push('/training-institutes')}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Institutes
-                </Button>
+                
+                <div className="pt-4 border-t border-gray-200 flex gap-2">
+                  <Button 
+                    className="flex-1 bgBlue hover:bg-blue-700 h-10" 
+                    onClick={() => setShowContactModal(true)}
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    Contact
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 border-blue-600 textBlue hover:lightBlueBg h-10" 
+                    onClick={() => router.push('/training-institutes')}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -558,50 +613,69 @@ export default function InstituteDetailsPage() {
 
         {/* Contact Modal */}
         {showContactModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle>Contact {institute.instituteName}</CardTitle>
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md bg-white shadow-2xl border-0">
+              <CardHeader className="bg-white border-b border-gray-200">
+                <CardTitle className="text-gray-900 font-semibold">Contact {institute.instituteName}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 bg-white p-6">
                 {institute.phone && (
-                  <div className="flex items-center space-x-3">
-                    <Phone className="w-5 h-5 text-blue-600" />
-                    <a href={`tel:${institute.phone}`} className="text-gray-600 hover:text-blue-600">
-                      {institute.phone}
-                    </a>
+                  <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <Phone className="w-5 h-5 textBlue" />
+                    <div className="flex-1">
+                      <div className="text-xs font-medium text-gray-700 mb-1">Phone</div>
+                      <a href={`tel:${institute.phone}`} className="textBlue hover:underline font-medium">
+                        {institute.phone}
+                      </a>
+                    </div>
                   </div>
                 )}
                 {institute.email && (
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-5 h-5 text-blue-600" />
-                    <a href={`mailto:${institute.email}`} className="text-gray-600 hover:text-blue-600 break-all">
-                      {institute.email}
-                    </a>
+                  <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <Mail className="w-5 h-5 textBlue" />
+                    <div className="flex-1">
+                      <div className="text-xs font-medium text-gray-700 mb-1">Email</div>
+                      <a href={`mailto:${institute.email}`} className="textBlue hover:underline text-sm break-all">
+                        {institute.email}
+                      </a>
+                    </div>
                   </div>
                 )}
                 {institute.insWebsite && (
-                  <div className="flex items-center space-x-3">
-                    <Globe className="w-5 h-5 text-blue-600" />
-                    <a href={institute.insWebsite} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600 flex items-center">
-                      Visit Website
-                      <ExternalLink className="w-3 h-3 ml-1" />
-                    </a>
+                  <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <Globe className="w-5 h-5 textBlue" />
+                    <div className="flex-1">
+                      <div className="text-xs font-medium text-gray-700 mb-1">Website</div>
+                      <a href={institute.insWebsite} target="_blank" rel="noopener noreferrer" className="textBlue hover:underline flex items-center">
+                        Visit Website
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    </div>
                   </div>
                 )}
                 {institute.insAddress && (
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
-                    <p className="text-gray-600 text-sm leading-relaxed">{institute.insAddress}</p>
+                  <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <MapPin className="w-5 h-5 textBlue mt-0.5" />
+                    <div className="flex-1">
+                      <div className="text-xs font-medium text-gray-700 mb-1">Address</div>
+                      <p className="text-gray-700 text-sm leading-relaxed">{institute.insAddress}</p>
+                    </div>
                   </div>
                 )}
               </CardContent>
-              <div className="flex justify-end p-6 pt-0">
+              <div className="flex justify-end gap-2 p-6 pt-0 bg-white border-t border-gray-200">
                 <Button
                   variant="outline"
                   onClick={() => setShowContactModal(false)}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   Close
+                </Button>
+                <Button
+                  onClick={() => setShowContactModal(false)}
+                  className="bgBlue hover:bg-blue-700"
+                >
+                  Got it
                 </Button>
               </div>
             </Card>

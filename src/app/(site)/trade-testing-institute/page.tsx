@@ -1,5 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
 import { motion } from "framer-motion";
@@ -13,6 +15,7 @@ interface TradeTest {
 }
 
 export default function TradeTestingInstitutePage() {
+  const router = useRouter();
   const [tests, setTests] = useState<TradeTest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +88,36 @@ export default function TradeTestingInstitutePage() {
 
     fetchTests();
   }, []);
+
+  const handleScheduleTest = async (testId: number | string) => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      
+      if (!token) {
+        toast.warning('Please login to schedule a test');
+        // Pass the intended destination as redirect parameter
+        const redirectUrl = encodeURIComponent('/trade-test-center');
+        router.push(`/login?redirect=${redirectUrl}&message=${encodeURIComponent('Please login to schedule your test')}`);
+        return;
+      }
+
+      // Find the test details
+      const test = tests.find(t => t.id === testId);
+      if (!test) {
+        toast.error('Test not found');
+        return;
+      }
+
+      toast.success(`Scheduling test: ${test.name}`);
+      
+      // Navigate to trade test center to view available centers for scheduling
+      router.push('/trade-test-center');
+      
+    } catch (error) {
+      console.error('Error scheduling test:', error);
+      toast.error('Failed to schedule test. Please try again.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -187,7 +220,10 @@ export default function TradeTestingInstitutePage() {
                       )}
                     </div>
                     
-                    <button className="inline-flex items-center justify-center w-full px-3 py-2 bgBlue hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all duration-200">
+                    <button 
+                      onClick={() => handleScheduleTest(test.id)}
+                      className="inline-flex items-center justify-center w-full px-3 py-2 bgBlue hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all duration-200"
+                    >
                       <i className="fa fa-calendar mr-2"></i>
                       Schedule Test
                     </button>

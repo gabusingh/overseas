@@ -9,6 +9,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card, CardContent } from "./ui/card";
 import Link from "next/link";
+import Image from "next/image";
 
 interface TradeTestCardProps {
   v: {
@@ -66,15 +67,18 @@ function TradeTestCard({ v, getTestTradeListFunc }: TradeTestCardProps) {
           </div>
           
           <div className="mb-3">
-            <img
-              src={
-                v?.course_image === "https://overseas.ai/placeholder/course.jpg"
-                  ? "/images/institute.png"
-                  : v?.course_image
-              }
-              className="w-full h-32 object-cover rounded-lg"
-              alt="Test Image"
-            />
+            <div className="relative w-full h-32 rounded-lg overflow-hidden">
+              <Image
+                src={
+                  v?.course_image === "https://overseas.ai/placeholder/course.jpg"
+                    ? "/images/institute.png"
+                    : v?.course_image || "/images/institute.png"
+                }
+                alt="Test Image"
+                fill
+                className="object-cover"
+              />
+            </div>
           </div>
           
           <div className="space-y-2 mb-4">

@@ -9,6 +9,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card, CardContent } from "./ui/card";
 import Link from "next/link";
+import Image from "next/image";
 
 interface AppliedTestCardProps {
   v: {
@@ -63,15 +64,18 @@ function AppliedTestCard({ v, getTestTradeListFunc }: AppliedTestCardProps) {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
           <div className="md:col-span-1">
-            <img
-              src={
-                v?.course_image === "https://overseas.ai/placeholder/course.jpg"
-                  ? "/images/institute.png"
-                  : v?.course_image
-              }
-              className="w-full h-auto rounded"
-              alt="Course Image"
-            />
+            <div className="relative w-full h-32 rounded-lg overflow-hidden">
+              <Image
+                src={
+                  v?.course_image === "https://overseas.ai/placeholder/course.jpg"
+                    ? "/images/institute.png"
+                    : v?.course_image || "/images/institute.png"
+                }
+                alt="Course Image"
+                fill
+                className="object-cover"
+              />
+            </div>
           </div>
           
           <div className="md:col-span-2">

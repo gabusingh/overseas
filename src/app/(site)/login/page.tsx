@@ -22,6 +22,18 @@ export default function LoginPage() {
   const router = useRouter();
   const { setUserData } = useGlobalState();
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Get redirect URL and message from URL parameters
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+  const [redirectMessage, setRedirectMessage] = useState<string | null>(null);
+  
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      setRedirectUrl(urlParams.get('redirect'));
+      setRedirectMessage(urlParams.get('message'));
+    }
+  }, []);
 
   // Redirect if user is already logged in
   React.useEffect(() => {
@@ -123,27 +135,35 @@ export default function LoginPage() {
         
         toast.success("User logged in successfully");
         
-        // Determine redirect route based on user type
+        // Check if there's a redirect URL from the login request
         let redirectPath = "/";
-        const userType = response?.data?.user?.type;
         
-        console.log('Determining redirect for user type:', userType);
-        
-        switch (userType) {
-          case "person":
-            redirectPath = "/my-profile";
-            break;
-          case "company":
-            redirectPath = "/hra-dashboard";
-            console.log('Redirecting to HR dashboard');
-            break;
-          case "institute":
-            redirectPath = "/institute-dashboard";
-            break;
-          default:
-            console.warn('Unknown user type:', userType, 'redirecting to home');
-            redirectPath = "/";
-            break;
+        if (redirectUrl && redirectUrl.startsWith('/')) {
+          // Use the redirect URL if provided and valid
+          redirectPath = decodeURIComponent(redirectUrl);
+          console.log('Using redirect URL:', redirectPath);
+        } else {
+          // Fall back to user type-based redirection
+          const userType = response?.data?.user?.type;
+          
+          console.log('Determining redirect for user type:', userType);
+          
+          switch (userType) {
+            case "person":
+              redirectPath = "/my-profile";
+              break;
+            case "company":
+              redirectPath = "/hra-dashboard";
+              console.log('Redirecting to HR dashboard');
+              break;
+            case "institute":
+              redirectPath = "/institute-dashboard";
+              break;
+            default:
+              console.warn('Unknown user type:', userType, 'redirecting to home');
+              redirectPath = "/";
+              break;
+          }
         }
         
         console.log('Final redirect path:', redirectPath);
@@ -206,6 +226,20 @@ export default function LoginPage() {
             </CardHeader>
 
             <CardContent className="px-8 pb-8">
+              {/* Custom Message for Redirect */}
+              {redirectMessage && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm text-blue-800 font-medium">
+                      {decodeURIComponent(redirectMessage)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Phone Number */}
                 <div className="space-y-2">
