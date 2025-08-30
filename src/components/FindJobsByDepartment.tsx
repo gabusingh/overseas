@@ -82,7 +82,7 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
         fetchJobCountsForDepartments(processedOccupations.slice(0, 6));
       } else {
         console.error('No occupation data found in response. Full response:', response);
-        setOccupations([]); // Set empty array instead of fallback data
+        setOccupations([]); // Set empty array - no mock data
       }
     } catch (error) {
       console.error("Error fetching occupations:", error);

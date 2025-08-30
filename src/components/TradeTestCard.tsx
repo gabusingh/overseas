@@ -53,64 +53,67 @@ function TradeTestCard({ v, getTestTradeListFunc }: TradeTestCardProps) {
   };
 
   return (
-    <div className="w-full md:w-1/2 p-2">
-      <Card className="shadow-sm h-full">
+    <div className="w-full md:w-1/2 lg:w-1/3 p-2">
+      <Card className="shadow-sm h-full border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300">
         <CardContent className="p-4">
-          <div className="flex justify-start mb-3">
-            <Badge variant="secondary" className="bg-green-500 text-white">
-              Total Seats: {v?.total_seats}
+          <div className="flex justify-between items-start mb-3">
+            <Badge variant="secondary" className="bgBlue text-white text-xs">
+              {v?.total_seats} Seats
             </Badge>
+            <div className="w-8 h-8 bgBlue rounded-full flex items-center justify-center">
+              <i className="fa fa-certificate text-white text-xs"></i>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            <div className="md:col-span-1">
-              <img
-                src={
-                  v?.course_image === "https://overseas.ai/placeholder/course.jpg"
-                    ? "/images/institute.png"
-                    : v?.course_image
-                }
-                className="w-full h-auto rounded"
-                alt="Test Image"
-              />
-            </div>
+          <div className="mb-3">
+            <img
+              src={
+                v?.course_image === "https://overseas.ai/placeholder/course.jpg"
+                  ? "/images/institute.png"
+                  : v?.course_image
+              }
+              className="w-full h-32 object-cover rounded-lg"
+              alt="Test Image"
+            />
+          </div>
+          
+          <div className="space-y-2 mb-4">
+            <h3 className="font-semibold text-base text-gray-900 line-clamp-2">
+              {v?.course_name}
+            </h3>
             
-            <div className="md:col-span-2">
-              <p className="mb-2">
-                <span className="font-semibold">Test Name: </span>
-                {v?.course_name}
-              </p>
-              <p className="mb-2">
-                <span className="font-semibold">Duration: </span>
-                {v?.course_duration}
-              </p>
-              <p className="mb-2">
-                <span className="font-semibold">Fee: </span>
-                {v?.course_fee}
-              </p>
-              <p className="mb-0">
-                <span className="font-semibold">Videography Facility: </span>
-                {v?.videographyAvlQ}
-              </p>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex items-center justify-between py-1 px-2 bg-gray-50 rounded text-sm">
+                <span className="text-gray-500 text-xs">Duration</span>
+                <span className="font-medium">{v?.course_duration}</span>
+              </div>
+              <div className="flex items-center justify-between py-1 px-2 bg-gray-50 rounded text-sm">
+                <span className="text-gray-500 text-xs">Fee</span>
+                <span className="font-medium">{v?.course_fee}</span>
+              </div>
+              <div className="flex items-center justify-between py-1 px-2 bg-gray-50 rounded text-sm">
+                <span className="text-gray-500 text-xs">Video</span>
+                <span className="font-medium">{v?.videographyAvlQ}</span>
+              </div>
             </div>
           </div>
           
-          <div className="flex justify-between items-center mt-4">
+          <div className="flex gap-2 mt-4">
             <Link 
               href={`/test-details/${v?.id}`}
-              className="text-blue-600 hover:text-blue-800 underline"
+              className="flex-1 text-center py-2 px-3 border textBlue border-blue-600 rounded-lg hover:lightBlueBg transition-colors text-sm font-medium"
             >
               Read More
             </Link>
             
             {v?.appliedStatus ? (
-              <Button variant="outline" size="sm" className="w-auto" disabled>
+              <Button variant="outline" size="sm" className="flex-1" disabled>
                 Applied
               </Button>
             ) : (
               <Button 
                 size="sm"
-                className="w-auto"
+                className="flex-1 bgBlue hover:bg-blue-700"
                 onClick={handleCourseApply}
               >
                 Apply

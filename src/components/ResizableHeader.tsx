@@ -109,7 +109,9 @@ function ResizableHeader() {
 
   const servicesDropdown = [
     { label: "Resume Building", href: "/about-resume-building" },
-    { label: "Skill Training", href: "/skill-training-institute" },
+    { label: "Skill Training", href: "/training-institutes" },
+    { label: "Trade Center", href: "/trade-test-center" },
+    { label: "Trade Test", href: "/trade-testing-institute" },
     { label: "Visa Assistance", href: "/about-us" },
   ];
 

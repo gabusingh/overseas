@@ -63,15 +63,8 @@ const HeroSection = React.memo(({ data: propData, countryData }: HeroSectionProp
       console.log('✅ HeroSection: Occupations loaded:', occupations?.length || 0);
     } catch (error) {
       console.error('❌ HeroSection: Error fetching occupations:', error);
-      // Set fallback data for hero section
-      const fallbackOccupations = [
-        { label: "Construction", value: 1, img: "/images/institute.png" },
-        { label: "Hospitality", value: 2, img: "/images/institute.png" },
-        { label: "Healthcare", value: 3, img: "/images/institute.png" },
-        { label: "Oil & Gas", value: 4, img: "/images/institute.png" },
-        { label: "IT & Software", value: 5, img: "/images/institute.png" },
-      ];
-      setDepartmentList(fallbackOccupations);
+      // No fallback data - set empty array
+      setDepartmentList([]);
     }
   }, []);
 

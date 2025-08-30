@@ -3,7 +3,30 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
-import Head from "next/head";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { Button } from "../../../../components/ui/button";
+import { Badge } from "../../../../components/ui/badge";
+import { Separator } from "../../../../components/ui/separator";
+import { 
+  Building, 
+  MapPin, 
+  Phone, 
+  Mail, 
+  Globe, 
+  Star, 
+  Users, 
+  Calendar,
+  ExternalLink,
+  Award,
+  CheckCircle,
+  ArrowLeft,
+  BookOpen,
+  Clock,
+  Play,
+  Download,
+  GraduationCap
+} from "lucide-react";
+import Link from "next/link";
 
 interface CourseDetail {
   id: string;
@@ -321,26 +344,17 @@ This course is perfect for developers who want to take their React skills to the
     }
   };
 
-  const getRatingStars = (rating: number, size: "sm" | "md" | "lg" = "md") => {
-    const sizeClasses = {
-      sm: "text-sm",
-      md: "text-base", 
-      lg: "text-lg"
-    };
-    
-    return (
-      <div className="flex items-center">
-        {[...Array(5)].map((_, i) => (
-          <i
-            key={i}
-            className={`fa fa-star ${sizeClasses[size]} ${
-              i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'
-            }`}
-          ></i>
-        ))}
-        <span className={`ml-2 ${sizeClasses[size]} text-gray-600`}>({rating.toFixed(1)})</span>
-      </div>
-    );
+  const renderStars = (rating: number) => {
+    const stars = [];
+    for (let i = 0; i < 5; i++) {
+      stars.push(
+        <Star 
+          key={i} 
+          className={`w-4 h-4 ${i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+        />
+      );
+    }
+    return stars;
   };
 
   const formatDate = (dateString: string) => {
@@ -353,10 +367,19 @@ This course is perfect for developers who want to take their React skills to the
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#17487f]"></div>
-          <p className="mt-4 text-gray-600">Loading course details...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
+            <div className="h-64 bg-gray-300 rounded mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                <div className="h-32 bg-gray-300 rounded mb-4"></div>
+                <div className="h-24 bg-gray-300 rounded"></div>
+              </div>
+              <div className="h-64 bg-gray-300 rounded"></div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -366,200 +389,251 @@ This course is perfect for developers who want to take their React skills to the
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <i className="fa fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Course Not Found</h2>
-          <p className="text-gray-600 mb-4">The course you're looking for could not be found.</p>
-          <button
-            onClick={() => router.push("/courses")}
-            className="bg-[#17487f] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Browse Courses
-          </button>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Course Not Found</h1>
+          <Button onClick={() => router.push('/training-institutes')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Training Institutes
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      <Head>
-        <title>{course.title} | Overseas.ai</title>
-        <meta name="description" content={course.shortDescription} />
-      </Head>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <nav className="mb-6">
+          <ol className="flex items-center space-x-2 text-sm text-gray-600">
+            <li><Link href="/" className="hover:text-blue-600 transition-colors">Home</Link></li>
+            <li className="text-gray-400">/</li>
+            <li><Link href="/training-institutes" className="hover:text-blue-600 transition-colors">Training Institutes</Link></li>
+            <li className="text-gray-400">/</li>
+            <li className="text-gray-900 font-medium truncate max-w-xs">{course.title}</li>
+          </ol>
+        </nav>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-8 mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Course Info */}
-            <div className="lg:col-span-2">
-              <div className="flex items-center mb-4">
-                <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full mr-3">
-                  {course.category}
-                </span>
-                <span className="bg-gray-100 text-gray-800 text-sm px-3 py-1 rounded-full">
-                  {course.level}
-                </span>
-              </div>
-              
-              <h1 className="text-3xl font-bold textBlue mb-4">{course.title}</h1>
-              <p className="text-gray-600 mb-6">{course.shortDescription}</p>
-              
-              <div className="flex flex-wrap items-center gap-6 mb-6">
-                <div className="flex items-center">
-                  <i className="fa fa-clock text-gray-400 mr-2"></i>
-                  <span className="text-gray-600">{course.duration}</span>
+        {/* Course Header - More Compact Design */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-4">
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-white" />
                 </div>
-                <div className="flex items-center">
-                  <i className="fa fa-users text-gray-400 mr-2"></i>
-                  <span className="text-gray-600">{course.enrolledStudents}/{course.maxStudents} students</span>
-                </div>
-                <div className="flex items-center">
-                  <i className="fa fa-globe text-gray-400 mr-2"></i>
-                  <span className="text-gray-600">{course.format}</span>
-                </div>
-                <div className="flex items-center">
-                  <i className="fa fa-language text-gray-400 mr-2"></i>
-                  <span className="text-gray-600">{course.language.join(", ")}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center mb-6">
-                {getRatingStars(course.rating, "lg")}
-                <span className="ml-4 text-gray-600">({course.totalReviews} reviews)</span>
-              </div>
-
-              {/* Instructor Preview */}
-              <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-                <img
-                  src={course.instructor.image}
-                  alt={course.instructor.name}
-                  className="w-12 h-12 rounded-full object-cover mr-4"
-                />
                 <div>
-                  <p className="font-semibold textBlue">{course.instructor.name}</p>
-                  <p className="text-sm text-gray-600">{course.instructor.title}</p>
-                </div>
-                <div className="ml-auto">
-                  {getRatingStars(course.instructor.rating, "sm")}
-                </div>
-              </div>
-            </div>
-
-            {/* Course Image & Enrollment */}
-            <div>
-              <div className="sticky top-8">
-                <div className="relative mb-4">
-                  <img
-                    src={course.images[activeImageIndex]}
-                    alt={course.title}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                  {course.images.length > 1 && (
-                    <div className="flex space-x-2 mt-2">
-                      {course.images.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setActiveImageIndex(index)}
-                          className={`w-3 h-3 rounded-full ${
-                            index === activeImageIndex ? 'bg-blue-600' : 'bg-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-gray-50 p-6 rounded-lg">
-                  <div className="flex items-baseline mb-4">
-                    <span className="text-3xl font-bold textBlue">${course.price}</span>
-                    {course.originalPrice && (
-                      <span className="text-lg text-gray-500 line-through ml-2">${course.originalPrice}</span>
-                    )}
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Badge className="bg-white/20 text-white border-white/30 text-xs">
+                      {course.category} • {course.level}
+                    </Badge>
                   </div>
-
-                  {course.isEnrolled ? (
-                    <button
-                      onClick={() => router.push(`/my-courses/${courseId}`)}
-                      className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-medium mb-4 hover:bg-green-700 transition-colors"
-                    >
-                      <i className="fa fa-play mr-2"></i>
-                      Continue Learning
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setShowEnrollModal(true)}
-                      disabled={course.enrolledStudents >= course.maxStudents}
-                      className="w-full bg-[#17487f] text-white px-6 py-3 rounded-lg font-medium mb-4 hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      {course.enrolledStudents >= course.maxStudents ? (
-                        <>
-                          <i className="fa fa-users mr-2"></i>
-                          Course Full
-                        </>
-                      ) : (
-                        <>
-                          <i className="fa fa-shopping-cart mr-2"></i>
-                          Enroll Now
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  <p className="text-center text-sm text-gray-600 mb-4">
-                    Enrollment deadline: {formatDate(course.enrollmentDeadline)}
-                  </p>
-
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <h1 className="text-xl font-bold mb-1">{course.title}</h1>
+                  <div className="flex items-center space-x-2 text-white/90 text-xs">
                     <div className="flex items-center">
-                      <i className="fa fa-calendar w-4 text-center mr-3"></i>
-                      <span>Starts: {formatDate(course.schedule.startDate)}</span>
+                      <Clock className="w-3 h-3 mr-1" />
+                      <span>{course.duration}</span>
                     </div>
                     <div className="flex items-center">
-                      <i className="fa fa-clock w-4 text-center mr-3"></i>
-                      <span>{course.schedule.timing}</span>
+                      <Users className="w-3 h-3 mr-1" />
+                      <span>{course.enrolledStudents}/{course.maxStudents}</span>
                     </div>
                     <div className="flex items-center">
-                      <i className="fa fa-repeat w-4 text-center mr-3"></i>
-                      <span>{course.schedule.days.join(", ")}</span>
+                      <Globe className="w-3 h-3 mr-1" />
+                      <span>{course.format}</span>
                     </div>
                   </div>
                 </div>
-
-                {/* Quick Info */}
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">What's Included:</h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    {course.features.slice(0, 4).map((feature, index) => (
-                      <li key={index}>• {feature}</li>
-                    ))}
-                  </ul>
-                </div>
               </div>
+              <Button 
+                onClick={() => setShowEnrollModal(true)}
+                size="sm"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/30 h-8 text-xs"
+                disabled={course.isEnrolled || course.enrolledStudents >= course.maxStudents}
+              >
+                {course.isEnrolled ? (
+                  <>
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Enrolled
+                  </>
+                ) : course.enrolledStudents >= course.maxStudents ? (
+                  <>
+                    <Users className="w-3 h-3 mr-1" />
+                    Full
+                  </>
+                ) : (
+                  <>
+                    <GraduationCap className="w-3 h-3 mr-1" />
+                    Enroll
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>
 
+        {/* Compact 3-Card Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Course Information Card */}
+          <Card className="flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <BookOpen className="w-5 h-5 mr-2 text-purple-600" />
+                Course Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <div className="space-y-3 text-sm mb-4">
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-900">Price:</span>
+                  <span className="text-purple-600 font-bold">${course.price}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-900">Duration:</span>
+                  <span className="text-gray-600">{course.duration}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-900">Format:</span>
+                  <span className="text-gray-600">{course.format}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-900">Rating:</span>
+                  <div className="flex items-center gap-1">
+                    {renderStars(course.rating)}
+                    <span className="text-gray-600">({course.rating})</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Button 
+                  className="w-full h-9 bg-purple-600 hover:bg-purple-700" 
+                  onClick={() => setSelectedTab('curriculum')}
+                >
+                  <Award className="w-4 h-4 mr-2" />
+                  View Curriculum
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Instructor Information Card */}
+          <Card className="flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <Users className="w-5 h-5 mr-2 text-purple-600" />
+                Instructor
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <div className="space-y-3 text-sm mb-4">
+                <div className="flex items-center space-x-3">
+                  <img
+                    src={course.instructor.image}
+                    alt={course.instructor.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900">{course.instructor.name}</p>
+                    <p className="text-xs text-gray-600">{course.instructor.title}</p>
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-900">Experience:</span>
+                  <span className="text-gray-600">{course.instructor.experience}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-900">Rating:</span>
+                  <div className="flex items-center gap-1">
+                    {renderStars(course.instructor.rating)}
+                    <span className="text-gray-600">({course.instructor.rating})</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Button 
+                  className="w-full h-9 bg-purple-600 hover:bg-purple-700" 
+                  onClick={() => setSelectedTab('instructor')}
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  View Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enrollment & Institute Card */}
+          <Card className="flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <GraduationCap className="w-5 h-5 mr-2 text-purple-600" />
+                Enrollment & Institute
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center space-x-2">
+                  <img
+                    src={course.institute.logo}
+                    alt={course.institute.name}
+                    className="w-8 h-8 rounded object-cover"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">{course.institute.name}</p>
+                    <p className="text-xs text-gray-600">{course.institute.location}</p>
+                  </div>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-gray-900">Students:</span>
+                  <span className="text-purple-600">{course.enrolledStudents}/{course.maxStudents}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-gray-900">Reviews:</span>
+                  <span className="text-gray-600">{course.totalReviews}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 pt-2">
+                  <div className="flex items-center p-1 bg-purple-50 rounded text-xs">
+                    <CheckCircle className="w-3 h-3 text-purple-600 mr-1" />
+                    <span>Certified</span>
+                  </div>
+                  <div className="flex items-center p-1 bg-green-50 rounded text-xs">
+                    <Award className="w-3 h-3 text-green-600 mr-1" />
+                    <span>Support</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full h-9 border-purple-600 text-purple-600 hover:bg-purple-50" 
+                  onClick={() => router.push(`/institute-details/${course.institute.id}`)}
+                >
+                  <Building className="w-4 h-4 mr-2" />
+                  View Institute
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Navigation Tabs */}
-        <div className="bg-white rounded-lg shadow-sm border mb-8">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
           <div className="border-b">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex px-6">
               {[
-                { id: 'overview', label: 'Overview', icon: 'fa-info-circle' },
-                { id: 'curriculum', label: 'Curriculum', icon: 'fa-list' },
-                { id: 'instructor', label: 'Instructor', icon: 'fa-user' },
-                { id: 'reviews', label: 'Reviews', icon: 'fa-star' }
+                { id: 'overview', label: 'Overview', icon: BookOpen },
+                { id: 'curriculum', label: 'Curriculum', icon: Award },
+                { id: 'instructor', label: 'Instructor', icon: Users },
+                { id: 'reviews', label: 'Reviews', icon: Star }
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setSelectedTab(tab.id as any)}
-                  className={`py-4 px-2 border-b-2 font-medium text-sm ${
+                  className={`py-4 px-4 border-b-2 font-medium text-sm flex items-center transition-colors ${
                     selectedTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
+                      ? 'border-purple-500 text-purple-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <i className={`fa ${tab.icon} mr-2`}></i>
+                  <tab.icon className="w-4 h-4 mr-2" />
                   {tab.label}
                 </button>
               ))}
@@ -567,7 +641,7 @@ This course is perfect for developers who want to take their React skills to the
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className="p-8">
             {selectedTab === 'overview' && (
               <div className="space-y-8">
                 {/* Course Description */}
@@ -656,7 +730,7 @@ This course is perfect for developers who want to take their React skills to the
                     <h3 className="text-2xl font-semibold textBlue mb-2">{course.instructor.name}</h3>
                     <p className="text-gray-600 mb-2">{course.instructor.title}</p>
                     <div className="flex items-center mb-4">
-                      {getRatingStars(course.instructor.rating)}
+                      {renderStars(course.instructor.rating)}
                       <span className="ml-4 text-gray-600">({course.instructor.experience} experience)</span>
                     </div>
                   </div>
@@ -672,7 +746,7 @@ This course is perfect for developers who want to take their React skills to the
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-semibold textBlue">Student Reviews</h3>
                   <div className="flex items-center">
-                    {getRatingStars(course.rating)}
+                    {renderStars(course.rating)}
                     <span className="ml-2 text-gray-600">({course.totalReviews} total reviews)</span>
                   </div>
                 </div>
@@ -695,7 +769,7 @@ This course is perfect for developers who want to take their React skills to the
                             <p className="text-sm text-gray-600">{formatDate(review.date)}</p>
                           </div>
                         </div>
-                        {getRatingStars(review.rating, "sm")}
+                        {renderStars(review.rating)}
                       </div>
                       <p className="text-gray-600">{review.comment}</p>
                     </div>
@@ -707,60 +781,87 @@ This course is perfect for developers who want to take their React skills to the
         </div>
 
         {/* Institute Information */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-xl font-semibold textBlue mb-6">About the Institute</h3>
-          <div className="flex items-start space-x-6">
-            <img
-              src={course.institute.logo}
-              alt={course.institute.name}
-              className="w-16 h-16 rounded-lg object-cover"
-            />
-            <div className="flex-1">
-              <h4 className="text-lg font-semibold textBlue mb-2">{course.institute.name}</h4>
-              <p className="text-gray-600 mb-2">
-                <i className="fa fa-map-marker mr-2"></i>
-                {course.institute.location}
-              </p>
-              <div className="flex items-center mb-3">
-                {getRatingStars(course.institute.rating, "sm")}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Building className="w-5 h-5 mr-2" />
+              About the Institute
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-6">
+                <img
+                  src={course.institute.logo}
+                  alt={course.institute.name}
+                  className="w-16 h-16 rounded-lg object-cover"
+                />
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">{course.institute.name}</h4>
+                  <p className="text-gray-600 mb-2 flex items-center">
+                    <MapPin className="w-4 h-4 mr-1" />
+                    {course.institute.location}
+                  </p>
+                  <div className="flex items-center mb-3">
+                    <div className="flex mr-2">{renderStars(course.institute.rating)}</div>
+                    <span className="text-sm text-gray-600">({course.institute.rating})</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {course.institute.accreditation.map((acc, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {acc}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {course.institute.accreditation.map((acc, index) => (
-                  <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                    {acc}
-                  </span>
-                ))}
-              </div>
+              <Button
+                onClick={() => router.push(`/institute-details/${course.institute.id}`)}
+                variant="outline"
+                className="flex items-center"
+              >
+                View Institute
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
             </div>
-            <button
-              onClick={() => router.push(`/institute-details/${course.institute.id}`)}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              View Institute
-              <i className="fa fa-arrow-right ml-2"></i>
-            </button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Enrollment Modal */}
         {showEnrollModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Enrollment</h3>
-              <p className="text-gray-600 mb-6">
-                You are about to enroll in "{course.title}" for ${course.price}.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <button
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle>Confirm Enrollment</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-600">
+                  You are about to enroll in "{course.title}" for ${course.price}.
+                </p>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Course Fee:</span>
+                    <span className="font-bold">${course.price}</span>
+                  </div>
+                  {course.originalPrice && (
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <span>Original Price:</span>
+                      <span className="line-through">${course.originalPrice}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+              <div className="flex justify-end space-x-3 p-6 pt-0">
+                <Button
+                  variant="outline"
                   onClick={() => setShowEnrollModal(false)}
-                  className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleEnrollment}
                   disabled={enrolling}
-                  className="bg-[#17487f] text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+                  className="bg-purple-600 hover:bg-purple-700"
                 >
                   {enrolling ? (
                     <>
@@ -769,16 +870,16 @@ This course is perfect for developers who want to take their React skills to the
                     </>
                   ) : (
                     <>
-                      <i className="fa fa-credit-card mr-2"></i>
+                      <GraduationCap className="w-4 h-4 mr-2" />
                       Enroll & Pay
                     </>
                   )}
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

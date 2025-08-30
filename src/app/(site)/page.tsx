@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { getOccupations, getCountriesForJobs, getNewsFeedData, getSuccessNotification } from '../../services/info.service';
 import { getInstitutes } from '../../services/institute.service';
-import { getAllCompanies } from '../../services/hra.service';
+import { getHraList } from '../../services/hra.service';
 import { toast } from 'sonner';
 
 // Lazy load heavy components
@@ -179,7 +179,7 @@ export default function Home() {
       // Stagger secondary data loading
       setTimeout(async () => {
         const [companiesRes, institutesRes] = await Promise.all([
-          getAllCompanies(),
+          getHraList(),
           getInstitutes()
         ]);
         

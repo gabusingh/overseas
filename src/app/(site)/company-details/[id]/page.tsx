@@ -195,323 +195,346 @@ export default function CompanyDetailsPage() {
           </ol>
         </nav>
 
-        {/* Company Header */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="flex-shrink-0">
-                <img
-                  src={company.cmpLogoS3 || company.cmpLogo}
-                  alt={`${company.cmpName} Logo`}
-                  className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-xl bg-white p-2"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/images/default-company-logo.svg";
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">{company.cmpName}</h1>
-                <p className="text-blue-100 text-lg mb-3">{company.cmpType}</p>
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>Since {formatDate(company.cmpWorkingFrom)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    <span>{company.cmpYearlyPlacement} placements/year</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Building className="w-4 h-4" />
-                    <span>{company.jobs_count} active jobs</span>
+        {/* Company Header - Compact Design */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center p-2">
+                  <img
+                    src={company.cmpLogoS3 || company.cmpLogo}
+                    alt={`${company.cmpName} Logo`}
+                    className="w-full h-full object-contain rounded"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "/images/default-company-logo.svg";
+                    }}
+                  />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold mb-1">{company.cmpName}</h1>
+                  <div className="flex items-center space-x-3 text-white/90 text-sm">
+                    <div className="flex items-center">
+                      <Building className="w-3 h-3 mr-1" />
+                      <span>{company.cmpType}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Users className="w-3 h-3 mr-1" />
+                      <span>{company.jobs_count} jobs</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {renderStars(company.cmpRating)}
+                      <span>({company.cmpRating})</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-1">
-                  {renderStars(company.cmpRating)}
-                  <span className="text-sm">({company.cmpRating}/5)</span>
-                </div>
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  {company.cmpApprovalSA === "1" ? "Approved" : "Pending Approval"}
-                </Badge>
-              </div>
+              <Badge 
+                variant="secondary" 
+                className={`${company.cmpApprovalSA === "1" ? 'bg-green-500/20 text-white border-green-300' : 'bg-yellow-500/20 text-white border-yellow-300'} h-6`}
+              >
+                {company.cmpApprovalSA === "1" ? "Approved" : "Pending"}
+              </Badge>
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Main Content */}
-          <div className="lg:col-span-2">
-            {/* Tabs */}
-            <div className="bg-white rounded-xl shadow-lg mb-6">
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-8 px-6">
-                  {[
-                    { id: 'overview', label: 'Overview', icon: Building },
-                    { id: 'departments', label: 'Departments', icon: Users },
-                    { id: 'countries', label: 'Countries', icon: MapPin },
-                    { id: 'contact', label: 'Contact', icon: Phone }
-                  ].map((tab) => {
-                    const Icon = tab.icon;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setSelectedTab(tab.id as any)}
-                        className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                          selectedTab === tab.id
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </nav>
+        {/* Compact 3-Card Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Company Information Card */}
+          <Card className="flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <Building className="w-5 h-5 mr-2 text-blue-600" />
+                Company Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <div className="space-y-3 text-sm mb-4">
+                <div>
+                  <span className="font-medium text-gray-900">Type:</span>
+                  <span className="ml-2 text-gray-600">{company.cmpType}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-900">License:</span>
+                  <span className="ml-2 text-gray-600">{company.RaLicenseNumber}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-900">Established:</span>
+                  <span className="ml-2 text-gray-600">{formatDate(company.cmpWorkingFrom)}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-900">Jobs:</span>
+                  <span className="ml-2 text-blue-600 font-medium">{company.jobs_count}</span>
+                </div>
               </div>
-
-              <div className="p-6">
-                {selectedTab === 'overview' && (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4">About {company.cmpName}</h3>
-                      <div className="prose prose-gray max-w-none">
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                          {company.cmpDescription}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3">Company Information</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3">
-                          <Building className="w-5 h-5 text-blue-600" />
-                          <div>
-                            <p className="text-sm text-gray-500">Type</p>
-                            <p className="font-medium">{company.cmpType}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-5 h-5 text-green-600" />
-                          <div>
-                            <p className="text-sm text-gray-500">Established</p>
-                            <p className="font-medium">{formatDate(company.cmpWorkingFrom)}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Users className="w-5 h-5 text-purple-600" />
-                          <div>
-                            <p className="text-sm text-gray-500">Yearly Placements</p>
-                            <p className="font-medium">{company.cmpYearlyPlacement}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Award className="w-5 h-5 text-orange-600" />
-                          <div>
-                            <p className="text-sm text-gray-500">License Number</p>
-                            <p className="font-medium">{company.RaLicenseNumber}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedTab === 'departments' && (
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Working Departments</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {company.cmpWorkingDepartmentNames?.map((dept, index) => (
-                        <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                          <span className="text-gray-700">{dept}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedTab === 'countries' && (
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Working Countries</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {company.cmpWorkingCountryNames?.map((country, index) => (
-                        <div key={index} className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                          <MapPin className="w-4 h-4 text-blue-600" />
-                          <span className="text-gray-700">{country}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedTab === 'contact' && (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Contact Information</h3>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <Phone className="w-5 h-5 text-blue-600" />
-                          <div>
-                            <p className="text-sm text-gray-500">Phone</p>
-                            <p className="font-medium">{company.cmpPhone}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Mail className="w-5 h-5 text-green-600" />
-                          <div>
-                            <p className="text-sm text-gray-500">Email</p>
-                            <p className="font-medium">{company.cmpEmail}</p>
-                          </div>
-                        </div>
-                        {company.cmpWebsiteLink && (
-                          <div className="flex items-center gap-3">
-                            <Globe className="w-5 h-5 text-purple-600" />
-                            <div>
-                              <p className="text-sm text-gray-500">Website</p>
-                              <a 
-                                href={company.cmpWebsiteLink} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                              >
-                                Visit Website
-                                <ExternalLink className="w-4 h-4" />
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                        {company.cmpFBLink && (
-                          <div className="flex items-center gap-3">
-                            <Facebook className="w-5 h-5 text-blue-600" />
-                            <div>
-                              <p className="text-sm text-gray-500">Facebook</p>
-                              <a 
-                                href={company.cmpFBLink.trim()} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                              >
-                                Follow on Facebook
-                                <ExternalLink className="w-4 h-4" />
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3">Address</h4>
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <p className="text-gray-700">{company.cmpOfficialAddress}</p>
-                        {company.cmpOfficialAddress2nd && (
-                          <p className="text-gray-700 mt-2">{company.cmpOfficialAddress2nd}</p>
-                        )}
-                        <p className="text-gray-600 mt-2">
-                          {company.state_name?.name} - {company.cmpPin}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-3">Contact Person</h4>
-                      <p className="text-gray-700">{company.cmpContPerson}</p>
-                    </div>
-                  </div>
-                )}
+              <div className="space-y-2">
+                <Button 
+                  className="w-full h-9 bg-blue-600 hover:bg-blue-700" 
+                  onClick={() => router.push(`/jobs?company=${company.id}`)}
+                >
+                  <Building className="w-4 h-4 mr-2" />
+                  View Jobs
+                </Button>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+
+          {/* Contact Information Card */}
+          <Card className="flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <Phone className="w-5 h-5 mr-2 text-blue-600" />
+                Contact Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <div className="space-y-3 text-sm mb-4">
+                <div className="flex items-center">
+                  <Phone className="w-4 h-4 text-blue-600 mr-2" />
+                  <a href={`tel:${company.cmpPhone}`} className="text-blue-600 hover:underline">
+                    {company.cmpPhone}
+                  </a>
+                </div>
+                <div className="flex items-center">
+                  <Mail className="w-4 h-4 text-blue-600 mr-2" />
+                  <a href={`mailto:${company.cmpEmail}`} className="text-blue-600 hover:underline text-xs break-all">
+                    {company.cmpEmail}
+                  </a>
+                </div>
+                {company.cmpWebsiteLink && (
+                  <div className="flex items-center">
+                    <Globe className="w-4 h-4 text-blue-600 mr-2" />
+                    <a href={company.cmpWebsiteLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center text-sm">
+                      Website
+                      <ExternalLink className="w-3 h-3 ml-1" />
+                    </a>
+                  </div>
+                )}
+                <div>
+                  <span className="font-medium text-gray-900">Contact Person:</span>
+                  <span className="ml-2 text-gray-600">{company.cmpContPerson}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Button 
+                  className="w-full h-9 bg-blue-600 hover:bg-blue-700" 
+                  onClick={() => setSelectedTab('contact')}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Contact Company
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stats & Features Card */}
+          <Card className="flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <Award className="w-5 h-5 mr-2 text-blue-600" />
+                Stats & Features
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <div className="space-y-3 mb-4">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Rating:</span>
+                  <div className="flex items-center gap-1">
+                    {renderStars(company.cmpRating)}
+                    <span className="font-medium">{company.cmpRating}/5</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Placements/Year:</span>
+                  <span className="font-medium text-blue-600">{company.cmpYearlyPlacement}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Countries:</span>
+                  <span className="font-medium">{company.cmpWorkingCountryNames?.length || 0}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Departments:</span>
+                  <span className="font-medium">{company.cmpWorkingDepartmentNames?.length || 0}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <div className="flex items-center p-2 bg-blue-50 rounded text-xs">
+                    <CheckCircle className="w-3 h-3 text-blue-600 mr-2" />
+                    <span>Licensed</span>
+                  </div>
+                  <div className="flex items-center p-2 bg-green-50 rounded text-xs">
+                    <Award className="w-3 h-3 text-green-600 mr-2" />
+                    <span>Verified</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full h-9 border-blue-600 text-blue-600 hover:bg-blue-50" 
+                  onClick={() => router.push('/companies')}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Companies
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Detailed Sections - Tabs */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="border-b">
+            <nav className="flex px-6">
+              {[
+                { id: 'overview', label: 'Overview', icon: Building },
+                { id: 'departments', label: 'Departments', icon: Users },
+                { id: 'countries', label: 'Countries', icon: MapPin },
+                { id: 'contact', label: 'Contact', icon: Phone }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setSelectedTab(tab.id as any)}
+                  className={`py-3 px-4 border-b-2 font-medium text-sm flex items-center transition-colors ${
+                    selectedTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4 mr-2" />
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
           </div>
 
-          {/* Right Column - Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="space-y-6">
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button className="w-full" onClick={() => router.push(`/jobs?company=${company.id}`)}>
-                    <Building className="w-4 h-4 mr-2" />
-                    View Jobs
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    <Mail className="w-4 h-4 mr-2" />
-                    Contact Company
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Visit Website
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Company Stats */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Company Stats</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Rating</span>
-                    <div className="flex items-center gap-1">
-                      {renderStars(company.cmpRating)}
-                      <span className="font-medium">{company.cmpRating}/5</span>
+          {/* Tab Content */}
+          <div className="p-6">
+            {selectedTab === 'overview' && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Award className="w-5 h-5 mr-2 text-blue-600" />
+                      About {company.cmpName}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-gray max-w-none">
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {company.cmpDescription}
+                      </p>
                     </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Active Jobs</span>
-                    <span className="font-medium">{company.jobs_count}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Yearly Placements</span>
-                    <span className="font-medium">{company.cmpYearlyPlacement}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Working Countries</span>
-                    <span className="font-medium">{company.cmpWorkingCountryNames?.length || 0}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Departments</span>
-                    <span className="font-medium">{company.cmpWorkingDepartmentNames?.length || 0}</span>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
-              {/* License Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">License Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-500">License Number</p>
-                    <p className="font-medium">{company.RaLicenseNumber}</p>
+            {selectedTab === 'departments' && (
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Working Departments</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {company.cmpWorkingDepartmentNames?.map((dept, index) => (
+                    <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-gray-700">{dept}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedTab === 'countries' && (
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Working Countries</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {company.cmpWorkingCountryNames?.map((country, index) => (
+                    <div key={index} className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                      <MapPin className="w-4 h-4 text-blue-600" />
+                      <span className="text-gray-700">{country}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedTab === 'contact' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Contact Information</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="text-sm text-gray-500">Phone</p>
+                        <p className="font-medium">{company.cmpPhone}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="text-sm text-gray-500">Email</p>
+                        <p className="font-medium">{company.cmpEmail}</p>
+                      </div>
+                    </div>
+                    {company.cmpWebsiteLink && (
+                      <div className="flex items-center gap-3">
+                        <Globe className="w-5 h-5 text-purple-600" />
+                        <div>
+                          <p className="text-sm text-gray-500">Website</p>
+                          <a 
+                            href={company.cmpWebsiteLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                          >
+                            Visit Website
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {company.cmpFBLink && (
+                      <div className="flex items-center gap-3">
+                        <Facebook className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <p className="text-sm text-gray-500">Facebook</p>
+                          <a 
+                            href={company.cmpFBLink.trim()} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                          >
+                            Follow on Facebook
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">GSTIN</p>
-                    <p className="font-medium">{company.cmpGSTIN || 'Not Available'}</p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Address</h4>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-gray-700">{company.cmpOfficialAddress}</p>
+                    {company.cmpOfficialAddress2nd && (
+                      <p className="text-gray-700 mt-2">{company.cmpOfficialAddress2nd}</p>
+                    )}
+                    <p className="text-gray-600 mt-2">
+                      {company.state_name?.name} - {company.cmpPin}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Approval Status</p>
-                    <Badge variant={company.cmpApprovalSA === "1" ? "default" : "secondary"}>
-                      {company.cmpApprovalSA === "1" ? "Approved" : "Pending"}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Contact Person</h4>
+                  <p className="text-gray-700">{company.cmpContPerson}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

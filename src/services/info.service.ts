@@ -234,12 +234,7 @@ export const getTopCountriesHiring = async () => {
       return fallbackResponse.data;
     } catch (fallbackError) {
       console.error('Fallback API also failed:', fallbackError);
-      
-      // Final fallback: Return empty data structure
-      return { 
-        countries: [],
-        data: []
-      };
+      throw fallbackError;
     }
   }
 };
