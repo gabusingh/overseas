@@ -178,7 +178,7 @@ export default function JobDescriptionPage() {
         };
         
         setJobData(mappedJobData);
-        setIsWishListed(mappedJobData.isWishListed);
+        setIsWishListed(mappedJobData.isWishListed || false);
       } else {
         throw new Error('Job not found');
       }

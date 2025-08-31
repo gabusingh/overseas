@@ -39,13 +39,13 @@ function Navbar() {
         { label: "Skill Training", href: "/training-institutes" },
         { label: "Trade Center", href: "/trade-test-center" },
         { label: "Trade Test", href: "/trade-test-institute" },
-        { label: "Visa Assistance", href: "/about-us" },
+        // { label: "Visa Assistance", href: "/about-us" },
       ]
     },
-    {
-      label: "For Employers",
-      href: "/for-employers"
-    }
+    // {
+    //   label: "For Employers",
+    //   href: "/for-employers"
+    // }
   ];
 
   return (

@@ -30,7 +30,7 @@ function NewsSlider() {
       console.log('News feed data:', response?.data);
       
       // Process the news data and take first 4 items
-      const newsData = response?.data?.slice(0, 4)?.map((item: any) => ({
+      const newsData = (response?.data?.newsData || response?.data || []).slice(0, 4).map((item: any) => ({
         id: item.id,
         title: item.news_title || item.title,
         excerpt: item.news_description || item.description || item.excerpt,
@@ -131,7 +131,7 @@ function NewsSlider() {
             <Card key={i} className="shadow-sm border-0 h-full flex flex-col">
               <CardHeader className="p-0">
                 <Image
-                  src={item.image}
+                  src={item.image || "/images/news1.svg"}
                   alt={item.title}
                   width={300}
                   height={200}

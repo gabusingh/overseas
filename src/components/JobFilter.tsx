@@ -62,7 +62,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
       const response = await getOccupations();
       console.log('📊 Occupations API Response:', response);
       
-      let occupationData = [];
+      let occupationData: any[] = [];
       if (response?.occupation && Array.isArray(response.occupation)) {
         occupationData = response.occupation;
       } else if (response?.data && Array.isArray(response.data)) {
@@ -99,7 +99,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
       const response = await getCountriesForJobs();
       console.log('📊 Countries API Response:', response);
       
-      let countryData = [];
+      let countryData: any[] = [];
       if (response?.countries && Array.isArray(response.countries)) {
         countryData = response.countries;
       } else if (response?.data && Array.isArray(response.data)) {

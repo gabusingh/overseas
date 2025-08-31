@@ -97,7 +97,7 @@ function ResizableHeader() {
     { name: "Jobs", link: "/jobs" },
     { name: "Companies", link: "/companies" },
     { name: "Services", link: "/services" },
-    { name: "For Employers", link: "/for-employers" },
+    // { name: "For Employers", link: "/for-employers" },
   ];
 
   // Dropdown data for mobile navigation
@@ -112,7 +112,7 @@ function ResizableHeader() {
     { label: "Skill Training", href: "/training-institutes" },
     { label: "Trade Center", href: "/trade-test-center" },
     { label: "Trade Test", href: "/trade-testing-institute" },
-    { label: "Visa Assistance", href: "/about-us" },
+    // { label: "Visa Assistance", href: "/about-us" },
   ];
 
   return (
@@ -198,12 +198,12 @@ function ResizableHeader() {
               </div>
 
               {/* For Employers */}
-              <Link
+              {/* <Link
                 href="/for-employers"
                 className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
               >
                 <span className="relative z-20">For Employers</span>
-              </Link>
+              </Link> */}
             </div>
           )}
 
@@ -355,14 +355,14 @@ function ResizableHeader() {
                   </div>
 
                   {/* For Employers */}
-                  <Link
+                  {/* <Link
                     href="/for-employers"
                     className="flex items-center py-3 text-indigo-600 hover:text-indigo-600 font-medium"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <i className="fa fa-briefcase mr-3 text-blue-600"></i>
                     For Employers
-                  </Link>
+                  </Link> */}
                 </>
               )}
 

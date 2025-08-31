@@ -535,7 +535,7 @@ export default function Header() {
           )}
 
           {/* User Actions */}
-          <div className="hidden lg:flex items-center space-x-4">
+          {/* <div className="hidden lg:flex items-center space-x-4">
             <Link href="/for-employers" className="text-gray-600 hover:text-blue-600 font-medium">
               For Employers
             </Link>
@@ -655,7 +655,7 @@ export default function Header() {
                 </Link>
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* Mobile Menu Button */}
           <button 
@@ -682,14 +682,14 @@ export default function Header() {
                 <i className="fa fa-graduation-cap mr-3 text-blue-600"></i>
                 Skills & Learning
               </Link>
-              <Link href="/career-guide" className="block py-3 border-b border-gray-100 font-medium text-gray-700">
+              {/* <Link href="/career-guide" className="block py-3 border-b border-gray-100 font-medium text-gray-700">
                 <i className="fa fa-compass mr-3 text-blue-600"></i>
                 Career Guide
-              </Link>
-              <Link href="/for-employers" className="block py-3 border-b border-gray-100 font-medium text-gray-700">
+              </Link> */}
+              {/* <Link href="/for-employers" className="block py-3 border-b border-gray-100 font-medium text-gray-700">
                 <i className="fa fa-briefcase mr-3 text-blue-600"></i>
                 For Employers
-              </Link>
+              </Link> */}
               <div className="pt-4 space-y-2">
                 {isAuthenticated ? (
                   <>

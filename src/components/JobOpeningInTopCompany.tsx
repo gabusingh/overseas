@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card, CardContent } from "./ui/card";
-import { getAllCompanies } from "../services/hra.service";
+import { getHraList } from "../services/hra.service";
 import Link from "next/link";
 
 interface Company {
@@ -22,7 +22,7 @@ function JobOpeningInTopCompany() {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const response = await getAllCompanies();
+      const response = await getHraList();
       console.log('Companies data:', response?.cmpData);
       
       // Take only first 4 companies for display

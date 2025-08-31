@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Search, MapPin, Briefcase } from "lucide-react";
 import { Button } from "./ui/button";
 import SearchComponent from "./SearchComponent";
+import PopularSearches from "./PopularSearches";
 import { getOccupations } from "../services/info.service";
 
 interface Department {
@@ -28,14 +29,20 @@ function CleanHeroSection({ data: propData, countryData }: CleanHeroSectionProps
   const getOccupationsListFunc = useCallback(async () => {
     try {
       const response = await getOccupations();
-      const occupations = response?.data?.map((item: { id: number; title: string; name: string }) => ({
-        label: item.title || item.name,
+      const rawData = response?.data || response?.occupation || [];
+      const occupations = rawData.map((item: { id: number; title?: string; name?: string; occupation?: string }) => ({
+        id: item.id,
+        title: item.title || item.name || item.occupation,
+        name: item.title || item.name || item.occupation,
+        label: item.title || item.name || item.occupation || 'Unknown',
         value: item.id,
         img: `/images/institute.png`,
       }));
       setDepartmentList(occupations || []);
     } catch (error) {
       console.log(error);
+      // Set empty array - no fallback data
+      setDepartmentList([]);
     }
   }, []);
 
@@ -82,19 +89,11 @@ function CleanHeroSection({ data: propData, countryData }: CleanHeroSectionProps
           </div>
 
           {/* Popular Searches */}
-          <div className="mt-8 text-center">
-            <p className="text-blue-100 mb-4">Popular searches:</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {departmentList.slice(0, 6).map((dept) => (
-                <button
-                  key={dept.value}
-                  className="px-4 py-2 bg-white/20 text-white rounded-full text-sm hover:bg-white/30 transition-colors backdrop-blur-sm"
-                >
-                  {dept.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <PopularSearches 
+            data={departmentList}
+            variant="hero"
+            maxItems={6}
+          />
         </div>
 
         {/* Quick Stats */}

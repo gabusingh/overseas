@@ -269,11 +269,15 @@ export default function JobsPage() {
         const response = await getOccupations();
         console.log('📊 Occupations response:', response);
         
-        const occupationData = response?.occupation || response?.data || [];
+        const occupationData = response?.data || response?.occupation || [];
         if (Array.isArray(occupationData) && occupationData.length > 0) {
           const categories = occupationData.map((item: any) => ({
-            label: item.occupation || item.title || item.name,
+            id: item.id,
+            title: item.title || item.name || item.occupation,
+            name: item.title || item.name || item.occupation,
+            label: item.title || item.name || item.occupation,
             value: item.id,
+            img: `/images/institute.png`,
             count: 0
           }));
           setCategories(categories);
@@ -283,16 +287,9 @@ export default function JobsPage() {
         }
       } catch (error) {
         console.error('❌ Error fetching categories:', error);
-        // Fallback categories
-        const fallbackCategories = [
-          { label: "Construction", value: 1, count: 0 },
-          { label: "Hospitality", value: 2, count: 0 },
-          { label: "Healthcare", value: 3, count: 0 },
-          { label: "Oil & Gas", value: 4, count: 0 },
-          { label: "IT & Software", value: 5, count: 0 },
-        ];
-        setCategories(fallbackCategories);
-        toast.info('Using offline categories. Some features may be limited.');
+        // Set empty array - no fallback data
+        setCategories([]);
+        toast.error('Failed to load job categories. Please refresh the page.');
       }
     };
 

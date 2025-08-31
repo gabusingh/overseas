@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "./ui/input";
+import PopularSearches from "./PopularSearches";
 
 interface SearchComponentProps {
   fullWidth?: boolean;
@@ -132,23 +133,9 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
     }
   }, [handleSearchNavigate]);
 
-  // Memoize popular searches data
-  const popularSearches = useMemo(() => {
-    return data && data.length > 0 ? data.slice(0, 6) : [
-      { label: "Helper", value: 1, img: "/images/institute.png" },
-      { label: "Plumber", value: 2, img: "/images/institute.png" },
-      { label: "Electrician", value: 3, img: "/images/institute.png" },
-      { label: "Painter", value: 4, img: "/images/institute.png" },
-      { label: "Steel Fixer", value: 5, img: "/images/institute.png" },
-      { label: "Mason", value: 6, img: "/images/institute.png" },
-      { label: "Carpenter", value: 6, img: "/images/institute.png" }
-
-    ];
-  }, [data]);
-
   // Memoize search button click handler for popular searches
-  const handlePopularSearchClick = useCallback((dept: { label: string; value: number }) => {
-    setSearchKey(dept.label);
+  const handlePopularSearchClick = useCallback((item: { label: string; value: number }) => {
+    setSearchKey(item.label);
   }, []);
 
   // Memoize the desktop search bar - Compact and Rounded
@@ -336,24 +323,12 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
 
   // Memoize the popular searches section
   const popularSearchesSection = useMemo(() => (
-    <div className="mt-8">
-      <div className="text-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Popular searches</h3>
-        <p className="text-gray-600 text-sm">Trending job titles and skills</p>
-      </div>
-      <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
-        {popularSearches.map((dept, index) => (
-          <button
-            key={index}
-            className="px-3 py-2 bg-white/95 backdrop-blur-sm text-gray-700 rounded-full text-sm hover:bg-white hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 hover:text-blue-700 font-medium"
-            onClick={() => handlePopularSearchClick(dept)}
-          >
-            {dept.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  ), [popularSearches, handlePopularSearchClick]);
+    <PopularSearches 
+      data={data}
+      variant="default"
+      onSearchClick={handlePopularSearchClick}
+    />
+  ), [data, handlePopularSearchClick]);
 
   // Memoize the voice search status
   const voiceSearchStatus = useMemo(() => {

@@ -32,10 +32,10 @@ function AppliedTestCard({ v, getTestTradeListFunc }: AppliedTestCardProps) {
   const handleCourseApply = async () => {
     if (globalState.user) {
       try {
-        const response = await applyCourse({
-          id: v?.id,
-          access_token: globalState?.user?.user?.access_token,
-        });
+        const response = await applyCourse(
+          v?.id,
+          globalState?.user?.user?.id
+        );
         console.log(response);
         if (response?.message === "Application submitted successfully!") {
           toast.success("Application submitted successfully!");

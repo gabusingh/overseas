@@ -53,9 +53,12 @@ const HeroSection = React.memo(({ data: propData, countryData }: HeroSectionProp
       const response = await getOccupations();
       console.log('📊 HeroSection: Occupations response:', response);
       
-      const rawData = response?.occupation || response?.data || [];
-      const occupations = rawData.map((item: { id: number; title: string; name: string; occupation?: string }) => ({
-        label: item.title || item.name || item.occupation,
+      const rawData = response?.data || response?.occupation || [];
+      const occupations = rawData.map((item: { id: number; title?: string; name?: string; occupation?: string }) => ({
+        id: item.id,
+        title: item.title || item.name || item.occupation,
+        name: item.title || item.name || item.occupation,
+        label: item.title || item.name || item.occupation || 'Unknown',
         value: item.id,
         img: `/images/institute.png`,
       }));
@@ -63,7 +66,7 @@ const HeroSection = React.memo(({ data: propData, countryData }: HeroSectionProp
       console.log('✅ HeroSection: Occupations loaded:', occupations?.length || 0);
     } catch (error) {
       console.error('❌ HeroSection: Error fetching occupations:', error);
-      // No fallback data - set empty array
+      // Set empty array - no fallback data
       setDepartmentList([]);
     }
   }, []);
