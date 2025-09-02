@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
 import { loginUsingOtp } from "@/services/user.service";
+import { registerHra, HraRegistrationData } from "@/services/hra.service";
 
 export default function EmployerSignupPage() {
   const router = useRouter();
@@ -141,14 +142,14 @@ export default function EmployerSignupPage() {
       
       console.log('Sending OTP using loginUsingOtp to:', fullPhone);
       
-      const response = await loginUsingOtp({ phone: fullPhone });
+      const response = await loginUsingOtp({ empPhone: fullPhone });
       
       console.log('loginUsingOtp response:', response);
       
-      // Check response - loginUsingOtp typically returns success: true/false
-      if (response?.success || response?.status === 'success') {
+      // Check response - loginUsingOtp returns axios response, check data property
+      if (response?.data?.success || response?.data?.status === 'success') {
         setIsOtpSent(true);
-        toast.success(response?.message || "OTP sent successfully");
+        toast.success(response?.data?.message || "OTP sent successfully");
       } else {
         // Fallback to the registration OTP endpoint if login OTP fails
         console.log('Falling back to registration OTP endpoint...');
@@ -166,7 +167,7 @@ export default function EmployerSignupPage() {
           setIsOtpSent(true);
           toast.success(data.message || "OTP sent successfully");
         } else {
-          toast.error(data.message || data.error || response?.message || "Failed to send OTP");
+          toast.error(data.message || data.error || response?.data?.message || "Failed to send OTP");
         }
       }
     } catch (e: any) {
@@ -229,43 +230,59 @@ export default function EmployerSignupPage() {
 
     setIsLoading(true);
     try {
-      const fd = new FormData();
-      fd.append("cmpOtp", formData.cmpOtp);
-      fd.append("countryCode", formData.countryCode);
-      fd.append("cmpOfficialMob", formData.cmpOfficialMob);
-      fd.append("cmpName", formData.cmpName);
-      fd.append("source", formData.source);
-      fd.append("cmpEmail", formData.cmpEmail);
-      fd.append("cmpContPerson", formData.cmpContPerson);
-      fd.append("RaLicenseNumber", formData.RaLicenseNumber);
-      fd.append("cmpOfficialAddress", formData.cmpOfficialAddress);
-      fd.append("cmpPin", formData.cmpPin);
-      if (formData.cmpLogo) fd.append("cmpLogo", formData.cmpLogo);
-      fd.append("password", formData.password);
-      fd.append("password_confirmation", formData.password_confirmation);
-      if (formData.cmpDescription) fd.append("cmpDescription", formData.cmpDescription);
+      // Prepare the registration data according to the HRA service interface
+      const registrationData: HraRegistrationData = {
+        cmpOtp: formData.cmpOtp,
+        countryCode: formData.countryCode,
+        cmpOfficialMob: formData.cmpOfficialMob,
+        cmpName: formData.cmpName,
+        source: formData.source,
+        cmpEmail: formData.cmpEmail,
+        cmpContPerson: formData.cmpContPerson,
+        RaLicenseNumber: formData.RaLicenseNumber,
+        cmpOfficialAddress: formData.cmpOfficialAddress,
+        cmpDescription: formData.cmpDescription || "",
+        cmpPin: formData.cmpPin,
+        cmpLogo: formData.cmpLogo || undefined,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+      };
 
-      const res = await fetch("/api/register-hra", {
-        method: "POST",
-        // Let browser set Content-Type with boundary for multipart
-        body: fd,
-        headers: { Accept: "application/json" },
-      });
-      const data = await res.json();
-      if (res.status === 201 || (res.ok && data?.message)) {
-        toast.success(data.message || "Company registered successfully");
-        // If token present, keep existing behavior; else send to login
-        if (data?.access_token) {
+      // Use the HRA service to register
+      const response = await registerHra(registrationData);
+      
+      if (response?.success || response?.status === 'success') {
+        toast.success(response?.message || "Company registered successfully");
+        
+        // Handle successful registration
+        if (response?.access_token) {
           try {
-            localStorage.setItem("loggedUser", JSON.stringify(data));
-            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("loggedUser", JSON.stringify(response));
+            localStorage.setItem("access_token", response.access_token);
           } catch {}
           setTimeout(() => router.push("/hra-dashboard"), 800);
         } else {
           setTimeout(() => router.push("/login?registered=1"), 800);
         }
-      } else if (res.status === 422) {
-        // Map validation errors if provided
+      } else {
+        // Handle validation errors if provided
+        if (response?.errors && typeof response.errors === "object") {
+          const mapped: ErrorState = {};
+          Object.keys(response.errors).forEach((k) => {
+            const key = k as keyof ErrorState;
+            const first = Array.isArray(response.errors[k]) ? response.errors[k][0] : String(response.errors[k]);
+            mapped[key] = first;
+          });
+          setErrors((prev) => ({ ...prev, ...mapped }));
+        }
+        toast.error(response?.error || response?.message || "Registration failed");
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      
+      // Handle specific error cases
+      if (error.response?.status === 422) {
+        const data = error.response.data;
         if (data?.errors && typeof data.errors === "object") {
           const mapped: ErrorState = {};
           Object.keys(data.errors).forEach((k) => {
@@ -277,10 +294,8 @@ export default function EmployerSignupPage() {
         }
         toast.error(data?.error || "Validation error");
       } else {
-        toast.error(data?.error || "Registration failed");
+        toast.error(error?.message || "Registration failed. Please try again.");
       }
-    } catch (e) {
-      toast.error("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -516,6 +531,23 @@ export default function EmployerSignupPage() {
                             />
                             {errors.cmpPin && (
                               <p className="text-red-500 text-sm mt-1">{errors.cmpPin}</p>
+                            )}
+                          </div>
+
+                          {/* Company Description */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Company Description (Optional)
+                            </label>
+                            <textarea
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Brief description of your company"
+                              rows={3}
+                              value={formData.cmpDescription}
+                              onChange={(e) => handleInputChange("cmpDescription", e.target.value)}
+                            />
+                            {errors.cmpDescription && (
+                              <p className="text-red-500 text-sm mt-1">{errors.cmpDescription}</p>
                             )}
                           </div>
 
