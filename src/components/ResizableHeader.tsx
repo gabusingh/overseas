@@ -66,7 +66,7 @@ function ResizableHeader() {
             { label: 'My Profile', href: '/my-profile', icon: 'fa fa-user' },
             { label: 'Saved Jobs', href: '/saved-jobs', icon: 'fa fa-heart' },
             { label: 'My Applications', href: '/my-applications', icon: 'fa fa-file-text' },
-            { label: 'Resume', href: '/my-resume', icon: 'fa fa-file-pdf' },
+            { label: 'Resume', href: '/resume-building', icon: 'fa fa-file-pdf' },
           ]
         };
     }
