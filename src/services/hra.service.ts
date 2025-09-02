@@ -123,6 +123,24 @@ export interface HraDashboardData {
   }>;
 }
 
+// Interface for HRA Registration
+export interface HraRegistrationData {
+  cmpOtp: string;
+  countryCode: string;
+  cmpOfficialMob: string;
+  cmpName: string;
+  source: string;
+  cmpEmail: string;
+  cmpContPerson: string;
+  RaLicenseNumber: string;
+  cmpOfficialAddress: string;
+  cmpDescription: string;
+  cmpPin: string;
+  cmpLogo?: File;
+  password: string;
+  password_confirmation: string;
+}
+
 export const getAllCompanies = async (token: string) => {
   try {
     const response = await axios.get(`${BASE_URL}get-all-companies`, {
@@ -469,6 +487,35 @@ export const getNotifications = async (token: string) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching notifications:', error);
+    throw error;
+  }
+};
+
+// HRA Registration function
+export const registerHra = async (registrationData: HraRegistrationData) => {
+  try {
+    const formData = new FormData();
+    
+    // Append all the registration data to FormData
+    Object.entries(registrationData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (key === 'cmpLogo' && value instanceof File) {
+          formData.append(key, value);
+        } else {
+          formData.append(key, value.toString());
+        }
+      }
+    });
+
+    const response = await axios.post(`${BASE_URL}register-hra`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error registering HRA:', error);
     throw error;
   }
 };
