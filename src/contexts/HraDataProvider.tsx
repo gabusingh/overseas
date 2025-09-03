@@ -18,6 +18,7 @@ const HraDataContext = createContext<HraDataContextType | undefined>(undefined);
 
 interface HraDataProviderProps {
   children: React.ReactNode;
+  skipDataFetch?: boolean; // New prop to control data fetching
 }
 
 // Cache duration: 5 minutes
@@ -61,7 +62,7 @@ function getHrUserIdFromStorage(): string | null {
   }
 }
 
-export function HraDataProvider({ children }: HraDataProviderProps) {
+export function HraDataProvider({ children, skipDataFetch = false }: HraDataProviderProps) {
   const [dashboardData, setDashboardData] = useState<HraDashboardData | null>(null);
   const [jobsData, setJobsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,6 +78,12 @@ export function HraDataProvider({ children }: HraDataProviderProps) {
   }, [lastFetchTime, dashboardData]);
 
   const fetchHraData = useCallback(async (force = false) => {
+    // Skip data fetching if disabled
+    if (skipDataFetch) {
+      console.log('HRA data fetching disabled for this page');
+      return;
+    }
+
     // Check if data is cached and valid
     if (!force && isCacheValid()) {
       return;
@@ -290,7 +297,7 @@ export function HraDataProvider({ children }: HraDataProviderProps) {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [isCacheValid, dashboardData]);
+  }, [isCacheValid, dashboardData, skipDataFetch]);
 
   const refreshData = useCallback(async () => {
     await fetchHraData(true);

@@ -211,16 +211,14 @@ export const getEnhancedHrDetails = async (token: string): Promise<any | null> =
 
     // Handle the actual API response structure
     let hrData;
-    if (response.data && Array.isArray(response.data)) {
-      // API returns an array of HR records, take the first one
-      hrData = response.data[0];
-
-    } else if (response.data) {
-      // If response has a data property but it's not an array
-      hrData = response.data;
-    } else {
-      // Otherwise, use the response directly
-      hrData = response;
+    if (response && typeof response === 'object') {
+      // If response is an array, take the first one
+      if (Array.isArray(response)) {
+        hrData = response[0];
+      } else {
+        // Otherwise, use the response directly
+        hrData = response;
+      }
     }
 
     if (!hrData) {
@@ -516,6 +514,39 @@ export const registerHra = async (registrationData: HraRegistrationData) => {
     return response.data;
   } catch (error) {
     console.error('Error registering HRA:', error);
+    throw error;
+  }
+};
+
+// HRA OTP functions for registration
+export const sendHraOtp = async (phone: string, countryCode: string) => {
+  try {
+    const formData = new FormData();
+    formData.append('empPhone', phone);
+    formData.append('empName', 'Employer');
+    formData.append('countryCode', countryCode);
+    formData.append('type', 'hra');
+
+    const response = await axios.post(`${BASE_URL}get-otp`, formData);
+    return response.data;
+  } catch (error) {
+    console.error('Error sending HRA OTP:', error);
+    throw error;
+  }
+};
+
+export const verifyHraOtp = async (phone: string, otp: string, countryCode: string) => {
+  try {
+    const formData = new FormData();
+    formData.append('empPhone', phone);
+    formData.append('otp', otp);
+    formData.append('countryCode', countryCode);
+    formData.append('type', 'hra');
+
+    const response = await axios.post(`${BASE_URL}register-person-step1`, formData);
+    return response.data;
+  } catch (error) {
+    console.error('Error verifying HRA OTP:', error);
     throw error;
   }
 };
