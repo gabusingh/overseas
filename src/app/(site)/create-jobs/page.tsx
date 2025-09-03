@@ -528,7 +528,7 @@ const CreateJobs = () => {
     return map[name] || undefined;
   };
 
-  const getSelectPlaceholder = (name: string, fallback: string = "Select option") => {
+      const getSelectPlaceholder = (name: string, fallback: string = "Select option") => {
     const map: Record<string, string> = {
       jobOccupation: "Select department",
       jobSkill: "Add a skill",
@@ -549,6 +549,7 @@ const CreateJobs = () => {
       jobAccommodation: "Accommodation",
       jobMedicalFacility: "Medical facility",
       jobTransportation: "Transportation",
+      languageRequired: "Add a language",
     };
     return map[name] || fallback;
   };
@@ -876,21 +877,23 @@ const CreateJobs = () => {
         // Handle skills data (expecting { skills: [...] } structure)
         if (skillsResponse?.skills && Array.isArray(skillsResponse.skills)) {
           const validSkills = skillsResponse.skills.filter((skill: any) => 
-            skill && typeof skill === 'object' && (skill.skill || skill.name)
+            skill && typeof skill === 'object' && (skill.skill || skill.name) && skill.id
           );
           
           if (validSkills.length > 0) {
-            // Remove duplicates based on skill name and create unique values
-            const uniqueSkills = validSkills.reduce((acc: any[], skill: any, index: number) => {
+            // Remove duplicates based on skill name and preserve skill ID
+            const uniqueSkills = validSkills.reduce((acc: any[], skill: any) => {
               const skillName = skill.skill || skill.name;
+              const skillId = skill.id;
               const existingIndex = acc.findIndex(s => s.label === skillName);
               
               if (existingIndex === -1) {
-                // New skill, add it
+                // New skill, add it with ID as value for backend
                 acc.push({
                   label: skillName,
-                  value: `${skillName}_${skill.id || index}`, // Make value unique with ID
-                  displayValue: skillName // What to actually store in form
+                  value: skillId.toString(), // Send skill ID to backend
+                  skillId: skillId, // Keep ID for reference
+                  skillName: skillName // Keep name for display
                 });
               }
               return acc;
@@ -910,14 +913,16 @@ const CreateJobs = () => {
         console.warn('⚠️ API skills loading failed:', apiError);
         console.log('⚙️ Using fallback skills for occupation:', occuId);
         
-        // Use fallback skills data
+        // Use fallback skills data with IDs
         const fallbackSkillsForOccupation = fallbackSkills[id as keyof typeof fallbackSkills] || [];
         
         if (fallbackSkillsForOccupation.length > 0) {
           setSkillList(
             fallbackSkillsForOccupation.map((skill: any) => ({
               label: skill.name,
-              value: skill.name,
+              value: skill.id.toString(), // Use skill ID as value
+              skillId: skill.id,
+              skillName: skill.name
             }))
           );
           console.log('✅ Fallback skills loaded:', fallbackSkillsForOccupation.length);
@@ -987,6 +992,7 @@ const CreateJobs = () => {
     return Object.keys(newErrors).length === 0;
   };
   
+  
   // Form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1047,7 +1053,8 @@ const CreateJobs = () => {
                    value.toString().trim() !== '' && 
                    !value.toString().startsWith('_')) {
           // Only append non-placeholder values
-          formDataInstance.append(key, String(value).trim());
+          const trimmedValue = String(value).trim();
+          formDataInstance.append(key, trimmedValue);
           hasValidData = true;
         }
       });
@@ -1214,29 +1221,35 @@ const CreateJobs = () => {
             {Array.isArray(formData[field.name as keyof FormDataType]) && (formData[field.name as keyof FormDataType] as string[]).length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {(formData[field.name as keyof FormDataType] as string[])
-                  .filter(skill => skill && skill !== "_none")
-                  .map((skill, index) => (
-                    <span
-                      key={`${skill}-${index}`}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full border border-blue-200"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentSkills = (formData[field.name as keyof FormDataType] as string[]) || [];
-                          const updatedSkills = currentSkills.filter(s => s !== skill);
-                          setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, updatedSkills));
-                        }}
-                        className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
-                        aria-label={`Remove ${skill}`}
+                  .filter(skillId => skillId && skillId !== "_none")
+                  .map((skillId, index) => {
+                    // Find the skill name to display from skillList
+                    const skillOption = skillList.find(option => option.value === skillId);
+                    const displayName = skillOption?.label || `Skill ${skillId}`;
+                    
+                    return (
+                      <span
+                        key={`${skillId}-${index}`}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full border border-blue-200"
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </span>
-                  ))
+                        {displayName}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentSkills = (formData[field.name as keyof FormDataType] as string[]) || [];
+                            const updatedSkills = currentSkills.filter(s => s !== skillId);
+                            setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, updatedSkills));
+                          }}
+                          className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                          aria-label={`Remove ${displayName}`}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </span>
+                    );
+                  })
                 }
               </div>
             )}
@@ -1247,10 +1260,10 @@ const CreateJobs = () => {
               onValueChange={(value: string) => {
                 if (value && value !== "_none") {
                   const currentSkills = (formData[field.name as keyof FormDataType] as string[]) || [];
-                  // Extract the actual skill name from the unique value (remove ID suffix)
-                  const skillName = value.includes('_') ? value.split('_')[0] : value;
-                  if (!currentSkills.includes(skillName)) {
-                    const updatedSkills = [...currentSkills, skillName];
+                  // Use the skill ID as the value (no need to extract anything)
+                  const skillId = value;
+                  if (!currentSkills.includes(skillId)) {
+                    const updatedSkills = [...currentSkills, skillId];
                     setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, updatedSkills));
                   }
                 }
@@ -1263,9 +1276,8 @@ const CreateJobs = () => {
                 <SelectGroup>
                   {field.options?.map((option, index) => {
                     const currentSkills = (formData[field.name as keyof FormDataType] as string[]) || [];
-                    // Extract skill name for checking selection (handle unique values)
-                    const skillName = option.value.includes('_') ? option.value.split('_')[0] : option.value;
-                    const isSelected = currentSkills.includes(skillName);
+                    // Check if this skill ID is already selected
+                    const isSelected = currentSkills.includes(option.value);
                     const isPlaceholder = option.value === "_none";
                     
                     return (
