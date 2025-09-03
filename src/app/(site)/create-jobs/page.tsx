@@ -940,6 +940,7 @@ const CreateJobs = () => {
   // Form validation function
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof FormDataType, string>> = {};
+    const missingFields: string[] = [];
     
     // Required field validations
     const requiredFields: (keyof FormDataType)[] = [
@@ -953,7 +954,9 @@ const CreateJobs = () => {
       if (!value || 
           (typeof value === 'string' && (value.trim() === '' || value.startsWith('_'))) ||
           (Array.isArray(value) && value.length === 0)) {
-        newErrors[field] = `${fieldsByName[field]?.label || field} is required`;
+        const fieldLabel = fieldsByName[field]?.label || field;
+        newErrors[field] = `${fieldLabel} is required`;
+        missingFields.push(fieldLabel);
       }
     });
     
@@ -989,6 +992,28 @@ const CreateJobs = () => {
     }
     
     setErrors(newErrors);
+    
+    // Show specific snackbar message for missing required fields
+    if (missingFields.length > 0) {
+      if (missingFields.length === 1) {
+        toast.error(`${missingFields[0]} is required`);
+      } else if (missingFields.length <= 3) {
+        toast.error(`Required fields: ${missingFields.join(', ')}`);
+      } else {
+        toast.error(`Please fill in all required fields (${missingFields.length} missing)`);
+      }
+    }
+    
+    // Show snackbar for other validation errors
+    const otherErrors = Object.keys(newErrors).filter(key => 
+      !requiredFields.includes(key as keyof FormDataType)
+    );
+    
+    if (otherErrors.length > 0) {
+      const firstError = newErrors[otherErrors[0] as keyof FormDataType];
+      toast.error(firstError || 'Please check your form inputs');
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
   
@@ -1002,7 +1027,7 @@ const CreateJobs = () => {
     
     // Validate form
     if (!validateForm()) {
-      toast.error('Please fix the validation errors before submitting');
+      // Validation function already shows specific error messages
       return;
     }
     
@@ -1071,16 +1096,21 @@ const CreateJobs = () => {
       
       // Handle different response scenarios
       if (response && typeof response === 'object') {
-        if ('error' in response) {
+        // Check for success message from backend
+        if ('message' in response && response.message === 'Job created successfully') {
+          toast.success('🎉 Job posted successfully! Your job is now live.');
+        } else if ('error' in response) {
           throw new Error(response.error as string || 'Server error occurred');
-        }
-        if ('success' in response && !response.success) {
+        } else if ('success' in response && !response.success) {
           throw new Error('Job creation failed on server');
+        } else {
+          // Default success if no specific success field
+          toast.success('🎉 Job posted successfully! Your job is now live.');
         }
+      } else {
+        // Success for non-object responses
+        toast.success('🎉 Job posted successfully! Your job is now live.');
       }
-      
-      // Success
-      toast.success("Job created successfully! Redirecting...");
       
       // Clear form data on success
       setFormData({} as FormDataValues);
@@ -1089,38 +1119,56 @@ const CreateJobs = () => {
       // Redirect with a small delay to show the success message
       setTimeout(() => {
         router.push("/jobs");
-      }, 1500);
+      }, 2000);
       
     } catch (error: any) {
       console.error("Error creating job:", error);
       
-      // Handle different error types
-      let errorMessage = 'Failed to create job. Please try again.';
+      // Handle different error types with enhanced messages
+      let errorMessage = '❌ Failed to create job. Please try again.';
+      let errorTitle = 'Job Creation Failed';
       
       if (error?.message) {
         errorMessage = error.message;
       } else if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
       } else if (error?.response?.statusText) {
         errorMessage = `Server error: ${error.response.statusText}`;
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
       
-      // Handle specific error codes
+      // Handle specific error codes with tailored messages
       if (error?.response?.status === 401) {
-        errorMessage = 'Session expired. Please log in again.';
-        // Optionally redirect to login
-        // router.push('/login');
+        errorTitle = 'Authentication Required';
+        errorMessage = '🔐 Your session has expired. Please log in again.';
+        // Optionally redirect to login after showing error
+        setTimeout(() => {
+          router.push('/login');
+        }, 3000);
       } else if (error?.response?.status === 403) {
-        errorMessage = 'You do not have permission to create jobs.';
+        errorTitle = 'Access Denied';
+        errorMessage = '🚫 You do not have permission to create jobs.';
       } else if (error?.response?.status === 422) {
-        errorMessage = 'Invalid data provided. Please check your inputs.';
+        errorTitle = 'Invalid Data';
+        errorMessage = '⚠️ Some required information is missing or invalid. Please check your inputs.';
+      } else if (error?.response?.status === 400) {
+        errorTitle = 'Bad Request';
+        errorMessage = '⚠️ Invalid job data. Please review your form and try again.';
       } else if (error?.response?.status >= 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorTitle = 'Server Error';
+        errorMessage = '🔧 Server is temporarily unavailable. Please try again in a few minutes.';
+      } else if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network')) {
+        errorTitle = 'Connection Error';
+        errorMessage = '🌐 Check your internet connection and try again.';
       }
       
-      toast.error(errorMessage);
+      // Show error with enhanced formatting
+      toast.error(errorMessage, {
+        duration: 5000, // Show for 5 seconds for error messages
+      });
       
     } finally {
       setLoading(false);
