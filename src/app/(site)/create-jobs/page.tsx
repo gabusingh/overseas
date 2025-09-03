@@ -528,7 +528,7 @@ const CreateJobs = () => {
     return map[name] || undefined;
   };
 
-  const getSelectPlaceholder = (name: string, fallback: string = "Select option") => {
+      const getSelectPlaceholder = (name: string, fallback: string = "Select option") => {
     const map: Record<string, string> = {
       jobOccupation: "Select department",
       jobSkill: "Add a skill",
@@ -549,6 +549,7 @@ const CreateJobs = () => {
       jobAccommodation: "Accommodation",
       jobMedicalFacility: "Medical facility",
       jobTransportation: "Transportation",
+      languageRequired: "Add a language",
     };
     return map[name] || fallback;
   };
@@ -876,21 +877,23 @@ const CreateJobs = () => {
         // Handle skills data (expecting { skills: [...] } structure)
         if (skillsResponse?.skills && Array.isArray(skillsResponse.skills)) {
           const validSkills = skillsResponse.skills.filter((skill: any) => 
-            skill && typeof skill === 'object' && (skill.skill || skill.name)
+            skill && typeof skill === 'object' && (skill.skill || skill.name) && skill.id
           );
           
           if (validSkills.length > 0) {
-            // Remove duplicates based on skill name and create unique values
-            const uniqueSkills = validSkills.reduce((acc: any[], skill: any, index: number) => {
+            // Remove duplicates based on skill name and preserve skill ID
+            const uniqueSkills = validSkills.reduce((acc: any[], skill: any) => {
               const skillName = skill.skill || skill.name;
+              const skillId = skill.id;
               const existingIndex = acc.findIndex(s => s.label === skillName);
               
               if (existingIndex === -1) {
-                // New skill, add it
+                // New skill, add it with ID as value for backend
                 acc.push({
                   label: skillName,
-                  value: `${skillName}_${skill.id || index}`, // Make value unique with ID
-                  displayValue: skillName // What to actually store in form
+                  value: skillId.toString(), // Send skill ID to backend
+                  skillId: skillId, // Keep ID for reference
+                  skillName: skillName // Keep name for display
                 });
               }
               return acc;
@@ -910,14 +913,16 @@ const CreateJobs = () => {
         console.warn('⚠️ API skills loading failed:', apiError);
         console.log('⚙️ Using fallback skills for occupation:', occuId);
         
-        // Use fallback skills data
+        // Use fallback skills data with IDs
         const fallbackSkillsForOccupation = fallbackSkills[id as keyof typeof fallbackSkills] || [];
         
         if (fallbackSkillsForOccupation.length > 0) {
           setSkillList(
             fallbackSkillsForOccupation.map((skill: any) => ({
               label: skill.name,
-              value: skill.name,
+              value: skill.id.toString(), // Use skill ID as value
+              skillId: skill.id,
+              skillName: skill.name
             }))
           );
           console.log('✅ Fallback skills loaded:', fallbackSkillsForOccupation.length);
@@ -935,6 +940,7 @@ const CreateJobs = () => {
   // Form validation function
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof FormDataType, string>> = {};
+    const missingFields: string[] = [];
     
     // Required field validations
     const requiredFields: (keyof FormDataType)[] = [
@@ -948,7 +954,9 @@ const CreateJobs = () => {
       if (!value || 
           (typeof value === 'string' && (value.trim() === '' || value.startsWith('_'))) ||
           (Array.isArray(value) && value.length === 0)) {
-        newErrors[field] = `${fieldsByName[field]?.label || field} is required`;
+        const fieldLabel = fieldsByName[field]?.label || field;
+        newErrors[field] = `${fieldLabel} is required`;
+        missingFields.push(fieldLabel);
       }
     });
     
@@ -984,8 +992,31 @@ const CreateJobs = () => {
     }
     
     setErrors(newErrors);
+    
+    // Show specific snackbar message for missing required fields
+    if (missingFields.length > 0) {
+      if (missingFields.length === 1) {
+        toast.error(`${missingFields[0]} is required`);
+      } else if (missingFields.length <= 3) {
+        toast.error(`Required fields: ${missingFields.join(', ')}`);
+      } else {
+        toast.error(`Please fill in all required fields (${missingFields.length} missing)`);
+      }
+    }
+    
+    // Show snackbar for other validation errors
+    const otherErrors = Object.keys(newErrors).filter(key => 
+      !requiredFields.includes(key as keyof FormDataType)
+    );
+    
+    if (otherErrors.length > 0) {
+      const firstError = newErrors[otherErrors[0] as keyof FormDataType];
+      toast.error(firstError || 'Please check your form inputs');
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
+  
   
   // Form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
@@ -996,7 +1027,7 @@ const CreateJobs = () => {
     
     // Validate form
     if (!validateForm()) {
-      toast.error('Please fix the validation errors before submitting');
+      // Validation function already shows specific error messages
       return;
     }
     
@@ -1047,7 +1078,8 @@ const CreateJobs = () => {
                    value.toString().trim() !== '' && 
                    !value.toString().startsWith('_')) {
           // Only append non-placeholder values
-          formDataInstance.append(key, String(value).trim());
+          const trimmedValue = String(value).trim();
+          formDataInstance.append(key, trimmedValue);
           hasValidData = true;
         }
       });
@@ -1064,16 +1096,21 @@ const CreateJobs = () => {
       
       // Handle different response scenarios
       if (response && typeof response === 'object') {
-        if ('error' in response) {
+        // Check for success message from backend
+        if ('message' in response && response.message === 'Job created successfully') {
+          toast.success('🎉 Job posted successfully! Your job is now live.');
+        } else if ('error' in response) {
           throw new Error(response.error as string || 'Server error occurred');
-        }
-        if ('success' in response && !response.success) {
+        } else if ('success' in response && !response.success) {
           throw new Error('Job creation failed on server');
+        } else {
+          // Default success if no specific success field
+          toast.success('🎉 Job posted successfully! Your job is now live.');
         }
+      } else {
+        // Success for non-object responses
+        toast.success('🎉 Job posted successfully! Your job is now live.');
       }
-      
-      // Success
-      toast.success("Job created successfully! Redirecting...");
       
       // Clear form data on success
       setFormData({} as FormDataValues);
@@ -1082,38 +1119,56 @@ const CreateJobs = () => {
       // Redirect with a small delay to show the success message
       setTimeout(() => {
         router.push("/jobs");
-      }, 1500);
+      }, 2000);
       
     } catch (error: any) {
       console.error("Error creating job:", error);
       
-      // Handle different error types
-      let errorMessage = 'Failed to create job. Please try again.';
+      // Handle different error types with enhanced messages
+      let errorMessage = '❌ Failed to create job. Please try again.';
+      let errorTitle = 'Job Creation Failed';
       
       if (error?.message) {
         errorMessage = error.message;
       } else if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
       } else if (error?.response?.statusText) {
         errorMessage = `Server error: ${error.response.statusText}`;
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
       
-      // Handle specific error codes
+      // Handle specific error codes with tailored messages
       if (error?.response?.status === 401) {
-        errorMessage = 'Session expired. Please log in again.';
-        // Optionally redirect to login
-        // router.push('/login');
+        errorTitle = 'Authentication Required';
+        errorMessage = '🔐 Your session has expired. Please log in again.';
+        // Optionally redirect to login after showing error
+        setTimeout(() => {
+          router.push('/login');
+        }, 3000);
       } else if (error?.response?.status === 403) {
-        errorMessage = 'You do not have permission to create jobs.';
+        errorTitle = 'Access Denied';
+        errorMessage = '🚫 You do not have permission to create jobs.';
       } else if (error?.response?.status === 422) {
-        errorMessage = 'Invalid data provided. Please check your inputs.';
+        errorTitle = 'Invalid Data';
+        errorMessage = '⚠️ Some required information is missing or invalid. Please check your inputs.';
+      } else if (error?.response?.status === 400) {
+        errorTitle = 'Bad Request';
+        errorMessage = '⚠️ Invalid job data. Please review your form and try again.';
       } else if (error?.response?.status >= 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorTitle = 'Server Error';
+        errorMessage = '🔧 Server is temporarily unavailable. Please try again in a few minutes.';
+      } else if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network')) {
+        errorTitle = 'Connection Error';
+        errorMessage = '🌐 Check your internet connection and try again.';
       }
       
-      toast.error(errorMessage);
+      // Show error with enhanced formatting
+      toast.error(errorMessage, {
+        duration: 5000, // Show for 5 seconds for error messages
+      });
       
     } finally {
       setLoading(false);
@@ -1214,29 +1269,35 @@ const CreateJobs = () => {
             {Array.isArray(formData[field.name as keyof FormDataType]) && (formData[field.name as keyof FormDataType] as string[]).length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {(formData[field.name as keyof FormDataType] as string[])
-                  .filter(skill => skill && skill !== "_none")
-                  .map((skill, index) => (
-                    <span
-                      key={`${skill}-${index}`}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full border border-blue-200"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentSkills = (formData[field.name as keyof FormDataType] as string[]) || [];
-                          const updatedSkills = currentSkills.filter(s => s !== skill);
-                          setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, updatedSkills));
-                        }}
-                        className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
-                        aria-label={`Remove ${skill}`}
+                  .filter(skillId => skillId && skillId !== "_none")
+                  .map((skillId, index) => {
+                    // Find the skill name to display from skillList
+                    const skillOption = skillList.find(option => option.value === skillId);
+                    const displayName = skillOption?.label || `Skill ${skillId}`;
+                    
+                    return (
+                      <span
+                        key={`${skillId}-${index}`}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full border border-blue-200"
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </span>
-                  ))
+                        {displayName}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentSkills = (formData[field.name as keyof FormDataType] as string[]) || [];
+                            const updatedSkills = currentSkills.filter(s => s !== skillId);
+                            setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, updatedSkills));
+                          }}
+                          className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                          aria-label={`Remove ${displayName}`}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </span>
+                    );
+                  })
                 }
               </div>
             )}
@@ -1247,10 +1308,10 @@ const CreateJobs = () => {
               onValueChange={(value: string) => {
                 if (value && value !== "_none") {
                   const currentSkills = (formData[field.name as keyof FormDataType] as string[]) || [];
-                  // Extract the actual skill name from the unique value (remove ID suffix)
-                  const skillName = value.includes('_') ? value.split('_')[0] : value;
-                  if (!currentSkills.includes(skillName)) {
-                    const updatedSkills = [...currentSkills, skillName];
+                  // Use the skill ID as the value (no need to extract anything)
+                  const skillId = value;
+                  if (!currentSkills.includes(skillId)) {
+                    const updatedSkills = [...currentSkills, skillId];
                     setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, updatedSkills));
                   }
                 }
@@ -1263,9 +1324,8 @@ const CreateJobs = () => {
                 <SelectGroup>
                   {field.options?.map((option, index) => {
                     const currentSkills = (formData[field.name as keyof FormDataType] as string[]) || [];
-                    // Extract skill name for checking selection (handle unique values)
-                    const skillName = option.value.includes('_') ? option.value.split('_')[0] : option.value;
-                    const isSelected = currentSkills.includes(skillName);
+                    // Check if this skill ID is already selected
+                    const isSelected = currentSkills.includes(option.value);
                     const isPlaceholder = option.value === "_none";
                     
                     return (
