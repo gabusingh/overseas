@@ -137,42 +137,40 @@ export default function EmployerSignupPage() {
     if (!validateOtpStep()) return;
     setIsLoading(true);
     try {
-      // Use the same loginUsingOtp service that works for login page
-      const fullPhone = formData.cmpOfficialMob; // No country code, just 10 digits
+      // For new HRA registrations, use the signup OTP endpoint first
+      console.log('Sending OTP for new HRA registration...');
+      const res = await fetch("/api/auth/send-signup-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empPhone: formData.cmpOfficialMob,
+          empName: "Employer"
+        }),
+      });
+      const data = await res.json();
       
-      console.log('Sending OTP using loginUsingOtp to:', fullPhone);
-      
-      const response = await loginUsingOtp({ empPhone: fullPhone });
-      
-      console.log('loginUsingOtp response:', response);
-      
-      // Check response - loginUsingOtp returns axios response, check data property
-      if (response?.data?.success || response?.data?.status === 'success') {
+      if (data.success || (res.ok && !data.error)) {
         setIsOtpSent(true);
-        toast.success(response?.data?.message || "OTP sent successfully");
+        toast.success(data.message || "OTP sent successfully");
       } else {
-        // Fallback to the registration OTP endpoint if login OTP fails
-        console.log('Falling back to registration OTP endpoint...');
-        const res = await fetch("/api/auth/send-signup-otp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            empPhone: formData.cmpOfficialMob,
-            empName: "Employer"
-          }),
-        });
-        const data = await res.json();
-        
-        if (data.success || (res.ok && !data.error)) {
-          setIsOtpSent(true);
-          toast.success(data.message || "OTP sent successfully");
-        } else {
-          toast.error(data.message || data.error || response?.data?.message || "Failed to send OTP");
+        // If signup OTP fails, try the login OTP as fallback
+        console.log('Signup OTP failed, trying login OTP as fallback...');
+        try {
+          const response = await loginUsingOtp({ empPhone: formData.cmpOfficialMob });
+          
+          if (response?.data?.success || response?.data?.status === 'success') {
+            setIsOtpSent(true);
+            toast.success(response?.data?.message || "OTP sent successfully (fallback)");
+          } else {
+            toast.error(data.message || data.error || "Failed to send OTP. Please ensure your mobile number is valid.");
+          }
+        } catch (fallbackError) {
+          toast.error(data.message || data.error || "Failed to send OTP. Please ensure your mobile number is valid.");
         }
       }
     } catch (e: any) {
       console.error('OTP send error:', e);
-      toast.error(e?.message || "Failed to send OTP. Please try again.");
+      toast.error("Failed to send OTP. Please try again.");
     } finally {
       setIsLoading(false);
     }

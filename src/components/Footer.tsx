@@ -4,27 +4,14 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { getOccupations, getCountriesForJobs } from "../services/info.service";
-import { getSkill } from "../services/job.service";
 import { useGlobalState } from "../contexts/GlobalProvider";
 import { toast } from "sonner";
 
-interface Country {
-  id: number;
-  name: string;
+interface FooterProps {
+  skipDataFetch?: boolean; // Keep for backward compatibility
 }
 
-interface Department {
-  label: string;
-  value: number;
-  img: string;
-}
-
-interface Skill {
-  skill: string;
-}
-
-function Footer() {
+export default function Footer({ skipDataFetch = false }: FooterProps) {
   const router = useRouter();
   const { globalState } = useGlobalState();
 
@@ -86,70 +73,6 @@ function Footer() {
     },
   ];
 
-  // States
-  const [departmentList, setDepartmentList] = useState<Department[]>([]);
-  const [countryList, setCountryList] = useState<Country[]>([]);
-  const [skillList, setSkillList] = useState<Skill[]>([]);
-  const [showFullDepartmentList, setShowFullDepartmentList] = useState(false);
-  const [showFullSkillList, setShowFullSkillList] = useState(false);
-
-  // Fetch Occupations
-  const getOccupationsListFunc = async () => {
-    try {
-      const response = await getOccupations();
-      const raw = Array.isArray(response?.occupation)
-        ? response.occupation
-        : Array.isArray(response?.data)
-        ? response.data
-        : Array.isArray(response)
-        ? response
-        : [];
-      const occupations = raw.map((item: { id: number; title?: string; name?: string; occupation?: string }) => ({
-        label: item.title || item.name || item.occupation || "",
-        value: item.id,
-        img: `/images/occupation-${item.id}.png`,
-      }));
-      setDepartmentList(occupations);
-    } catch (error) {
-      console.log(error);
-      setDepartmentList([]);
-    }
-  };
-
-  // Fetch Countries
-  const getCountriesForJobsFunc = async () => {
-    try {
-      const response = await getCountriesForJobs();
-      const countries = Array.isArray(response?.countries)
-        ? response.countries
-        : Array.isArray(response?.data)
-        ? response.data
-        : Array.isArray(response)
-        ? response
-        : [];
-      setCountryList(countries);
-    } catch (error) {
-      console.log(error);
-      setCountryList([]);
-    }
-  };
-
-  // Fetch Skills
-  const getSkillsFunc = async () => {
-    try {
-      const response = await getSkill();
-      const skills = Array.isArray(response?.skills)
-        ? response.skills
-        : Array.isArray(response)
-        ? response
-        : [];
-      setSkillList(skills);
-    } catch (error) {
-      console.log(error);
-      setSkillList([]);
-    }
-  };
-
   // Access control handler for restricted links
   const handleRestrictedAccess = (path: string) => {
     // Check if user is logged in
@@ -170,12 +93,8 @@ function Footer() {
     router.push(path);
   };
 
-  // Fetch Data on Component Mount
-  useEffect(() => {
-    getCountriesForJobsFunc();
-    getOccupationsListFunc();
-    getSkillsFunc();
-  }, []);
+  // No data fetching needed since Footer doesn't display occupations, countries, or skills
+  // This eliminates unnecessary API calls for pages that don't need this data
 
   return (
     <footer className="bg-white border-t border-gray-200 text-gray-700 text-sm">
@@ -298,4 +217,3 @@ function Footer() {
   );
 }
 
-export default Footer;
