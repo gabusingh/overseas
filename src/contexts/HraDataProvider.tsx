@@ -148,13 +148,13 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
       });
 
       if (!Array.isArray(jobsResponseData)) {
-        console.error('❌ Jobs response is not an array:', {
+        console.log('📊 Jobs response is not an array, checking for valid response patterns:', {
           responseType: typeof jobsResponseData,
           responseValue: jobsResponseData,
           fullResponse: jobsResponse
         });
         
-        // Check if it's a paginated response
+        // Check if it's a paginated response or empty object
         if (jobsResponseData && typeof jobsResponseData === 'object') {
           // Check for common pagination response patterns
           if (jobsResponseData.jobs && Array.isArray(jobsResponseData.jobs)) {
@@ -166,13 +166,24 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
           } else if (jobsResponseData.items && Array.isArray(jobsResponseData.items)) {
             console.log('✅ Found items array in response');
             processedJobsData = jobsResponseData.items;
+          } else if (Object.keys(jobsResponseData).length === 0) {
+            // Handle empty object response gracefully - this is valid for no jobs
+            console.log('✅ Empty object response - no jobs posted yet');
+            processedJobsData = [];
           } else {
-            // Log all keys to understand the structure
-            console.error('Unable to find jobs array. Response structure:', Object.keys(jobsResponseData));
-            throw new Error(`Invalid jobs response format. Expected array, got object with keys: ${Object.keys(jobsResponseData).join(', ')}`);
+            // Log all keys to understand the structure but don't throw error
+            console.warn('⚠️ Unexpected response structure, treating as empty:', Object.keys(jobsResponseData));
+            console.log('Full response for debugging:', jobsResponseData);
+            processedJobsData = [];
           }
+        } else if (jobsResponseData === null || jobsResponseData === undefined) {
+          // Handle null/undefined responses
+          console.log('✅ Null/undefined response - treating as empty jobs list');
+          processedJobsData = [];
         } else {
-          throw new Error(`Invalid jobs response format. Expected array, got ${typeof jobsResponseData}. This indicates an API issue.`);
+          // Handle other non-object types
+          console.warn(`⚠️ Unexpected response type (${typeof jobsResponseData}), treating as empty:`, jobsResponseData);
+          processedJobsData = [];
         }
       } else {
         processedJobsData = jobsResponseData;

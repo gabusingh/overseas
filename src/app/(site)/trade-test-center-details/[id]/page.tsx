@@ -61,8 +61,6 @@ export default function TradeTestCenterDetailsPage() {
   const fetchCenterDetails = async () => {
     setLoading(true);
     try {
-      console.log('🔄 Fetching trade test center details for ID:', centerId);
-      
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       
       const res = await fetch('https://backend.overseas.ai/api/list-trade-center', {
@@ -79,21 +77,17 @@ export default function TradeTestCenterDetailsPage() {
       }
       
       const data = await res.json();
-      console.log('📊 Trade Centers API Response:', data);
       
       const centers = data?.data || [];
       const foundCenter = centers.find((center: any) => center.id.toString() === centerId);
       
       if (!foundCenter) {
-        console.warn('⚠️ Trade test center not found in response');
         toast.error('Trade test center not found');
         return;
       }
       
-      console.log('✅ Trade test center details loaded:', foundCenter);
       setCenter(foundCenter);
     } catch (error: any) {
-      console.error('❌ Error fetching trade test center details:', error);
       toast.error(error.message || 'Failed to load trade test center details. Please try again.');
     } finally {
       setLoading(false);
@@ -203,7 +197,7 @@ export default function TradeTestCenterDetailsPage() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold mb-1">{center.instituteName}</h1>
-                  <div className="flex items-center space-x-2 text-white/90 text-xs">
+                  <div className="flex items-center space-x-2 text-white text-xs font-medium">
                     <div className="flex items-center">
                       <MapPin className="w-3 h-3 mr-1" />
                       <span>{extractCity(center.insAddress)}</span>
@@ -220,7 +214,7 @@ export default function TradeTestCenterDetailsPage() {
               <Button 
                 onClick={() => setShowContactModal(true)}
                 size="sm"
-                className="bg-white/10 hover:bg-white/20 text-white border-white/30 h-8 text-xs"
+                className="bg-white/90 hover:bg-white text-blue-600 hover:text-blue-700 border-white h-8 text-xs font-semibold shadow-sm"
               >
                 <Phone className="w-3 h-3 mr-1" />
                 Contact
@@ -586,7 +580,7 @@ export default function TradeTestCenterDetailsPage() {
                         </p>
                         <Button 
                           onClick={() => setShowContactModal(true)}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
                         >
                           <Phone className="w-4 h-4 mr-2" />
                           Contact for Test Details
@@ -624,8 +618,8 @@ export default function TradeTestCenterDetailsPage() {
 
         {/* Contact Modal */}
         {showContactModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md">
+          <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md bg-white shadow-2xl border-0">
               <CardHeader>
                 <CardTitle>Contact {center.instituteName}</CardTitle>
               </CardHeader>
