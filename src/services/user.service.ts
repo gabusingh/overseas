@@ -63,7 +63,12 @@ export const verifyOtpForLogin = async (params: { empPhone: string; otp: string 
 
 export const signUp = async (formData: FormData) => {
   try {
-    const response = await axios.post(BASE_URL + "get-otp", formData);
+    const response = await axios.post(BASE_URL + "get-otp", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Accept': 'application/json'
+      }
+    });
     return response;
   } catch (error) {
     console.error('Error fetching data:', error);

@@ -144,33 +144,40 @@ export default function EmployerSignupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           empPhone: formData.cmpOfficialMob,
-          empName: "Employer"
+          empName: "Employer",
+          countryCode: formData.countryCode
         }),
       });
       const data = await res.json();
-      
+
       if (data.success || (res.ok && !data.error)) {
         setIsOtpSent(true);
         toast.success(data.message || "OTP sent successfully");
       } else {
-        // If signup OTP fails, try the login OTP as fallback
-        console.log('Signup OTP failed, trying login OTP as fallback...');
-        try {
-          const response = await loginUsingOtp({ empPhone: formData.cmpOfficialMob });
-          
-          if (response?.data?.success || response?.data?.status === 'success') {
-            setIsOtpSent(true);
-            toast.success(response?.data?.message || "OTP sent successfully (fallback)");
-          } else {
-            toast.error(data.message || data.error || "Failed to send OTP. Please ensure your mobile number is valid.");
+        const serverMessage = data.message || data.error || "Failed to send OTP. Please ensure your mobile number is valid.";
+        const isAlreadyRegistered = /already\s*registered|exists?/i.test(serverMessage);
+
+        if (isAlreadyRegistered) {
+          console.log('Number appears registered; trying login OTP as fallback...');
+          try {
+            const response = await loginUsingOtp({ empPhone: formData.cmpOfficialMob });
+            if (response?.data?.success || response?.data?.status === 'success') {
+              setIsOtpSent(true);
+              toast.success(response?.data?.message || "OTP sent successfully (fallback)");
+            } else {
+              toast.error(serverMessage);
+            }
+          } catch (fallbackError) {
+            toast.error(serverMessage);
           }
-        } catch (fallbackError) {
-          toast.error(data.message || data.error || "Failed to send OTP. Please ensure your mobile number is valid.");
+        } else {
+          toast.error(serverMessage);
         }
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to send OTP. Please try again.";
       console.error('OTP send error:', e);
-      toast.error("Failed to send OTP. Please try again.");
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -275,12 +282,13 @@ export default function EmployerSignupPage() {
         }
         toast.error(response?.error || response?.message || "Registration failed");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
       
       // Handle specific error cases
-      if (error.response?.status === 422) {
-        const data = error.response.data;
+      const axiosStatus = (error as any)?.response?.status;
+      if (axiosStatus === 422) {
+        const data = (error as any)?.response?.data;
         if (data?.errors && typeof data.errors === "object") {
           const mapped: ErrorState = {};
           Object.keys(data.errors).forEach((k) => {
@@ -292,7 +300,8 @@ export default function EmployerSignupPage() {
         }
         toast.error(data?.error || "Validation error");
       } else {
-        toast.error(error?.message || "Registration failed. Please try again.");
+        const message = (error instanceof Error && error.message) ? error.message : "Registration failed. Please try again.";
+        toast.error(message);
       }
     } finally {
       setIsLoading(false);

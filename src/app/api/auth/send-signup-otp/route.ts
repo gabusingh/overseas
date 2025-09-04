@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     console.log('Send OTP Request body:', body);
-    const { empPhone, empName } = body;
+    const { empPhone, empName, countryCode } = body;
 
     // Validate required fields
     if (!empPhone || !empName) {
@@ -27,6 +27,11 @@ export async function POST(request: NextRequest) {
     const formData = new FormData();
     formData.append('empPhone', empPhone);
     formData.append('empName', empName);
+    if (countryCode) {
+      formData.append('countryCode', countryCode);
+    }
+    // Tag as HRA flow for backend analytics/routing if supported
+    formData.append('type', 'hra');
 
     console.log('Calling signUp with:', { empPhone, empName });
     
