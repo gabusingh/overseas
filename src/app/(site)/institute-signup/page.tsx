@@ -2,16 +2,9 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { X, Eye, EyeOff, GraduationCap, Phone, Lock, Mail, MapPin, Globe, FileText } from "lucide-react";
-import Link from "next/link";
 import { toast } from "sonner";
 import Head from "next/head";
+import Link from "next/link";
 
 export default function InstituteSignupPage() {
   const router = useRouter();
@@ -291,375 +284,394 @@ export default function InstituteSignupPage() {
         <meta name="keywords" content="institute registration, training institute signup, overseas skills training, vocational training" />
       </Head>
       
-      <div 
-        className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat py-8"
-        style={{ backgroundImage: "url(/images/logoBg.jpg)" }}
+      <div
+        className="min-h-screen"
+        style={{
+          background: "url(https://www.bacancytechnology.com/main/img/job-recruitment-portal-development/banner.jpg?v-1)",
+          backgroundSize: "100% 100%",
+          backgroundRepeat: "no-repeat",
+        }}
       >
-        <Card className="w-full max-w-2xl shadow-2xl bg-white/95 backdrop-blur-sm">
-          <CardHeader className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -top-2 -right-2 bg-white border border-red-500 text-red-500 hover:bg-red-50 rounded-full"
-              onClick={() => router.push("/")}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            
-          
-            
-            <CardTitle className="text-center text-xl font-semibold text-gray-800">
-              Register Your Institute
-            </CardTitle>
-            <p className="text-center text-sm text-gray-600 mt-2">
-              Offer overseas skill development courses and training programs
-            </p>
-          </CardHeader>
-          
-          <CardContent className="max-h-[70vh] overflow-y-auto">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Institute Details Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Institute Information</h3>
+        <div className="pt-20 pb-10">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-center items-center min-h-screen py-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl">
                 
-                {/* Institute Name */}
-                <div>
-                  <Label htmlFor="instituteName">Institute Name *</Label>
-                  <div className="relative">
-                    <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="instituteName"
-                      type="text"
-                      placeholder="Enter your institute name"
-                      value={formData.instituteName}
-                      onChange={(e) => handleInputChange("instituteName", e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  {errors.instituteName && <p className="text-red-500 text-xs mt-1">{errors.instituteName}</p>}
-                </div>
-
-                {/* Director Name */}
-                <div>
-                  <Label htmlFor="directorName">Director/Principal Name *</Label>
-                  <Input
-                    id="directorName"
-                    type="text"
-                    placeholder="Enter director or principal name"
-                    value={formData.directorName}
-                    onChange={(e) => handleInputChange("directorName", e.target.value)}
+                {/* Left side - Image */}
+                <div className="hidden lg:flex items-center justify-center">
+                  <img
+                    src="https://cdn-icons-png.flaticon.com/256/3330/3330380.png"
+                    className="max-h-80 w-auto"
+                    alt="Institute Registration"
                   />
-                  {errors.directorName && <p className="text-red-500 text-xs mt-1">{errors.directorName}</p>}
                 </div>
 
-                {/* Email and Mobile Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email">Email Address *</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="institute@example.com"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="mobile">Mobile Number *</Label>
-                    <div className="flex">
-                      <select className="px-3 py-2 border border-r-0 border-gray-300 bg-gray-50 text-gray-600 rounded-l-md focus:outline-none">
-                        <option value="">+91</option>
-                      </select>
-                      <div className="relative flex-1">
-                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="mobile"
-                          type="tel"
-                          placeholder="Enter 10-digit mobile number"
-                          value={formData.mobile}
-                          onChange={(e) => handleInputChange("mobile", e.target.value)}
-                          className="rounded-l-none pl-10"
-                          maxLength={10}
+                {/* Right side - Form */}
+                <div className="flex items-center justify-center">
+                  <div className="w-full max-w-lg">
+                    <div className="bg-white shadow-xl rounded-lg border border-gray-100">
+                      {/* Header */}
+                      <div className="bg-gradient-to-r from-[#17487f] to-[#1e5fa3] px-6 py-4 rounded-t-lg">
+                        <h3 className="text-xl font-bold text-white text-center">
+                          <i className="fa fa-graduation-cap mr-2"></i>
+                          Training Institute Register
+                        </h3>
+                        <p className="text-blue-100 text-center text-xs mt-1">
+                          Join our network of certified training providers
+                        </p>
+                      </div>
+                      
+                      {/* Scrollable Form Content */}
+                      <div className="max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <form onSubmit={handleSubmit} className="p-6 space-y-3">
+                          {/* Institute Name */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Institute Name
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter institute name"
+                          value={formData.instituteName}
+                          onChange={(e) => handleInputChange("instituteName", e.target.value)}
                         />
+                        {errors.instituteName && <p className="text-red-500 text-sm mt-1">{errors.instituteName}</p>}
+                      </div>
+
+                      {/* Director Name */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Director/Principal Name
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter director name"
+                          value={formData.directorName}
+                          onChange={(e) => handleInputChange("directorName", e.target.value)}
+                        />
+                        {errors.directorName && <p className="text-red-500 text-sm mt-1">{errors.directorName}</p>}
+                      </div>
+
+                      {/* Email */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter email address"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
+                        />
+                        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                      </div>
+
+                      {/* Phone Number */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Phone Number
+                        </label>
+                        <div className="flex">
+                          <select
+                            className="px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-32"
+                          >
+                            <option value="+91">+91 India</option>
+                          </select>
+                          <input
+                            type="tel"
+                            className="flex-1 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter phone number"
+                            value={formData.mobile}
+                            onChange={(e) => handleInputChange("mobile", e.target.value)}
+                            maxLength={10}
+                          />
+                        </div>
+                        {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
+                      </div>
+
+                      {/* Password */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter password"
+                            value={formData.password}
+                            onChange={(e) => handleInputChange("password", e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            <i className={`fa ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                          </button>
+                        </div>
+                        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                      </div>
+
+                      {/* Confirm Password */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Confirm Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Confirm password"
+                            value={formData.confirmPassword}
+                            onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            <i className={`fa ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                          </button>
+                        </div>
+                        {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+                      </div>
+
+                      {/* Website (Optional) */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Website (Optional)
+                        </label>
+                        <input
+                          type="url"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="https://www.institute.com"
+                          value={formData.website}
+                          onChange={(e) => handleInputChange("website", e.target.value)}
+                        />
+                        {errors.website && <p className="text-red-500 text-sm mt-1">{errors.website}</p>}
+                      </div>
+
+                      {/* Address */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Address
+                        </label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter complete address"
+                          value={formData.address}
+                          onChange={(e) => handleInputChange("address", e.target.value)}
+                          rows={2}
+                        />
+                        {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+                      </div>
+
+                      {/* City and State */}
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            City
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="City"
+                            value={formData.city}
+                            onChange={(e) => handleInputChange("city", e.target.value)}
+                          />
+                          {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            State
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="State"
+                            value={formData.state}
+                            onChange={(e) => handleInputChange("state", e.target.value)}
+                          />
+                          {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
+                        </div>
+                      </div>
+
+                      {/* Established Year and Registration Number */}
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Established Year
+                          </label>
+                          <input
+                            type="number"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., 2010"
+                            min="1900"
+                            max={new Date().getFullYear()}
+                            value={formData.establishedYear}
+                            onChange={(e) => handleInputChange("establishedYear", e.target.value)}
+                          />
+                          {errors.establishedYear && <p className="text-red-500 text-sm mt-1">{errors.establishedYear}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Registration Number
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Registration number"
+                            value={formData.registrationNumber}
+                            onChange={(e) => handleInputChange("registrationNumber", e.target.value)}
+                          />
+                          {errors.registrationNumber && <p className="text-red-500 text-sm mt-1">{errors.registrationNumber}</p>}
+                        </div>
+                      </div>
+
+                      {/* Affiliations */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Affiliations/Certifications
+                        </label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="List affiliations and certifications"
+                          value={formData.affiliations}
+                          onChange={(e) => handleInputChange("affiliations", e.target.value)}
+                          rows={2}
+                        />
+                        {errors.affiliations && <p className="text-red-500 text-sm mt-1">{errors.affiliations}</p>}
+                      </div>
+
+                      {/* Description */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Institute Description
+                        </label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Describe your institute (minimum 50 characters)"
+                          value={formData.description}
+                          onChange={(e) => handleInputChange("description", e.target.value)}
+                          rows={3}
+                        />
+                        {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+                      </div>
+
+                      {/* Send OTP Button */}
+                      {!isOtpSent && (
+                        <button
+                          type="button"
+                          className="w-full bgBlue text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          onClick={handleSendOtp}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? "Sending OTP..." : "Send OTP"}
+                        </button>
+                      )}
+
+                      {/* OTP Input */}
+                      {isOtpSent && (
+                        <>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Enter OTP
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg tracking-widest"
+                              placeholder="Enter 6-digit OTP"
+                              value={formData.otp}
+                              onChange={(e) => handleInputChange("otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                              maxLength={6}
+                            />
+                            {errors.otp && <p className="text-red-500 text-sm mt-1">{errors.otp}</p>}
+                          </div>
+
+                          <div className="flex gap-2 mb-4">
+                            <button
+                              type="submit"
+                              className="flex-1 bgBlue text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              disabled={isLoading}
+                            >
+                              {isLoading ? (
+                                <div className="flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  Registering...
+                                </div>
+                              ) : (
+                                "Register Institute"
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              className="text-blue-600 hover:text-blue-800 font-medium"
+                              onClick={handleSendOtp}
+                              disabled={isLoading}
+                            >
+                              Resend OTP
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Login Link */}
+                      <p className="mt-4 text-center text-sm text-gray-600">
+                        Already have an account?{" "}
+                        <button
+                          type="button"
+                          onClick={() => router.push("/login")}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Login
+                        </button>
+                      </p>
+
+                      {/* Other Registration Types */}
+                      <div className="mt-4 text-center text-sm text-gray-600">
+                        <p>Register as:</p>
+                        <div className="mt-2 space-y-1">
+                          <Link href="/candidate-register" className="block text-blue-600 hover:text-blue-800 font-medium">
+                            Job Seeker
+                          </Link>
+                          <Link href="/employer-signup" className="block text-blue-600 hover:text-blue-800 font-medium">
+                            Employer/Company
+                          </Link>
+                          <Link href="/partner-signup" className="block text-blue-600 hover:text-blue-800 font-medium">
+                            Business Partner
+                          </Link>
+                        </div>
+                      </div>
+                        </form>
                       </div>
                     </div>
-                    {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
-                  </div>
-                </div>
-
-                {/* Website */}
-                <div>
-                  <Label htmlFor="website">Website (Optional)</Label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="website"
-                      type="url"
-                      placeholder="https://www.institute.com"
-                      value={formData.website}
-                      onChange={(e) => handleInputChange("website", e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  {errors.website && <p className="text-red-500 text-xs mt-1">{errors.website}</p>}
-                </div>
-
-                {/* Established Year and Registration Number */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="establishedYear">Established Year *</Label>
-                    <Input
-                      id="establishedYear"
-                      type="number"
-                      placeholder="e.g., 2010"
-                      min="1900"
-                      max={new Date().getFullYear()}
-                      value={formData.establishedYear}
-                      onChange={(e) => handleInputChange("establishedYear", e.target.value)}
-                    />
-                    {errors.establishedYear && <p className="text-red-500 text-xs mt-1">{errors.establishedYear}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="registrationNumber">Registration Number *</Label>
-                    <div className="relative">
-                      <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="registrationNumber"
-                        type="text"
-                        placeholder="Enter registration number"
-                        value={formData.registrationNumber}
-                        onChange={(e) => handleInputChange("registrationNumber", e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    {errors.registrationNumber && <p className="text-red-500 text-xs mt-1">{errors.registrationNumber}</p>}
-                  </div>
-                </div>
-
-                {/* Affiliations */}
-                <div>
-                  <Label htmlFor="affiliations">Affiliations/Certifications *</Label>
-                  <Textarea
-                    id="affiliations"
-                    placeholder="List your affiliations, certifications, and recognitions (e.g., NSDC, NCVT, State Board)"
-                    value={formData.affiliations}
-                    onChange={(e) => handleInputChange("affiliations", e.target.value)}
-                    rows={3}
-                  />
-                  {errors.affiliations && <p className="text-red-500 text-xs mt-1">{errors.affiliations}</p>}
-                </div>
-              </div>
-
-              {/* Address Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Institute Address</h3>
-                
-                <div>
-                  <Label htmlFor="address">Address *</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Textarea
-                      id="address"
-                      placeholder="Enter complete institute address"
-                      value={formData.address}
-                      onChange={(e) => handleInputChange("address", e.target.value)}
-                      className="pl-10"
-                      rows={3}
-                    />
-                  </div>
-                  {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="city">City *</Label>
-                    <Input
-                      id="city"
-                      type="text"
-                      placeholder="Enter city"
-                      value={formData.city}
-                      onChange={(e) => handleInputChange("city", e.target.value)}
-                    />
-                    {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="state">State *</Label>
-                    <Input
-                      id="state"
-                      type="text"
-                      placeholder="Enter state"
-                      value={formData.state}
-                      onChange={(e) => handleInputChange("state", e.target.value)}
-                    />
-                    {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      type="text"
-                      value={formData.country}
-                      onChange={(e) => handleInputChange("country", e.target.value)}
-                      disabled
-                    />
                   </div>
                 </div>
               </div>
-
-              {/* Institute Description */}
-              <div>
-                <Label htmlFor="description">Institute Description *</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe your institute, courses offered, facilities, and what makes you unique (minimum 50 characters)"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  rows={4}
-                />
-                {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
-              </div>
-
-              {/* Security Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Security</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Password */}
-                  <div>
-                    <Label htmlFor="password">Password *</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Create a strong password"
-                        value={formData.password}
-                        onChange={(e) => handleInputChange("password", e.target.value)}
-                        className="pl-10 pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0 h-auto"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Confirm your password"
-                        value={formData.confirmPassword}
-                        onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                        className="pl-10 pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0 h-auto"
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Send OTP Button */}
-              {!isOtpSent && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full border-[#17487f] text-[#17487f] hover:bg-[#17487f] hover:text-white"
-                  onClick={handleSendOtp}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Sending OTP..." : "Send OTP for Verification"}
-                </Button>
-              )}
-
-              {/* OTP Input */}
-              {isOtpSent && (
-                <div>
-                  <Label htmlFor="otp">OTP *</Label>
-                  <Input
-                    id="otp"
-                    type="text"
-                    placeholder="Enter 6-digit OTP"
-                    value={formData.otp}
-                    onChange={(e) => handleInputChange("otp", e.target.value)}
-                    maxLength={6}
-                  />
-                  {errors.otp && <p className="text-red-500 text-xs mt-1">{errors.otp}</p>}
-                  
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={handleSendOtp}
-                    disabled={isLoading}
-                    className="text-sm p-0 h-auto mt-2 text-[#17487f]"
-                  >
-                    Resend OTP
-                  </Button>
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <Button 
-                type="submit" 
-                className="w-full bg-[#17487f] hover:bg-[#135a8a]" 
-                disabled={isLoading || !isOtpSent}
-              >
-                {isLoading ? "Registering Institute..." : "Register Institute"}
-              </Button>
-
-              <Separator className="my-4" />
-
-              {/* Login Link */}
-              <div className="text-center text-sm text-gray-600 space-y-2">
-                <p>
-                  Already have an account?{" "}
-                  <Link href="/login" className="text-[#17487f] hover:underline font-medium">
-                    Sign In
-                  </Link>
-                </p>
-                
-                <div className="space-y-1">
-                  <p>Register as:</p>
-                  <Link href="/candidate-register" className="block text-[#17487f] hover:underline font-medium">
-                    Job Seeker
-                  </Link>
-                  <Link href="/employer-signup" className="block text-[#17487f] hover:underline font-medium">
-                    Employer/Company
-                  </Link>
-                </div>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>
       </div>
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #555;
+        }
+      `}</style>
     </>
   );
 }

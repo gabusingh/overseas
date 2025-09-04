@@ -200,199 +200,198 @@ export default function CandidateRegisterPage() {
         <meta name="keywords" content="register job seeker, overseas jobs registration, international jobs signup" />
       </Head>
       
-      <div 
-        className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat py-8"
-        style={{ backgroundImage: "url(/images/logoBg.jpg)" }}
+      <div
+        className="min-h-screen"
+        style={{
+          background: "url(https://www.bacancytechnology.com/main/img/job-recruitment-portal-development/banner.jpg?v-1)",
+          backgroundSize: "100% 100%",
+          backgroundRepeat: "no-repeat",
+        }}
       >
-        <Card className="w-full max-w-lg shadow-2xl bg-white/95 backdrop-blur-sm">
-          <CardHeader className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -top-2 -right-2 bg-white border border-red-500 text-red-500 hover:bg-red-50 rounded-full"
-              onClick={() => router.push("/")}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            
-            <CardTitle className="text-center text-xl font-semibold text-gray-800">
-              Create Your Account
-            </CardTitle>
-            <p className="text-center text-sm text-gray-600 mt-2">
-              Register as Job Seeker to find overseas opportunities
-            </p>
-          </CardHeader>
-          
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Full Name */}
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="pl-10 border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
+        <div className="pt-20 pb-10">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-center items-center min-h-screen py-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl">
+                
+                {/* Left side - Image */}
+                <div className="hidden lg:flex items-center justify-center">
+                  <img
+                    src="https://cdn-icons-png.flaticon.com/256/8662/8662443.png"
+                    className="max-h-80 w-auto"
+                    alt="Job Seeker Registration"
                   />
                 </div>
-                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-              </div>
 
-              {/* Mobile Number */}
-              <div>
-                <Label htmlFor="mobile">Mobile Number</Label>
-                <div className="flex">
-                  <select className="px-3 py-2 border border-r-0 border-gray-300 bg-gray-50 text-gray-600 rounded-l-md focus:outline-none">
-                    <option value="">+91</option>
-                  </select>
-                  <div className="relative flex-1">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="mobile"
-                      type="tel"
-                      placeholder="Enter 10-digit mobile number"
-                      value={formData.mobile}
-                      onChange={(e) => handleInputChange("mobile", e.target.value)}
-                      className="rounded-l-none pl-10 border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
-                      maxLength={10}
-                    />
+                {/* Right side - Form */}
+                <div className="flex items-center justify-center">
+                  <div className="w-full max-w-md">
+                    <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-6">
+                      <h3 className="text-2xl font-bold text-[#17487f] mb-6 text-center">
+                        <i className="fa fa-user mr-2"></i>
+                        Job Seeker Register
+                      </h3>
+                      
+                      {/* Full Name */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Full Name
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter your full name"
+                          value={formData.name}
+                          onChange={(e) => handleInputChange("name", e.target.value)}
+                        />
+                        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                      </div>
+
+                      {/* Phone Number */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Phone Number
+                        </label>
+                        <div className="flex">
+                          <select
+                            className="px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-32"
+                          >
+                            <option value="+91">+91 India</option>
+                          </select>
+                          <input
+                            type="tel"
+                            className="flex-1 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter phone number"
+                            value={formData.mobile}
+                            onChange={(e) => handleInputChange("mobile", e.target.value)}
+                            maxLength={10}
+                          />
+                        </div>
+                        {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
+                      </div>
+
+                      {/* Password */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter password"
+                            value={formData.password}
+                            onChange={(e) => handleInputChange("password", e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            <i className={`fa ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                          </button>
+                        </div>
+                        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                      </div>
+
+                      {/* Confirm Password */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Confirm Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Confirm password"
+                            value={formData.confirmPassword}
+                            onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            <i className={`fa ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                          </button>
+                        </div>
+                        {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+                      </div>
+
+                      {/* Send OTP Button */}
+                      {!isOtpSent && (
+                        <button
+                          type="button"
+                          className="w-full bgBlue text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          onClick={handleSendOtp}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? "Sending OTP..." : "Send OTP"}
+                        </button>
+                      )}
+
+                      {/* OTP Input */}
+                      {isOtpSent && (
+                        <>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Enter OTP
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg tracking-widest"
+                              placeholder="Enter 6-digit OTP"
+                              value={formData.otp}
+                              onChange={(e) => handleInputChange("otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                              maxLength={6}
+                            />
+                            {errors.otp && <p className="text-red-500 text-sm mt-1">{errors.otp}</p>}
+                          </div>
+
+                          <div className="flex gap-2 mb-4">
+                            <button
+                              type="submit"
+                              className="flex-1 bgBlue text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              disabled={isLoading}
+                            >
+                              {isLoading ? (
+                                <div className="flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  Creating Account...
+                                </div>
+                              ) : (
+                                "Create Account"
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              className="text-blue-600 hover:text-blue-800 font-medium"
+                              onClick={handleSendOtp}
+                              disabled={isLoading}
+                            >
+                              Resend OTP
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Login Link */}
+                      <p className="mt-4 text-center text-sm text-gray-600">
+                        Already have an account?{" "}
+                        <button
+                          type="button"
+                          onClick={() => router.push("/login")}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Login
+                        </button>
+                      </p>
+                    </form>
                   </div>
                 </div>
-                {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
               </div>
-
-              {/* Password */}
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a strong password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
-                    className="pl-10 pr-10 border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0 h-auto"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                    className="pl-10 pr-10 border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0 h-auto"
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-                {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
-              </div>
-
-              {/* Send OTP Button */}
-              {!isOtpSent && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full border-[#17487f] text-[#17487f] hover:bg-[#17487f] hover:text-white"
-                  onClick={handleSendOtp}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Sending OTP..." : "Send OTP to Mobile"}
-                </Button>
-              )}
-
-              {/* OTP Input */}
-              {isOtpSent && (
-                <div>
-                  <Label htmlFor="otp">OTP</Label>
-                  <Input
-                    id="otp"
-                    type="text"
-                    placeholder="Enter 6-digit OTP"
-                    value={formData.otp}
-                    onChange={(e) => handleInputChange("otp", e.target.value)}
-                    className="text-center text-lg tracking-widest border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
-                    maxLength={6}
-                  />
-                  {errors.otp && <p className="text-red-500 text-xs mt-1">{errors.otp}</p>}
-                  
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={handleSendOtp}
-                    disabled={isLoading}
-                    className="text-sm p-0 h-auto mt-2 text-[#17487f]"
-                  >
-                    Resend OTP
-                  </Button>
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <Button 
-                type="submit" 
-                className="w-full bg-[#17487f] hover:bg-[#135a8a]" 
-                disabled={isLoading || !isOtpSent}
-              >
-                {isLoading ? "Creating Account..." : "Create Account"}
-              </Button>
-
-              <Separator className="my-4" />
-
-              {/* Login Link */}
-              <div className="text-center text-sm text-gray-600">
-                <p>
-                  Already have an account?{" "}
-                  <Link href="/login" className="text-[#17487f] hover:underline font-medium">
-                    Sign In
-                  </Link>
-                </p>
-              </div>
-
-              {/* Other Registration Types */}
-              <div className="text-center text-sm text-gray-600 space-y-1">
-                <p>Register as:</p>
-                <div className="space-y-1">
-                  <Link href="/employer-signup" className="block text-[#17487f] hover:underline font-medium">
-                    Employer/Company
-                  </Link>
-                  <Link href="/institute-signup" className="block text-[#17487f] hover:underline font-medium">
-                    Training Institute
-                  </Link>
-                </div>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );

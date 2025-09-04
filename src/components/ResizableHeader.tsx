@@ -94,16 +94,16 @@ function ResizableHeader() {
   };
 
   const navItems = [
-    { name: "Jobs", link: "/jobs" },
-    { name: "Companies", link: "/companies" },
-    { name: "Services", link: "/services" },
+    { name: "Jobs",  },
+    { name: "Companies", },
+    { name: "Services",  },
     // { name: "For Employers", link: "/for-employers" },
   ];
 
   // Dropdown data for mobile navigation
   const jobsDropdown = [
     { label: "All Jobs", href: "/jobs" },
-    { label: "Jobs by Country", href: "/jobs" },
+    // { label: "Jobs by Country", href: "/jobs" },
    // { label: "Latest Jobs", href: "/jobs/last-week" },
   ];
 

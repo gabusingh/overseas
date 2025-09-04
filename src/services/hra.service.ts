@@ -183,9 +183,30 @@ export const getJobsPostedByHra = async (hraId: string, token: string) => {
     const response = await axios.get(`${BASE_URL}jobs-posted-by-hra/${hraId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    
+    // Log the raw response for debugging
+    console.log('🔍 Raw jobs API response:', {
+      status: response.status,
+      data: response.data,
+      dataType: typeof response.data,
+      isArray: Array.isArray(response.data)
+    });
+    
+    // Return the response data directly - let the caller handle the structure
     return response.data;
-  } catch (error) {
-    console.error("Error fetching jobs posted by HRA:", error);
+  } catch (error: any) {
+    console.error("Error fetching jobs posted by HRA:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    });
+    
+    // If it's a 404 or no data found, return empty structure instead of throwing
+    if (error.response?.status === 404 || error.message?.includes('not found')) {
+      console.log('📭 No jobs found for this HRA - returning empty result');
+      return {}; // This matches the current API behavior
+    }
+    
     throw error;
   }
 };

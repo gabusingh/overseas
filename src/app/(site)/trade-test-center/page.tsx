@@ -40,7 +40,6 @@ export default function TradeTestCenterPage() {
         }
         
         const data = await res.json();
-        console.log('Trade Centers API Response:', data);
         
         // The API returns {msg, data: [array of centers]}
         const list = data?.data || [];
@@ -64,7 +63,6 @@ export default function TradeTestCenterPage() {
         
         setCenters(mapped);
       } catch (err: any) {
-        console.error('Error fetching trade test centers:', err);
         setError(err.message || 'Failed to load trade test centers');
       } finally {
         setLoading(false);
