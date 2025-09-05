@@ -23,22 +23,26 @@ const PopularSearches = React.memo(({
   className = ""
 }: PopularSearchesProps) => {
   
-  // Fallback data for popular searches
-  const fallbackData = [
-    { label: "Helper", value: 1, img: "/images/institute.png" },
-    { label: "Plumber", value: 2, img: "/images/institute.png" },
-    { label: "Electrician", value: 3, img: "/images/institute.png" },
-    { label: "Painter", value: 4, img: "/images/institute.png" },
-    { label: "Steel Fixer", value: 5, img: "/images/institute.png" },
-    { label: "Mason", value: 6, img: "/images/institute.png" },
-    { label: "Carpenter", value: 7, img: "/images/institute.png" }
-  ];
-
-  // Always use the same fallback data for consistency
+  // Use provided data or fallback data
   const popularSearches = useMemo(() => {
-    // Always use fallback data to ensure same results on all pages
+    // If data is provided and not empty, use it
+    if (data && data.length > 0) {
+      return data.slice(0, maxItems);
+    }
+
+    // Fallback data when no data is provided
+    const fallbackData: PopularSearchItem[] = [
+      { label: "Helper", value: 1, img: "/images/institute.png" },
+      { label: "Plumber", value: 2, img: "/images/institute.png" },
+      { label: "Electrician", value: 3, img: "/images/institute.png" },
+      { label: "Painter", value: 4, img: "/images/institute.png" },
+      { label: "Steel Fixer", value: 5, img: "/images/institute.png" },
+      { label: "Mason", value: 6, img: "/images/institute.png" },
+      { label: "Carpenter", value: 7, img: "/images/institute.png" }
+    ];
+
     return fallbackData.slice(0, maxItems);
-  }, [maxItems]);
+  }, [data, maxItems]);
 
   // Memoize click handler
   const handleClick = useCallback((item: PopularSearchItem) => {
@@ -111,6 +115,7 @@ const PopularSearches = React.memo(({
             key={`${item.value}-${index}`}
             className={variantStyles.button}
             onClick={() => handleClick(item)}
+            title={`Search for ${item.label} jobs`}
           >
             {item.label}
           </button>

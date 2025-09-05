@@ -22,11 +22,11 @@ function Navbar() {
     {
       label: "Jobs",
       href: "/jobs",
-      dropdown: [
-        { label: "All Jobs", href: "/jobs" },
-        // { label: "Jobs by Country", href: "/jobs" },
-       // { label: "Latest Jobs", href: "/jobs/last-week" },
-      ]
+      // dropdown: [
+      //   { label: "All Jobs", href: "/jobs" },
+      //   // { label: "Jobs by Country", href: "/jobs" },
+      //  // { label: "Latest Jobs", href: "/jobs/last-week" },
+      // ]
     },
     {
       label: "Companies",
