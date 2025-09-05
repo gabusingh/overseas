@@ -206,10 +206,12 @@ export default function JobsPage() {
 
         // Add filter payload
         if (payload.jobOccupation.length > 0) {
+          // Keeping existing format for backend compatibility
           payload.jobOccupation.forEach(id => formData.append('jobOccupation[]', id.toString()));
         }
         if (payload.jobLocationCountry.length > 0) {
-          payload.jobLocationCountry.forEach(id => formData.append('jobLocationCountry[]', id.toString()));
+          // Send as single key with JSON array to match backend expectation
+          formData.append('jobLocationCountry', JSON.stringify(payload.jobLocationCountry));
         }
         if (payload.passportType) {
           formData.append('passportType', payload.passportType);
