@@ -6,26 +6,26 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
 import { Badge } from "../../../../components/ui/badge";
-import { Separator } from "../../../../components/ui/separator";
+// import { Separator } from "../../../../components/ui/separator";
 import { 
   Building, 
   MapPin, 
   Phone, 
   Mail, 
   Globe, 
-  Star, 
-  Users, 
+  // Star, 
+  // Users, 
   Calendar,
   ExternalLink,
-  Facebook,
-  Linkedin,
+  // Facebook,
+  // Linkedin,
   Award,
-  CheckCircle,
+  // CheckCircle,
   ArrowLeft,
   GraduationCap,
   BookOpen,
   Shield,
-  Clock
+  // Clock
 } from "lucide-react";
 import Link from "next/link";
 
@@ -53,14 +53,34 @@ export default function InstituteDetailsPage() {
   const [institute, setInstitute] = useState<InstituteDetail | null>(null);
   const [selectedTab, setSelectedTab] = useState<'overview' | 'contact' | 'courses'>('overview');
   const [showContactModal, setShowContactModal] = useState(false);
+  type Course = {
+    id: number;
+    course_name: string;
+    submission_date?: string;
+    course_duration?: string;
+    total_seats?: string | number;
+    course_fee?: string | number;
+    assessment_type?: string;
+    course_type?: string;
+    eligibility?: string;
+    course_image?: string;
+  };
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const toSlug = (value: string) =>
+    (value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'course';
 
   useEffect(() => {
     if (instituteId) {
       fetchInstituteDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instituteId]);
 
-  const fetchInstituteDetails = async () => {
+  const fetchInstituteDetails = async (): Promise<void> => {
     setLoading(true);
     try {
       console.log('🔄 Fetching institute details for ID:', instituteId);
@@ -83,8 +103,8 @@ export default function InstituteDetailsPage() {
       const data = await res.json();
       console.log('📊 Training Institutes API Response:', data);
       
-      const institutes = data?.data || [];
-      const foundInstitute = institutes.find((inst: any) => inst.id.toString() === instituteId);
+      const institutes: Array<InstituteDetail & { id: number }> = data?.data || [];
+      const foundInstitute = institutes.find((inst) => String(inst.id) === instituteId);
       
       if (!foundInstitute) {
         console.warn('⚠️ Institute not found in response');
@@ -94,26 +114,62 @@ export default function InstituteDetailsPage() {
       
       console.log('✅ Institute details loaded:', foundInstitute);
       setInstitute(foundInstitute);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error fetching institute details:', error);
-      toast.error(error.message || 'Failed to load institute details. Please try again.');
+      const message = (error instanceof Error && error.message) ? error.message : 'Failed to load institute details. Please try again.';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderStars = (count: number = 5) => {
-    const stars = [];
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <Star 
-          key={i} 
-          className={`w-4 h-4 ${i < count ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-        />
-      );
+  const fetchCourses = async (): Promise<void> => {
+    try {
+      setCoursesLoading(true);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const res = await fetch('https://backend.overseas.ai/api/courses-by-institute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ instId: instituteId })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || 'Failed to fetch courses');
+      }
+      setCourses(Array.isArray(data?.data) ? data.data : []);
+    } catch (error: unknown) {
+      console.error('❌ Error fetching courses:', error);
+      const message = (error instanceof Error && error.message) ? error.message : 'Failed to load courses';
+      toast.error(message);
+      setCourses([]);
+    } finally {
+      setCoursesLoading(false);
     }
-    return stars;
   };
+
+  useEffect(() => {
+    if (selectedTab === 'courses' && instituteId) {
+      fetchCourses();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTab, instituteId]);
+
+  // const renderStars = (count: number = 5) => {
+  //   const stars = [];
+  //   for (let i = 0; i < 5; i++) {
+  //     stars.push(
+  //       <Star 
+  //         key={i} 
+  //         className={`w-4 h-4 ${i < count ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+  //       />
+  //     );
+  //   }
+  //   return stars;
+  // };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -414,14 +470,14 @@ export default function InstituteDetailsPage() {
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="border-b">
             <nav className="flex px-6">
-              {[
+              {([
                 { id: 'overview', label: 'Overview', icon: Building },
                 { id: 'contact', label: 'Contact', icon: Phone },
                 { id: 'courses', label: 'Courses', icon: BookOpen }
-              ].map((tab) => (
+              ] as const).map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setSelectedTab(tab.id as any)}
+                  onClick={() => setSelectedTab(tab.id)}
                   className={`py-3 px-4 border-b-2 font-medium text-sm flex items-center transition-colors ${
                     selectedTab === tab.id
                       ? 'border-blue-500 text-blue-600'
@@ -558,31 +614,54 @@ export default function InstituteDetailsPage() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-semibold text-gray-900">Available Courses</h3>
                   <Badge variant="secondary">
-                    {institute.course_count || '0'} courses available
+                    {courses.length || institute.course_count || '0'} courses available
                   </Badge>
                 </div>
                 
-                {institute.course_count && parseInt(institute.course_count.toString()) > 0 ? (
+                {coursesLoading ? (
                   <Card>
                     <CardContent className="p-6">
                       <div className="text-center py-8">
-                        <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          {institute.course_count} Courses Available
-                        </h3>
-                        <p className="text-gray-600 mb-6">
-                          Contact the institute directly for detailed course information and enrollment.
-                        </p>
-                        <Button 
-                          onClick={() => setShowContactModal(true)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          <Phone className="w-4 h-4 mr-2" />
-                          Contact for Course Details
-                        </Button>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600">Loading courses...</p>
                       </div>
                     </CardContent>
                   </Card>
+                ) : courses.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {courses.map((course) => (
+                      <Card key={course.id} className="border border-gray-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={course.course_image || '/images/institute.png'}
+                              alt={course.course_name}
+                              className="w-12 h-12 rounded-md object-cover bg-gray-100 border border-gray-200 flex-shrink-0"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/institute.png'; }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-gray-900 truncate">{course.course_name}</div>
+                              <div className="text-xs text-gray-600 mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
+                                <span>Dur: <span className="font-medium">{course.course_duration || 'N/A'}</span></span>
+                                <span>Seats: <span className="font-medium">{course.total_seats || 'N/A'}</span></span>
+                                <span>Fee: <span className="font-medium">{course.course_fee ? `₹${course.course_fee}` : 'N/A'}</span></span>
+                                <span>Type: <span className="font-medium">{course.course_type || 'N/A'}</span></span>
+                                {course.submission_date && (
+                                  <span>Apply by: <span className="font-medium">{formatDate(course.submission_date)}</span></span>
+                                )}
+                              </div>
+                            </div>
+                            <Link
+                              href={`/course-details/${toSlug(course.course_name)}/${course.id}`}
+                              className="inline-flex items-center whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-md"
+                            >
+                              Apply Now
+                            </Link>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 ) : (
                   <Card>
                     <CardContent className="p-6">
