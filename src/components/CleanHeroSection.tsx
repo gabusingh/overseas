@@ -90,7 +90,7 @@ function CleanHeroSection({ data: propData, countryData }: CleanHeroSectionProps
 
           {/* Popular Searches */}
           <PopularSearches 
-            data={departmentList}
+            data={departmentList.length > 0 ? departmentList.slice(0, 6) : undefined}
             variant="hero"
             maxItems={6}
           />

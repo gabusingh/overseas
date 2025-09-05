@@ -94,18 +94,18 @@ function ResizableHeader() {
   };
 
   const navItems = [
-    { name: "Jobs",  },
+    { name: "Jobs", href: "/jobs" },
     { name: "Companies", },
     { name: "Services",  },
     // { name: "For Employers", link: "/for-employers" },
   ];
 
   // Dropdown data for mobile navigation
-  const jobsDropdown = [
-    { label: "All Jobs", href: "/jobs" },
-    // { label: "Jobs by Country", href: "/jobs" },
-   // { label: "Latest Jobs", href: "/jobs/last-week" },
-  ];
+  // const jobsDropdown = [
+  //   { label: "All Jobs", href: "/jobs" },
+  //   // { label: "Jobs by Country", href: "/jobs" },
+  //  // { label: "Latest Jobs", href: "/jobs/last-week" },
+  // ];
 
   const servicesDropdown = [
     { label: "Resume Building", href: "/about-resume-building" },
@@ -141,29 +141,13 @@ function ResizableHeader() {
           {/* Hide navigation menu for HR users (company type) */}
           {userType !== 'company' && (
             <div className="absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-1 text-sm font-medium text-indigo-600 transition duration-200 hover:text-indigo-600 lg:flex lg:space-x-1">
-              {/* Jobs Dropdown */}
-              <div className="relative group">
-                <Link
-                  href="/jobs"
-                  className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center"
-                >
-                  <span className="relative z-20">Jobs</span>
-                  <i className="fa fa-chevron-down ml-1 text-xs"></i>
-                </Link>
-                <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-neutral-950 dark:border-neutral-800">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-neutral-800">Find Jobs</div>
-                  {jobsDropdown.map((item, index) => (
-                    <Link
-                      key={index}
-                      href={item.href}
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-brand-blue/10 hover:text-brand-blue transition-colors dark:text-indigo-400 dark:hover:bg-neutral-800 dark:hover:text-indigo-300"
-                    >
-                      <i className="fa fa-briefcase mr-3 text-brand-blue"></i>
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+              {/* Jobs Link */}
+              <Link
+                href="/jobs"
+                className="relative px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              >
+                <span className="relative z-20">Jobs</span>
+              </Link>
 
               {/* Companies */}
               <Link
@@ -278,38 +262,15 @@ function ResizableHeader() {
               {/* Hide navigation menu items for HR users (company type) */}
               {userType !== 'company' && (
                 <>
-                  {/* Jobs Section */}
-                  <div>
-                    <button
-                      onClick={() => setActiveDropdown(activeDropdown === 'Jobs' ? null : 'Jobs')}
-                      className="w-full flex items-center justify-between py-3 text-indigo-600 hover:text-indigo-600 font-medium"
-                    >
-                      <div className="flex items-center">
-                        <i className="fa fa-search mr-3 text-blue-600"></i>
-                        Jobs
-                      </div>
-                      <i className={`fa fa-chevron-down transition-transform duration-200 ${
-                        activeDropdown === 'Jobs' ? 'rotate-180' : ''
-                      }`}></i>
-                    </button>
-                    {activeDropdown === 'Jobs' && (
-                      <div className="pl-8 py-2 space-y-1">
-                        {jobsDropdown.map((item, index) => (
-                          <Link
-                            key={index}
-                            href={item.href}
-                            className="block px-4 py-2 text-sm text-indigo-600 hover:text-indigo-600 hover:bg-blue-50 rounded-md"
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              setActiveDropdown(null);
-                            }}
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  {/* Jobs Link */}
+                  <Link
+                    href="/jobs"
+                    className="flex items-center py-3 text-indigo-600 hover:text-indigo-600 font-medium"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <i className="fa fa-search mr-3 text-blue-600"></i>
+                    Jobs
+                  </Link>
 
                   {/* Companies */}
                   <Link

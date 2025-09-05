@@ -324,7 +324,7 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
   // Memoize the popular searches section
   const popularSearchesSection = useMemo(() => (
     <PopularSearches 
-      data={data}
+      data={data && data.length > 0 ? data.slice(0, 6) : undefined}
       variant="default"
       onSearchClick={handlePopularSearchClick}
     />
