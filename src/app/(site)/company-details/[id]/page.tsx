@@ -270,7 +270,7 @@ export default function CompanyDetailsPage() {
               </div>
               <div className="space-y-2">
                 <Button 
-                  className="w-full h-9 bg-blue-600 hover:bg-blue-700" 
+                  className="w-full h-9 text-white bg-blue-600 hover:bg-blue-700" 
                   onClick={() => router.push(`/jobs?company=${company.id}`)}
                 >
                   <Building className="w-4 h-4 mr-2" />
@@ -318,7 +318,7 @@ export default function CompanyDetailsPage() {
               </div>
               <div className="space-y-2">
                 <Button 
-                  className="w-full h-9 bg-blue-600 hover:bg-blue-700" 
+                  className="w-full h-9 text-white bg-blue-600 hover:bg-blue-700" 
                   onClick={() => setSelectedTab('contact')}
                 >
                   <Mail className="w-4 h-4 mr-2" />

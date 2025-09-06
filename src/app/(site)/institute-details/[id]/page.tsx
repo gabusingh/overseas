@@ -6,28 +6,23 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
 import { Badge } from "../../../../components/ui/badge";
-import { Separator } from "../../../../components/ui/separator";
 import { 
   Building, 
   MapPin, 
   Phone, 
   Mail, 
   Globe, 
-  Star, 
+  Star,
   Users, 
   Calendar,
   ExternalLink,
-  Facebook,
-  Linkedin,
   Award,
-  CheckCircle,
   ArrowLeft,
   GraduationCap,
   BookOpen,
   Shield,
   Clock,
   DollarSign,
-  User,
   FileText,
   PlayCircle,
   Loader2
@@ -93,11 +88,18 @@ export default function InstituteDetailsPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [dataCache, setDataCache] = useState<{[key: string]: any}>({});
+  
+  const toSlug = (value: string) =>
+    (value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'course';
 
   useEffect(() => {
     if (instituteId) {
       fetchInstituteDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instituteId]);
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export default function InstituteDetailsPage() {
     }
   }, [selectedTab, institute]);
 
-  const fetchInstituteDetails = async () => {
+  const fetchInstituteDetails = async (): Promise<void> => {
     setLoading(true);
     try {
       console.log('🔄 Fetching institute details for ID:', instituteId);
@@ -136,8 +138,8 @@ export default function InstituteDetailsPage() {
         15 * 60 * 1000 // 15 minutes cache
       );
       
-      const institutes = cachedData?.data || [];
-      const foundInstitute = institutes.find((inst: any) => inst.id.toString() === instituteId);
+      const institutes: Array<InstituteDetail & { id: number }> = cachedData?.data || [];
+      const foundInstitute = institutes.find((inst) => String(inst.id) === instituteId);
       
       if (!foundInstitute) {
         console.warn('⚠️ Institute not found in response');
@@ -147,15 +149,16 @@ export default function InstituteDetailsPage() {
       
       console.log('✅ Institute details loaded:', foundInstitute);
       setInstitute(foundInstitute);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error fetching institute details:', error);
-      toast.error(error.message || 'Failed to load institute details. Please try again.');
+      const message = (error instanceof Error && error.message) ? error.message : 'Failed to load institute details. Please try again.';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchCourses = async () => {
+  const fetchCourses = async (): Promise<void> => {
     if (courses.length > 0) {
       console.log('📦 Using cached courses data');
       return;
@@ -163,6 +166,29 @@ export default function InstituteDetailsPage() {
     
     setLoadingCourses(true);
     try {
+      // Try the specific institute courses API first
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        const res = await fetch('https://backend.overseas.ai/api/courses-by-institute', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ instId: instituteId })
+        });
+        const data = await res.json();
+        if (res.ok && Array.isArray(data?.data)) {
+          setCourses(data.data);
+          console.log('✅ Courses loaded from specific API:', data.data.length);
+          return;
+        }
+      } catch (specificError) {
+        console.log('📦 Specific courses API failed, trying cached all courses API...');
+      }
+      
+      // Fallback to getAllCourses with filtering
       const response = await getAllCourses();
       if (response?.data) {
         // Filter courses for this institute
@@ -173,9 +199,11 @@ export default function InstituteDetailsPage() {
         setCourses(instituteCourses);
         console.log('✅ Courses loaded and cached:', instituteCourses.length);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error fetching courses:', error);
-      toast.error('Failed to load courses. Please try again.');
+      const message = (error instanceof Error && error.message) ? error.message : 'Failed to load courses';
+      toast.error(message);
+      setCourses([]);
     } finally {
       setLoadingCourses(false);
     }
@@ -193,6 +221,14 @@ export default function InstituteDetailsPage() {
     }
     return stars;
   };
+
+  useEffect(() => {
+    if (selectedTab === 'courses' && instituteId) {
+      fetchCourses();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTab, instituteId]);
+
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -393,7 +429,7 @@ export default function InstituteDetailsPage() {
                 </div>
                 <div className="pt-4 border-t border-gray-200">
                   <Button 
-                    className="w-full bgBlue hover:bg-blue-700 text-white h-10" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10" 
                     onClick={() => setSelectedTab('courses')}
                   >
                     <BookOpen className="w-4 h-4 mr-2" />
@@ -469,7 +505,7 @@ export default function InstituteDetailsPage() {
                 
                 <div className="pt-4 border-t border-gray-200 flex gap-2">
                   <Button 
-                    className="flex-1 bgBlue hover:bg-blue-700 h-10" 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-10" 
                     onClick={() => setShowContactModal(true)}
                   >
                     <Phone className="w-4 h-4 mr-2" />
@@ -493,14 +529,14 @@ export default function InstituteDetailsPage() {
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="border-b">
             <nav className="flex px-6">
-              {[
+              {([
                 { id: 'overview', label: 'Overview', icon: Building },
                 { id: 'contact', label: 'Contact', icon: Phone },
                 { id: 'courses', label: 'Courses', icon: BookOpen }
-              ].map((tab) => (
+              ] as const).map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setSelectedTab(tab.id as any)}
+                  onClick={() => setSelectedTab(tab.id)}
                   className={`py-3 px-4 border-b-2 font-medium text-sm flex items-center transition-colors ${
                     selectedTab === tab.id
                       ? 'border-blue-500 text-blue-600'
@@ -708,7 +744,7 @@ export default function InstituteDetailsPage() {
                               asChild
                               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-xs text-white h-8"
                             >
-                              <Link href={`/course-details/${course.id}`} className="flex items-center justify-center space-x-1">
+                              <Link href={`/course-details/${toSlug(course.course_name)}/${course.id}`} className="flex items-center justify-center space-x-1">
                                 <PlayCircle className="w-3 h-3" />
                                 <span>View Details</span>
                               </Link>
