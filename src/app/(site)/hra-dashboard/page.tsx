@@ -42,7 +42,6 @@ export default function HraDashboardPage() {
       const userSimple = localStorage.getItem("user");
       
       if (!token || !user) {
-        console.log('No token or user data found, redirecting to login');
         router.push("/login");
         return;
       }
@@ -52,10 +51,7 @@ export default function HraDashboardPage() {
       
       // Check if user is a company (HR) user
       const userType = userData?.user?.type || userData?.type || userSimpleData?.type;
-      console.log('HR Dashboard - User type check:', userType);
-      
       if (userType !== 'company') {
-        console.log('User is not a company type, redirecting based on type:', userType);
         toast.error('Access denied. This dashboard is only for HR/Company users.');
         
         // Redirect to appropriate dashboard based on user type
@@ -78,7 +74,6 @@ export default function HraDashboardPage() {
       // Use context to fetch HRA data with caching
       await fetchHraData();
     } catch (error) {
-      console.error("Error initializing dashboard:", error);
       toast.error("Failed to initialize dashboard. Please try again.");
     }
   };

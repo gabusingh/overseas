@@ -58,7 +58,6 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
         if (legacyUser) {
           try {
             const parsedUser = JSON.parse(legacyUser);
-            console.log('GlobalProvider Debug - Parsed legacy user:', parsedUser);
             if (parsedUser.access_token) {
               // For compatibility with old format, ensure correct structure
               const userObject = parsedUser.user || {
@@ -68,7 +67,6 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
                 phone: parsedUser.phone,
                 name: parsedUser.name
               };
-              console.log('GlobalProvider Debug - User object created:', userObject);
               setGlobalState(prev => ({ 
                 ...prev, 
                 user: {
@@ -78,13 +76,11 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
               }));
             }
           } catch (e) {
-            console.warn('Error parsing legacy user data:', e);
-          }
+            }
         }
       }
     } catch (error) {
-      console.warn('Error from global provider:', error);
-    }
+      }
   };
 
   useEffect(() => {

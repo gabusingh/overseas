@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart } from "lucide-react";
 import { getUserAwareJobList, saveJobById, applyJobApi } from "../../../services/job.service";
 import { getOccupations, getCountries } from "../../../services/info.service";
+import { extractOccupationsFromJobs } from "../../../utils/popularKeywords";
 import JobFilter from "../../../components/JobFilter";
 import SearchComponent from "../../../components/SearchComponent";
 import ProfileCompletionModal from "../../../components/ProfileCompletionModal";
@@ -65,6 +66,7 @@ export default function JobsPage() {
 
   const [categories, setCategories] = useState<Array<{label: string, value: number, count?: number}>>([]);
   const [countries, setCountries] = useState<Array<{label: string, value: number, count?: number}>>([]);
+  const [popularOccupations, setPopularOccupations] = useState<Array<{label: string, value: number, img?: string}>>([]);
   
   const router = useRouter();
   // const searchParams = useSearchParams(); // Removed as not used
@@ -122,7 +124,6 @@ export default function JobsPage() {
         toast.error(response?.data?.error || "Something went wrong");
       }
     } catch (error: unknown) {
-      console.error('Apply job error:', error);
       const errorMessage = (error as any)?.response?.data?.error || (error as any)?.message || "Internal Server Error";
       if (errorMessage === "You did not fill mandatory fields.") {
         setSelectedJobId(jobId);
@@ -152,7 +153,6 @@ export default function JobsPage() {
         toast.error(response?.data?.error || "Failed to save job");
       }
     } catch (error: unknown) {
-      console.error('Save job error:', error);
       toast.error((error as any)?.response?.data?.error || "Failed to save job");
     }
   };
@@ -234,11 +234,19 @@ export default function JobsPage() {
         const totalCount = (response as any)?.totalJobs || (response as any)?.total || pageJobs.length;
         const lastPageFromServer = (response as any)?.lastPage || Math.ceil(totalCount / perPage) || 1;
 
-        setJobs(Array.isArray(pageJobs) ? pageJobs : []);
+        const validJobs = Array.isArray(pageJobs) ? pageJobs : [];
+        setJobs(validJobs);
         setTotalJobs(totalCount);
         setTotalPages(lastPageFromServer);
+        
+        // Extract popular occupations from actual jobs data
+        if (validJobs.length > 0) {
+          const occupations = extractOccupationsFromJobs(validJobs, 8);
+          setPopularOccupations(occupations);
+        } else {
+          setPopularOccupations([]);
+        }
       } catch (error: any) {
-        console.error('Error fetching jobs:', error);
         
         // Check for specific error types
         if (error?.response?.status === 500) {
@@ -267,9 +275,7 @@ export default function JobsPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        console.log('🔄 Fetching occupations...');
         const response = await getOccupations();
-        console.log('📊 Occupations response:', response);
         
         const occupationData = response?.data || response?.occupation || [];
         if (Array.isArray(occupationData) && occupationData.length > 0) {
@@ -283,12 +289,10 @@ export default function JobsPage() {
             count: 0
           }));
           setCategories(categories);
-          console.log('✅ Categories loaded:', categories.length);
         } else {
           throw new Error('No valid categories found');
         }
       } catch (error) {
-        console.error('❌ Error fetching categories:', error);
         // Set empty array - no fallback data
         setCategories([]);
         toast.error('Failed to load job categories. Please refresh the page.');
@@ -297,9 +301,7 @@ export default function JobsPage() {
 
     const fetchCountries = async () => {
       try {
-        console.log('🔄 Fetching countries...');
         const response = await getCountries();
-        console.log('📊 Countries response:', response);
         
         const countryData = response?.countries || response?.data || [];
         if (Array.isArray(countryData) && countryData.length > 0) {
@@ -309,22 +311,13 @@ export default function JobsPage() {
             count: 0
           }));
           setCountries(countries);
-          console.log('✅ Countries loaded:', countries.length);
         } else {
           throw new Error('No valid countries found');
         }
       } catch (error) {
-        console.error('❌ Error fetching countries:', error);
-        // Fallback countries
-        const fallbackCountries = [
-          { label: "United Arab Emirates", value: 1, count: 0 },
-          { label: "Saudi Arabia", value: 2, count: 0 },
-          { label: "Qatar", value: 3, count: 0 },
-          { label: "Kuwait", value: 4, count: 0 },
-          { label: "Singapore", value: 7, count: 0 },
-        ];
-        setCountries(fallbackCountries);
-        toast.info('Using offline countries. Some features may be limited.');
+        // Set empty array - no fallback data
+        setCountries([]);
+        toast.error('Failed to load countries. Please refresh the page.');
       }
     };
 
@@ -431,7 +424,7 @@ export default function JobsPage() {
             >
               <SearchComponent 
                 fullWidth={true} 
-                data={categories.map(cat => ({ ...cat, img: '/images/institute.png' }))}
+                data={popularOccupations}
                 countryData={countries.map(country => ({ id: country.value, name: country.label }))}
               />
             </motion.div>

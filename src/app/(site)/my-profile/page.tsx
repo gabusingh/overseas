@@ -81,7 +81,6 @@ export default function MyProfilePage() {
         setActiveTab(tabParam);
       }
     } catch (error) {
-      console.error("Error parsing user data:", error);
       router.push("/login");
     }
   }, [router, searchParams]);
@@ -119,8 +118,7 @@ export default function MyProfilePage() {
       if (dashboardResponse.status === 'fulfilled') {
         dashboardData = { ...dashboardData, ...dashboardResponse.value };
       } else {
-        console.warn('Dashboard API failed, using fallback data:', dashboardResponse.reason);
-      }
+        }
       
       // Update user data with complete profile information from backend
       if (empDataResponse.status === 'fulfilled' && empDataResponse.value) {
@@ -177,26 +175,22 @@ export default function MyProfilePage() {
           profile_image: currentUser.profile_image || empData.empProfileImage || ""
         };
         
-        console.log('MyProfile: Updated user data with backend info:', updatedUser);
         setUser(updatedUser);
         
         // Update localStorage with complete data for both keys
         localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
         localStorage.setItem("user", JSON.stringify(updatedUser));
         
-        console.log('MyProfile: Saved complete user data to localStorage');
-      }
+        }
       
       // Handle applied jobs count and data
       if (appliedJobsResponse.status === 'fulfilled') {
         // Check for the correct response structure: response?.data?.jobs
         const appliedJobsData = appliedJobsResponse.value?.data?.jobs || appliedJobsResponse.value?.data || [];
         const safeAppliedJobsData = Array.isArray(appliedJobsData) ? appliedJobsData : [];
-        console.log('Applied jobs data extracted:', safeAppliedJobsData.length, 'jobs');
         setAppliedJobs(safeAppliedJobsData);
         dashboardData.applied_jobs_count = safeAppliedJobsData.length || 0;
       } else if (appliedJobsResponse.status === 'rejected') {
-        console.warn('Applied jobs API failed:', appliedJobsResponse.reason);
         setAppliedJobs([]);
       } else {
         setAppliedJobs([]);
@@ -207,11 +201,9 @@ export default function MyProfilePage() {
         // Check for the correct response structure: response?.data?.jobs
         const savedJobsData = savedJobsResponse.value?.data?.jobs || savedJobsResponse.value?.data || [];
         const safeSavedJobsData = Array.isArray(savedJobsData) ? savedJobsData : [];
-        console.log('Saved jobs data extracted:', safeSavedJobsData.length, 'jobs');
         setSavedJobs(safeSavedJobsData);
         dashboardData.saved_jobs_count = safeSavedJobsData.length || 0;
       } else if (savedJobsResponse.status === 'rejected') {
-        console.warn('Saved jobs API failed:', savedJobsResponse.reason);
         setSavedJobs([]);
       } else {
         setSavedJobs([]);
@@ -231,7 +223,6 @@ export default function MyProfilePage() {
       if (experiencesResponse.status === 'fulfilled') {
         setExperiences(experiencesResponse.value?.experiences || experiencesResponse.value?.data || []);
       } else {
-        console.warn('Experience API failed, using empty array:', experiencesResponse.reason);
         setExperiences([]);
       }
       
@@ -242,12 +233,10 @@ export default function MyProfilePage() {
         dashboardData.notifications_count = notifs.length;
         setDashboardData({...dashboardData});
       } else {
-        console.warn('Notifications API failed, using empty array:', notificationsResponse.reason);
         setNotifications([]);
       }
       
     } catch (error) {
-      console.error("Error loading user data:", error);
       // Set fallback data for all sections
       setDashboardData({
         profile_strength: 65,
@@ -698,8 +687,7 @@ export default function MyProfilePage() {
                               setNotifications(prev => prev.map(n => ({ ...n, is_read: true, isRead: true })));
                               toast.success('All notifications marked as read');
                             } catch (error) {
-                              console.error('Error marking notifications as read:', error);
-                            }
+                              }
                           }
                         }}
                       >
@@ -1123,8 +1111,6 @@ export default function MyProfilePage() {
                     <div className="space-y-4">
                       {savedJobs.map((job) => {
                         // Debug logging to see what data is available
-                        console.log('Saved job data:', job);
-                        
                         // Extract job details with proper field mapping
                         const jobTitle = job.jobTitle || job.job_title || job.title || 'Job Position';
                         const companyName = job.companyName || job.company_name || job.cmpName || job.company || 'Company';
@@ -1236,8 +1222,7 @@ export default function MyProfilePage() {
                                         // You can add unsave API call here if needed
                                         toast.info('Please go to the job details page to unsave this job');
                                       } catch (error) {
-                                        console.error('Error unsaving job:', error);
-                                      }
+                                        }
                                     }
                                   }}
                                 >

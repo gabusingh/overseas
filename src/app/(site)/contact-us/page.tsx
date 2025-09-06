@@ -38,7 +38,6 @@ export default function ContactUsPage() {
         message: ""
       });
     } catch (error) {
-      console.error("Contact form error:", error);
       toast.error("Failed to send message. Please try again.");
     } finally {
       setLoading(false);

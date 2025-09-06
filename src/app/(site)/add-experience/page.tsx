@@ -130,7 +130,6 @@ export default function AddExperiencePage() {
         router.push("/my-profile?tab=experience");
       }
     } catch (error: any) {
-      console.error("Error adding experience:", error);
       toast.error(error.response?.data?.message || "Failed to add experience");
     } finally {
       setLoading(false);

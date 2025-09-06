@@ -73,18 +73,14 @@ interface JobDetailResponse {
   jobs: JobDetail;
 }
 
-
 export const getJobList = async (payload: FormData): Promise<JobListResponse> => {
   try {
     // Let axios set the proper multipart boundary automatically
     const response = await axios.post(BASE_URL + "filter-all-jobs", payload);
     return response.data;
   } catch (error: any) {
-    console.error("Error posting data:", error);
-    
     // Handle 500 errors gracefully
     if (error?.response?.status === 500) {
-      console.error('Backend server error (500). Using empty response as fallback.');
       // Return empty but valid response structure
       return {
         jobs: [],
@@ -105,22 +101,8 @@ const getHrUserIdFromStorage = (): string | null => {
     const loggedUser = localStorage.getItem("loggedUser");
     const userSimple = localStorage.getItem("user");
     
-    console.log('🔍 DEBUG - localStorage data:');
-    console.log('- loggedUser exists:', !!loggedUser);
-    console.log('- userSimple exists:', !!userSimple);
-    
     if (loggedUser) {
       const userData = JSON.parse(loggedUser);
-      console.log('📋 DEBUG - loggedUser data structure:', {
-        hasUser: !!userData?.user,
-        hasCmpData: !!userData?.cmpData,
-        hasId: !!userData?.id,
-        hasHrId: !!userData?.hrId,
-        hasEmpId: !!userData?.empId,
-        userType: userData?.user?.type || userData?.type,
-        userData: userData
-      });
-      
       // Try different possible ID fields for HR users
       const hrId = userData?.user?.id || 
                    userData?.cmpData?.id || 
@@ -130,8 +112,6 @@ const getHrUserIdFromStorage = (): string | null => {
                    userData?.user?.empId ||
                    userData?.cmpData?.empId;
       
-      console.log('🎯 DEBUG - Extracted HR ID:', hrId);
-      
       if (hrId) {
         return hrId.toString();
       }
@@ -139,20 +119,15 @@ const getHrUserIdFromStorage = (): string | null => {
     
     if (userSimple) {
       const userSimpleData = JSON.parse(userSimple);
-      console.log('📋 DEBUG - userSimple data:', userSimpleData);
       const hrId = userSimpleData?.id;
-      
-      console.log('🎯 DEBUG - UserSimple HR ID:', hrId);
       
       if (hrId) {
         return hrId.toString();
       }
     }
     
-    console.warn('⚠️ DEBUG - No HR ID found in localStorage');
     return null;
   } catch (error) {
-    console.error('❌ Error extracting HR user ID:', error);
     return null;
   }
 };
@@ -175,7 +150,6 @@ const getUserTypeFromStorage = (): string | null => {
     
     return null;
   } catch (error) {
-    console.error('Error extracting user type:', error);
     return null;
   }
 };
@@ -197,13 +171,10 @@ interface EnhancedJobListResponse extends JobListResponse {
 export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJobListResponse> => {
   try {
     const userType = getUserTypeFromStorage();
-    console.log('User type detected for job listing:', userType);
-    
     // Always show all jobs regardless of user type
     // Previously this function filtered jobs for HR users to show only their posted jobs
     // Now HR users will see all available jobs just like candidates
     
-    console.log('Fetching all jobs for all users');
     const regularResponse = await getJobList(payload);
     
     // Optionally enhance with HR details if user is HR (for UI purposes only)
@@ -212,10 +183,8 @@ export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJo
       const token = localStorage.getItem("access_token");
       try {
         hrDetails = await getEnhancedHrDetails(token);
-        console.log('HR details fetched for UI enhancement:', hrDetails?.cmpData?.cmpName || 'Unknown Company');
-      } catch (detailsError) {
-        console.warn('Could not fetch HR details:', detailsError);
-      }
+        } catch (detailsError) {
+        }
     }
     
     return {
@@ -229,7 +198,6 @@ export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJo
     };
     
   } catch (error) {
-    console.error('Error in getUserAwareJobList:', error);
     // Fallback to regular job list on error
     const fallbackResponse = await getJobList(payload);
     return {
@@ -249,7 +217,6 @@ export const getJobListForSearch = async (payload: object = {}): Promise<JobList
     });
     return response.data;
   } catch (error) {
-    console.error("Error posting data:", error);
     throw error;
   }
 };
@@ -258,26 +225,29 @@ export const getJobListForSearch = async (payload: object = {}): Promise<JobList
 export const searchJobsByKey = async (searchKey: string | FormData): Promise<JobListResponse> => {
   try {
     let payload: any;
-    let headers: any = {};
+    let config: any = {};
     
     if (typeof searchKey === 'string') {
       payload = {
         searchKey: searchKey.replace(/-/g, ' ')
       };
-      headers = {
+      config.headers = {
         'Content-Type': 'application/json',
       };
-    } else {
+      } else if (searchKey instanceof FormData) {
       payload = searchKey;
-      headers = {
-        'Content-Type': 'multipart/form-data',
-      };
+      // Don't set Content-Type header for FormData - let axios handle it
+      // Log FormData contents for debugging
+      for (let [key, value] of searchKey.entries()) {
+        }
+    } else {
+      throw new Error('Invalid searchKey type');
     }
     
-    const response = await axios.post(BASE_URL + "search-all-jobs", payload, { headers });
+    const response = await axios.post(BASE_URL + "search-all-jobs", payload, config);
+    
     return response.data;
   } catch (error) {
-    console.error("Error searching jobs:", error);
     throw error;
   }
 };
@@ -291,7 +261,6 @@ export const getSearchResult = async (occuId: number, countryId: number) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching search result:', error);
     throw error;
   }
 };
@@ -305,7 +274,6 @@ export const getThisWeekJob = async (payload: FormData): Promise<JobListResponse
     });
     return response.data;
   } catch (error) {
-    console.error("Error posting data:", error);
     throw error;
   }
 };
@@ -315,7 +283,6 @@ export const getOccupations = async () => {
     const response = await axios.get(BASE_URL + 'get-occupations');
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -325,7 +292,6 @@ export const getSkill = async () => {
     const response = await axios.post(BASE_URL + 'get-skills');
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -335,7 +301,6 @@ export const getJobByDepartment = async (id: number) => {
     const response = await axios.get(BASE_URL + 'occupation-wise-jobs/' + id);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -345,7 +310,6 @@ export const getJobByCountry = async (id: number) => {
     const response = await axios.get(BASE_URL + 'country-wise-jobs/' + id);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -355,12 +319,9 @@ export const getJobById = async (id: string | number): Promise<any> => {
     const response = await axios.get(BASE_URL + 'getJobs/' + id);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
-
-
 
 export const applyJobApi = async (payload: any, accessToken: string) => {
   try {
@@ -381,7 +342,6 @@ export const applyJobApi = async (payload: any, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error applying for job:', error);
     throw error;
   }
 };
@@ -395,7 +355,6 @@ export const appliedJobList = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -409,7 +368,6 @@ export const appliedJobById = async (id: number, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -423,7 +381,6 @@ export const getInterviewById = async (id: number, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -437,7 +394,6 @@ export const favouriteJobList = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -451,7 +407,6 @@ export const saveJobById = async (jobId: number, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -465,7 +420,6 @@ export const userSavedJobsList = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching saved jobs:', error);
     throw error;
   }
 };
@@ -474,9 +428,27 @@ export const getLatestJobs = async () => {
   try {
     const response = await axios.get(BASE_URL + 'get-latest-jobs');
     return response.data;
-  } catch (error) {
-    console.error('Error fetching latest jobs:', error);
+  } catch (error: any) {
+    // Provide specific error information
+    if (error?.response?.status === 401) {
+      } else if (error?.response?.status === 403) {
+      } else {
+      }
     throw error;
+  }
+};
+
+// Safe version that doesn't throw on authentication errors
+export const getLatestJobsSafe = async () => {
+  try {
+    const response = await axios.get(BASE_URL + 'get-latest-jobs');
+    return response.data;
+  } catch (error: any) {
+    if (error?.response?.status === 401 || error?.response?.status === 403) {
+      return null; // Return null instead of throwing
+    } else {
+      throw error; // Re-throw other errors
+    }
   }
 };
 
@@ -487,7 +459,6 @@ export const getRelatedJobs = async (jobId: number) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching related jobs:', error);
     throw error;
   }
 };
@@ -501,7 +472,6 @@ export const jobQuery = async (formData: FormData) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error submitting job query:', error);
     throw error;
   }
 };
@@ -514,7 +484,6 @@ export const getJobsByCountryByDepartment = async (countryId: number, department
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching jobs by country and department:', error);
     throw error;
   }
 };
@@ -529,7 +498,6 @@ export const getAppliedJobs = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching applied jobs:', error);
     throw error;
   }
 };
@@ -543,7 +511,6 @@ export const getSavedJobs = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching saved jobs:', error);
     throw error;
   }
 };
@@ -557,7 +524,6 @@ export const removeSavedJob = async (jobId: number, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error removing saved job:', error);
     throw error;
   }
 };
@@ -569,7 +535,6 @@ export const getCompanies = async (page: number = 1) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching companies:', error);
     throw error;
   }
 };
@@ -579,7 +544,6 @@ export const getCompanyById = async (id: number) => {
     const response = await axios.get(BASE_URL + 'company/' + id);
     return response;
   } catch (error) {
-    console.error('Error fetching company details:', error);
     throw error;
   }
 };
@@ -589,7 +553,6 @@ export const searchJobs = async (searchParams: any) => {
     const response = await axios.post(BASE_URL + 'search-jobs', searchParams);
     return response;
   } catch (error) {
-    console.error('Error searching jobs:', error);
     throw error;
   }
 };
@@ -599,7 +562,6 @@ export const getJobStatistics = async () => {
     const response = await axios.get(BASE_URL + 'job-statistics');
     return response;
   } catch (error) {
-    console.error('Error fetching job statistics:', error);
     throw error;
   }
 };

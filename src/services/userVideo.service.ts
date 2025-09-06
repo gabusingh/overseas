@@ -11,7 +11,6 @@ export const getWorkVideo = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching work videos:', error);
     throw error;
   }
 };
@@ -25,7 +24,6 @@ export const getIntroVideo = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching intro videos:', error);
     throw error;
   }
 };
@@ -39,7 +37,6 @@ export const deleteWorkVideo = async (videoId: string | number, accessToken: str
     });
     return response;
   } catch (error) {
-    console.error('Error deleting work video:', error);
     throw error;
   }
 };
@@ -53,7 +50,6 @@ export const deleteIntroVideo = async (videoId: string | number, accessToken: st
     });
     return response;
   } catch (error) {
-    console.error('Error deleting intro video:', error);
     throw error;
   }
 };
@@ -68,7 +64,6 @@ export const uploadIntroVideo = async (formData: FormData, accessToken: string) 
     });
     return response;
   } catch (error) {
-    console.error('Error uploading intro video:', error);
     throw error;
   }
 };

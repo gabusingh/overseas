@@ -292,7 +292,6 @@ const ResumeBuilderModals: React.FC<ModalsProps> = ({
   }, []);
   
   useEffect(() => {
-    console.log('showOtpInput prop changed:', showOtpInput);
     setOtpInputVisible(showOtpInput);
   }, [showOtpInput]);
 

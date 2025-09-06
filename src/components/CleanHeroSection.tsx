@@ -40,7 +40,6 @@ function CleanHeroSection({ data: propData, countryData }: CleanHeroSectionProps
       }));
       setDepartmentList(occupations || []);
     } catch (error) {
-      console.log(error);
       // Set empty array - no fallback data
       setDepartmentList([]);
     }
@@ -90,9 +89,9 @@ function CleanHeroSection({ data: propData, countryData }: CleanHeroSectionProps
 
           {/* Popular Searches */}
           <PopularSearches 
-            data={departmentList.length > 0 ? departmentList.slice(0, 6) : undefined}
+            data={departmentList.length > 0 ? departmentList.slice(0, 8) : undefined}
             variant="hero"
-            maxItems={6}
+            maxItems={8}
           />
         </div>
 

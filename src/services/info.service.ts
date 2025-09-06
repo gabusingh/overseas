@@ -32,7 +32,6 @@ export const getState = async (): Promise<StateResponse> => {
     const response = await axios.get(BASE_URL + 'state-list');
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -44,7 +43,6 @@ export const getDistrict = async (stateId: number): Promise<DistrictResponse> =>
     });
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -54,7 +52,6 @@ export const getOccupations = async (): Promise<OccupationResponse> => {
     const response = await axios.get(BASE_URL + 'get-occupations');
     return response.data;
   } catch (error) {
-    console.error('Error fetching occupations:', error);
     throw error;
   }
 };
@@ -62,10 +59,8 @@ export const getOccupations = async (): Promise<OccupationResponse> => {
 export const getSkillsByOccuId = async (occuId: number) => {
   try {
     const response = await axios.get(BASE_URL + 'get-occupations/' + occuId);
-    console.log('🔍 Raw skills API response for occupation', occuId, ':', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error fetching skills for occupation', occuId, ':', error);
     throw error;
   }
 };
@@ -73,10 +68,8 @@ export const getSkillsByOccuId = async (occuId: number) => {
 export const getCountries = async (): Promise<CountryResponse> => {
   try {
     const response = await axios.get(BASE_URL + 'country-list');
-    console.log('🔍 Raw countries API response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error fetching countries:', error);
     throw error;
   }
 };
@@ -86,7 +79,6 @@ export const getCountriesForJobs = async (): Promise<CountryResponse> => {
     const response = await axios.get(BASE_URL + 'country-list-for-jobs');
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -96,7 +88,6 @@ export const getHomeData = async (): Promise<HomeDataResponse> => {
     const response = await axios.get(BASE_URL + 'home-page-data');
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -106,7 +97,6 @@ export const getSuccessNotification = async () => {
     const response = await axios.get(BASE_URL + 'show-success-notification');
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -118,7 +108,6 @@ export const getPs = async (districtId: number) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -130,7 +119,6 @@ export const getPanchayat = async (psId: number) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -142,7 +130,6 @@ export const getVillage = async (psId: number) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -152,7 +139,6 @@ export const getCountryCode = async () => {
     const response = await axios.get(BASE_URL + 'country-code-list');
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -162,7 +148,6 @@ export const getVersionCode = async () => {
     const response = await axios.get(BASE_URL + 'check-version');
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -182,7 +167,6 @@ export const getNewsFeedData = async () => {
     }));
     return { data: { newsData: mapped } };
   } catch (error) {
-    console.error('Error fetching news feed:', error);
     throw error;
   }
 };
@@ -194,7 +178,6 @@ export const getCompanies = async (page: number = 1) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching companies:', error);
     throw error;
   }
 };
@@ -204,7 +187,6 @@ export const getCompanyById = async (id: number) => {
     const response = await axios.get(BASE_URL + 'company/' + id);
     return response;
   } catch (error) {
-    console.error('Error fetching company details:', error);
     throw error;
   }
 };
@@ -214,7 +196,6 @@ export const getTradeTestCenters = async () => {
     const response = await axios.get(BASE_URL + 'get-trade-test-centers');
     return response;
   } catch (error) {
-    console.error('Error fetching trade test centers:', error);
     throw error;
   }
 };
@@ -226,14 +207,11 @@ export const getTopCountriesHiring = async () => {
     const response = await axios.get(BASE_URL + 'country-list-for-jobs');
     return response.data;
   } catch (error) {
-    console.error('Error fetching top countries hiring:', error);
-    
     // Fallback 1: Try the general countries endpoint
     try {
       const fallbackResponse = await axios.get(BASE_URL + 'getCountriesForJobs');
       return fallbackResponse.data;
     } catch (fallbackError) {
-      console.error('Fallback API also failed:', fallbackError);
       throw fallbackError;
     }
   }
@@ -272,7 +250,6 @@ export const normalizeCountryHiringData = (apiResponse: any) => {
       totalJobs: country.totalJobs
     }));
   } catch (error) {
-    console.error('Error normalizing country hiring data:', error);
     return [];
   }
 };

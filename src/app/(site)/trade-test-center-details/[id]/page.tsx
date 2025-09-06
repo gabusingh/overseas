@@ -319,7 +319,7 @@ export default function TradeTestCenterDetailsPage() {
                 </div>
                 <div className="pt-4 border-t border-gray-200">
                   <Button 
-                    className="w-full bgBlue hover:bg-blue-700 h-10" 
+                    className="w-full bgBlue hover:bg-blue-700 text-white h-10" 
                     onClick={() => setSelectedTab('tests')}
                   >
                     <FileText className="w-4 h-4 mr-2" />
@@ -395,7 +395,7 @@ export default function TradeTestCenterDetailsPage() {
                 
                 <div className="pt-4 border-t border-gray-200 flex gap-2">
                   <Button 
-                    className="flex-1 bgBlue hover:bg-blue-700 h-10" 
+                    className="flex-1 bgBlue hover:bg-blue-700 text-white h-10" 
                     onClick={() => setShowContactModal(true)}
                   >
                     <Phone className="w-4 h-4 mr-2" />

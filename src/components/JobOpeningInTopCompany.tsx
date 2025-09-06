@@ -23,14 +23,11 @@ function JobOpeningInTopCompany() {
     try {
       setLoading(true);
       const response = await getHraList();
-      console.log('Companies data:', response?.cmpData);
-      
       // Take only first 4 companies for display
       const companiesData = response?.cmpData?.slice(0, 4) || [];
       setCompanies(companiesData);
       setError(null);
     } catch (error) {
-      console.error('Error fetching companies:', error);
       setError('Failed to load companies');
       
       // Fallback to mock data if API fails
