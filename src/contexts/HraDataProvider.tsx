@@ -54,8 +54,10 @@ function getHrUserIdFromStorage(): string | null {
       }
     }
 
+    console.warn('HR User ID not found in stored user data');
     return null;
   } catch (error) {
+    console.error('Error extracting HR user ID:', error);
     return null;
   }
 }
@@ -78,16 +80,18 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
   const fetchHraData = useCallback(async (force = false) => {
     // Skip data fetching if disabled
     if (skipDataFetch) {
+      console.log('HRA data fetching disabled for this page');
       return;
     }
 
-    // Check if data is cached and valid (unless force refresh)
+    // Check if data is cached and valid
     if (!force && isCacheValid()) {
       return;
     }
 
     // Prevent multiple simultaneous calls
     if (fetchingRef.current) {
+      console.log('API call already in progress');
       return;
     }
 
@@ -101,6 +105,7 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
         throw new Error('No authentication token found');
       }
 
+
       // Fetch dashboard analytics data with proper transformation (primary source)
       const transformedData = await getHraDashboardData(token);
 
@@ -110,41 +115,74 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
       const analyticsResponse = await getHraDashboardAnalytics(token);
       const analyticsData = analyticsResponse?.data || analyticsResponse;
 
+
       // Get jobs posted by this specific HR user - NO FALLBACKS
       let processedJobsData = [];
       const hrUserId = getHrUserIdFromStorage();
+
 
       if (!hrUserId) {
         throw new Error('HR User ID not found in localStorage. Cannot fetch HR-specific jobs. Please ensure you are logged in as an HR user.');
       }
 
       // Fetch jobs posted by this specific HR user ONLY - no fallbacks
+      console.log('🚀 Fetching jobs for HR User ID:', hrUserId);
       const jobsResponse = await getJobsPostedByHra(hrUserId, token);
+
+      console.log('📊 Jobs API Response:', {
+        hasResponse: !!jobsResponse,
+        responseType: typeof jobsResponse,
+        isArray: Array.isArray(jobsResponse),
+        hasData: !!jobsResponse?.data,
+        dataIsArray: Array.isArray(jobsResponse?.data),
+        responseKeys: jobsResponse ? Object.keys(jobsResponse) : 'null response'
+      });
 
       const jobsResponseData = jobsResponse?.data || jobsResponse;
 
+      console.log('📋 Jobs Response Data Check:', {
+        type: typeof jobsResponseData,
+        isArray: Array.isArray(jobsResponseData),
+        length: Array.isArray(jobsResponseData) ? jobsResponseData.length : 'not array',
+        sampleData: Array.isArray(jobsResponseData) && jobsResponseData.length > 0 ? jobsResponseData[0] : jobsResponseData
+      });
+
       if (!Array.isArray(jobsResponseData)) {
+        console.log('📊 Jobs response is not an array, checking for valid response patterns:', {
+          responseType: typeof jobsResponseData,
+          responseValue: jobsResponseData,
+          fullResponse: jobsResponse
+        });
+        
         // Check if it's a paginated response or empty object
         if (jobsResponseData && typeof jobsResponseData === 'object') {
           // Check for common pagination response patterns
           if (jobsResponseData.jobs && Array.isArray(jobsResponseData.jobs)) {
+            console.log('✅ Found jobs array in paginated response');
             processedJobsData = jobsResponseData.jobs;
           } else if (jobsResponseData.data && Array.isArray(jobsResponseData.data)) {
+            console.log('✅ Found data array in nested response');
             processedJobsData = jobsResponseData.data;
           } else if (jobsResponseData.items && Array.isArray(jobsResponseData.items)) {
+            console.log('✅ Found items array in response');
             processedJobsData = jobsResponseData.items;
           } else if (Object.keys(jobsResponseData).length === 0) {
             // Handle empty object response gracefully - this is valid for no jobs
+            console.log('✅ Empty object response - no jobs posted yet');
             processedJobsData = [];
           } else {
             // Log all keys to understand the structure but don't throw error
+            console.warn('⚠️ Unexpected response structure, treating as empty:', Object.keys(jobsResponseData));
+            console.log('Full response for debugging:', jobsResponseData);
             processedJobsData = [];
           }
         } else if (jobsResponseData === null || jobsResponseData === undefined) {
           // Handle null/undefined responses
+          console.log('✅ Null/undefined response - treating as empty jobs list');
           processedJobsData = [];
         } else {
           // Handle other non-object types
+          console.warn(`⚠️ Unexpected response type (${typeof jobsResponseData}), treating as empty:`, jobsResponseData);
           processedJobsData = [];
         }
       } else {
@@ -153,10 +191,21 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
 
       // If no jobs found or empty response, try the getAllCreatedJobs API as fallback
       if (processedJobsData.length === 0) {
+        console.warn('⚠️ No jobs found using getJobsPostedByHra. Trying getAllCreatedJobs API...');
+        
         try {
           const allJobsResponse = await getAllCreatedJobs(token);
+          console.log('📊 All Created Jobs Response:', {
+            hasResponse: !!allJobsResponse,
+            responseType: typeof allJobsResponse,
+            isArray: Array.isArray(allJobsResponse),
+            hasData: !!allJobsResponse?.data,
+            responseKeys: allJobsResponse ? Object.keys(allJobsResponse) : 'null'
+          });
+          
           // First check if response itself is directly the jobs array
           if (Array.isArray(allJobsResponse)) {
+            console.log('✅ getAllCreatedJobs returned an array directly');
             processedJobsData = allJobsResponse;
           } else if (allJobsResponse && typeof allJobsResponse === 'object') {
             // Check various possible field names where jobs might be stored
@@ -176,6 +225,7 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
             
             for (const field of possibleFields) {
               if (allJobsResponse[field] && Array.isArray(allJobsResponse[field])) {
+                console.log(`✅ Found jobs array in field '${field}' of getAllCreatedJobs response`);
                 processedJobsData = allJobsResponse[field];
                 break;
               }
@@ -184,10 +234,12 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
             // If still no data found, check if data.data pattern exists
             if (processedJobsData.length === 0 && allJobsResponse.data) {
               if (Array.isArray(allJobsResponse.data)) {
+                console.log('✅ Found jobs array in data field');
                 processedJobsData = allJobsResponse.data;
               } else if (typeof allJobsResponse.data === 'object') {
                 for (const field of possibleFields) {
                   if (allJobsResponse.data[field] && Array.isArray(allJobsResponse.data[field])) {
+                    console.log(`✅ Found jobs array in data.${field}`);
                     processedJobsData = allJobsResponse.data[field];
                     break;
                   }
@@ -197,23 +249,38 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
             
             // Log what we found if still no data
             if (processedJobsData.length === 0) {
+              console.error('❌ Could not find jobs array in response. Available keys:', Object.keys(allJobsResponse));
               if (allJobsResponse.data) {
-                }
+                console.error('Data field keys:', Object.keys(allJobsResponse.data));
+              }
             }
           }
         } catch (fallbackError) {
+          console.error('❌ Fallback getAllCreatedJobs also failed:', fallbackError);
           // Keep the empty array if fallback also fails
         }
       }
 
       if (processedJobsData.length === 0) {
-        } else {
-        }
+        console.warn('⚠️ No jobs found for HR user. This might be normal if no jobs have been posted yet.');
+      } else {
+        console.log(`📋 Successfully loaded ${processedJobsData.length} jobs`);
+        console.log('📋 First job sample:', processedJobsData[0]);
+      }
 
       setJobsData(processedJobsData);
       setLastFetchTime(Date.now());
 
+
     } catch (error: any) {
+      console.error('❌ HRA Data Fetch Error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
       // Provide specific error messages
       let errorMessage = 'Failed to load HRA data. ';
 
@@ -235,6 +302,7 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
       }
 
       setError(errorMessage);
+
 
     } finally {
       setLoading(false);

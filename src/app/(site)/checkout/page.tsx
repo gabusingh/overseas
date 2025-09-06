@@ -195,6 +195,7 @@ export default function CheckoutPage() {
       setCheckoutItems(mockItems);
       setSelectedPaymentMethod("card"); // Default payment method
     } catch (error) {
+      console.error("Error initializing checkout:", error);
       toast.error("Failed to load checkout information");
     } finally {
       setLoading(false);
@@ -274,6 +275,7 @@ export default function CheckoutPage() {
       router.push(`/checkout/success?orderId=${orderId}&total=${orderSummary.total}&currency=${checkoutItems[0]?.currency || 'AED'}`);
       
     } catch (error) {
+      console.error("Payment processing error:", error);
       toast.error("Payment failed. Please try again.");
     } finally {
       setProcessing(false);

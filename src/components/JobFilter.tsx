@@ -50,7 +50,9 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
 
   const getOccupationsListFunc = async () => {
     try {
+      console.log('🔄 Fetching occupations...');
       const response = await getOccupations();
+      console.log('📊 Occupations API Response:', response);
       
       let occupationData: OccupationItem[] = [];
       if (response?.occupation && Array.isArray(response.occupation)) {
@@ -67,8 +69,10 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         img: "/images/institute.png",
       }));
       
+      console.log('✅ Processed occupations:', occupations.length);
       setDepartmentList(occupations || []);
     } catch (error) {
+      console.error('❌ Error fetching occupations:', error);
       // Fallback occupations
       const fallbackOccupations = [
         { label: "Construction", value: 1, img: "/images/institute.png" },
@@ -83,7 +87,9 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
 
   const getCountriesForJobsFunc = async () => {
     try {
+      console.log('🔄 Fetching countries...');
       const response = await getCountriesForJobs();
+      console.log('📊 Countries API Response:', response);
       
       let countryData: CountryItem[] = [];
       if (response?.countries && Array.isArray(response.countries)) {
@@ -94,8 +100,10 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         countryData = response;
       }
       
+      console.log('✅ Processed countries:', countryData.length);
       setCountryList(countryData || []);
     } catch (error) {
+      console.error('❌ Error fetching countries:', error);
       // Fallback countries
       const fallbackCountries = [
         { id: 1, name: "United Arab Emirates" },
@@ -114,6 +122,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
   }, []);
 
   const handleCheckboxChange = (type: string, value: number | string) => {
+    console.log('Checkbox clicked:', type, value); // Debug log
     
     setPayload((prevState: JobFilterPayload) => {
       const updated = { ...prevState };
@@ -149,6 +158,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         updated.sortBy = updated.sortBy === value ? "" : (value as string);
       }
       
+      console.log('Updated payload:', updated); // Debug log
       return updated;
     });
   };

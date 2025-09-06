@@ -57,6 +57,7 @@ export const HrProfileProvider: React.FC<HrProfileProviderProps> = ({ children }
       
       return false;
     } catch (error) {
+      console.error('Error checking HR user status:', error);
       return false;
     }
   }, []);
@@ -64,11 +65,13 @@ export const HrProfileProvider: React.FC<HrProfileProviderProps> = ({ children }
   // Function to fetch HR profile
   const fetchHrProfile = useCallback(async (): Promise<void> => {
     if (!checkIsHrUser()) {
+      console.log('User is not an HR user, skipping profile fetch');
       return;
     }
 
     const token = localStorage.getItem("access_token");
     if (!token) {
+      console.warn('No access token found for HR profile fetch');
       setError('Authentication required');
       return;
     }
@@ -77,14 +80,18 @@ export const HrProfileProvider: React.FC<HrProfileProviderProps> = ({ children }
     setError(null);
 
     try {
+      console.log('Fetching HR profile details...');
       const profile = await getEnhancedHrDetails(token);
       
       if (profile) {
         setHrProfile(profile);
-        } else {
+        console.log('HR profile loaded successfully:', profile.cmpData?.cmpName || 'Unknown Company');
+      } else {
         setError('Failed to load HR profile');
-        }
+        console.warn('HR profile returned null');
+      }
     } catch (error) {
+      console.error('Error fetching HR profile:', error);
       setError('Failed to fetch HR profile');
       // Don't show toast error here to avoid spam
     } finally {
@@ -125,7 +132,8 @@ export const HrProfileProvider: React.FC<HrProfileProviderProps> = ({ children }
     setHrProfile(null);
     setError(null);
     setLoading(false);
-    }, []);
+    console.log('HR profile cleared');
+  }, []);
 
   // Initialize profile on mount
   useEffect(() => {

@@ -82,6 +82,7 @@ export default function MyDocumentsPage() {
         setDocuments([]);
       }
     } catch (error) {
+      console.error("Error fetching documents:", error);
       // On error, still set empty array instead of showing error for better UX
       setDocuments([]);
     } finally {
@@ -190,6 +191,7 @@ export default function MyDocumentsPage() {
         throw new Error("Upload failed");
       }
     } catch (error: any) {
+      console.error("Upload error:", error);
       toast.error(error.response?.data?.message || "Failed to upload document. Please try again.");
     } finally {
       // Clear progress after a short delay
@@ -215,6 +217,7 @@ export default function MyDocumentsPage() {
       setDocuments(prev => prev.filter(doc => doc.id !== documentId));
       toast.success("Document deleted successfully");
     } catch (error) {
+      console.error("Delete error:", error);
       toast.error("Failed to delete document");
     }
   };

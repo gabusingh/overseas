@@ -12,6 +12,8 @@ interface GlobalErrorProps {
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
     // Log catastrophic error
+    console.error('Global Application Error:', error);
+    
     // Send to error tracking service
     // Sentry.captureException(error);
   }, [error]);
