@@ -48,7 +48,7 @@ export default function Header() {
           }
         }
       } catch (e) {
-        console.error('Error parsing loggedUser:', e);
+        // Silent error handling
       }
       
       // Priority 2: Check localStorage user
@@ -60,7 +60,7 @@ export default function Header() {
             detectedType = parsed?.type;
           }
         } catch (e) {
-          console.error('Error parsing user:', e);
+          // Silent error handling
         }
       }
       
@@ -78,8 +78,6 @@ export default function Header() {
                    detectedType === 'hr' || 
                    detectedType === 'employer';
       
-      console.log('Header HR Detection:', { detectedType, hrDetected });
-      
       setUserType(detectedType);
       setIsHrUser(hrDetected);
     };
@@ -95,45 +93,6 @@ export default function Header() {
   
   // Use detected user type
   const effectiveUser = user || globalState.user || (userType ? { type: userType } : null);
-  
-  // Debug logging for user type issue
-  React.useEffect(() => {
-    console.log('=== HEADER DEBUG START ===');
-    console.log('Header Debug - Global State:', globalState);
-    console.log('Header Debug - User Object:', user);
-    console.log('Header Debug - Detected User Type:', userType);
-    console.log('Header Debug - Is HR User:', isHrUser);
-    console.log('Header Debug - Effective User:', effectiveUser);
-    console.log('Header Debug - Effective User Type:', (effectiveUser as any)?.type);
-    console.log('Header Debug - Dashboard Link Text:', getDashboardLinkText());
-    console.log('Header Debug - localStorage loggedUser:', localStorage.getItem('loggedUser'));
-    console.log('Header Debug - localStorage user:', localStorage.getItem('user'));
-    
-    // Try to parse and show the actual data
-    try {
-      const loggedUserData = localStorage.getItem('loggedUser');
-      if (loggedUserData) {
-        const parsed = JSON.parse(loggedUserData);
-        console.log('Header Debug - Parsed loggedUser:', parsed);
-        console.log('Header Debug - Parsed loggedUser type:', parsed.type || parsed.user?.type || parsed.cmpData?.type);
-      }
-    } catch (e) {
-      console.log('Header Debug - Error parsing loggedUser:', e);
-    }
-    
-    try {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const parsed = JSON.parse(userData);
-        console.log('Header Debug - Parsed user:', parsed);
-        console.log('Header Debug - Parsed user type:', parsed.type);
-      }
-    } catch (e) {
-      console.log('Header Debug - Error parsing user:', e);
-    }
-    
-    console.log('=== HEADER DEBUG END ===');
-  }, [globalState, user, userType, isHrUser, effectiveUser]);
 
   const handleLogout = async () => {
     try {
@@ -142,7 +101,6 @@ export default function Header() {
         await logOut(accessToken);
       }
     } catch (error) {
-      console.error('Logout API error:', error);
       // Continue with logout even if API call fails
     } finally {
       // Clear all stored authentication data

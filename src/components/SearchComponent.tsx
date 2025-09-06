@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation";
 import { Input } from "./ui/input";
 import PopularSearches from "./PopularSearches";
+import { getPopularSearchKeywords } from "../services/popularSearch.service";
 
 interface SearchComponentProps {
   fullWidth?: boolean;
@@ -53,6 +54,8 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
   const [selectedExperience, setSelectedExperience] = useState("");
   const [locationInput, setLocationInput] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [popularSearches, setPopularSearches] = useState<Array<{ label: string; value: number }>>([]);
+  const [loadingPopular, setLoadingPopular] = useState(true);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const router = useRouter();
 
@@ -77,7 +80,6 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
         };
 
         recognition.onerror = (event) => {
-          console.error("Speech recognition error:", event.error);
           setIsListening(false);
         };
 
@@ -86,8 +88,6 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
         };
 
         recognitionRef.current = recognition;
-      } else {
-        console.error("Sorry, your browser does not support the Web Speech API.");
       }
     }
   }, []);
@@ -95,6 +95,48 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
   useEffect(() => {
     setupSpeechRecognition();
   }, [setupSpeechRecognition]);
+
+  // Fetch popular search keywords from actual job data
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchPopularKeywords = async () => {
+      try {
+        const keywords = await getPopularSearchKeywords(6); // Get top 6 keywords
+        
+        if (isMounted) {
+          setPopularSearches(keywords);
+          setLoadingPopular(false);
+        }
+      } catch (error: any) {
+        if (isMounted) {
+          // Fallback to occupation data if available
+          const fallbackData = data.slice(0, 6);
+          if (fallbackData.length > 0) {
+            setPopularSearches(fallbackData);
+          } else {
+            // Ultimate fallback with common job terms (limited to 6)
+            const ultimateFallback = [
+              { label: "Construction", value: 1 },
+              { label: "Engineering", value: 2 },
+              { label: "Healthcare", value: 3 },
+              { label: "Hospitality", value: 4 },
+              { label: "IT Support", value: 5 },
+              { label: "Manufacturing", value: 6 }
+            ];
+            setPopularSearches(ultimateFallback);
+          }
+          setLoadingPopular(false);
+        }
+      }
+    };
+    
+    fetchPopularKeywords();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [data]);
 
   // Memoize search navigation function
   const handleSearchNavigate = useCallback(() => {
@@ -135,8 +177,61 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
 
   // Memoize search button click handler for popular searches
   const handlePopularSearchClick = useCallback((item: { label: string; value: number }) => {
-    setSearchKey(item.label);
-  }, []);
+    
+    try {
+      // Update the search input for visual feedback
+      setSearchKey(item.label);
+      
+      // Format the search key for URL compatibility
+      const formattedSearchKey = item.label
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
+        .replace(/\s+/g, "-") // Replace spaces with hyphens
+        .toLowerCase(); // Convert to lowercase for consistency
+      
+      const searchUrl = `/jobs/${formattedSearchKey}`;
+      
+      // Track the search for analytics
+      if (typeof window !== 'undefined') {
+        try {
+          const searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+          searchHistory.push({
+            keyword: item.label,
+            source: 'popular_search',
+            timestamp: new Date().toISOString()
+          });
+          localStorage.setItem('searchHistory', JSON.stringify(searchHistory.slice(-50))); // Keep last 50
+        } catch (storageError) {
+          // Silent fail for localStorage
+        }
+      }
+      
+      // Show a loading toast while navigating
+      if (typeof window !== 'undefined') {
+        // Create a simple toast notification if available
+        const event = new CustomEvent('search-navigation', {
+          detail: { keyword: item.label, url: searchUrl }
+        });
+        window.dispatchEvent(event);
+      }
+      
+      // Navigate to the search results
+      router.push(searchUrl);
+      
+    } catch (error) {
+      // Show error notification if possible
+      if (typeof window !== 'undefined') {
+        const errorEvent = new CustomEvent('search-error', {
+          detail: { keyword: item.label, error: error.message }
+        });
+        window.dispatchEvent(errorEvent);
+      }
+      
+      // Fallback to a simple search URL
+      const fallbackUrl = `/jobs?search=${encodeURIComponent(item.label)}`;
+      router.push(fallbackUrl);
+    }
+  }, [router]);
 
   // Memoize the desktop search bar - Compact and Rounded
   const desktopSearchBar = useMemo(() => (
@@ -322,13 +417,42 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
   ), [searchKey, selectedExperience, locationInput, handleKeyPress, handleSearchNavigate, handleMicClick, isListening]);
 
   // Memoize the popular searches section
-  const popularSearchesSection = useMemo(() => (
-    <PopularSearches 
-      data={data && data.length > 0 ? data.slice(0, 6) : undefined}
-      variant="default"
-      onSearchClick={handlePopularSearchClick}
-    />
-  ), [data, handlePopularSearchClick]);
+  const popularSearchesSection = useMemo(() => {
+    // Don't show popular searches while loading
+    if (loadingPopular) {
+      return (
+        <div className="mt-8 text-center">
+          <div className="text-sm text-gray-500 mb-4">Loading popular searches...</div>
+          <div className="flex justify-center gap-2">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="h-8 w-20 bg-gray-200 rounded-full animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Show popular searches from job data
+    if (popularSearches.length > 0) {
+      return (
+        <PopularSearches 
+          data={popularSearches}
+          variant="hero"
+          maxItems={6}
+          onSearchClick={handlePopularSearchClick}
+          className="mt-6"
+        />
+      );
+    }
+    return (
+      <div className="mt-8 text-center">
+        <p className="text-sm text-gray-500">No popular searches available</p>
+      </div>
+    );
+    
+    // No popular searches available
+    return null;
+  }, [popularSearches, loadingPopular, handlePopularSearchClick]);
 
   // Memoize the voice search status
   const voiceSearchStatus = useMemo(() => {

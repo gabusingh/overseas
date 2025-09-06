@@ -138,7 +138,6 @@ export default function EmployerSignupPage() {
     setIsLoading(true);
     try {
       // For new HRA registrations, use the signup OTP endpoint first
-      console.log('Sending OTP for new HRA registration...');
       const res = await fetch("/api/auth/send-signup-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -158,7 +157,6 @@ export default function EmployerSignupPage() {
         const isAlreadyRegistered = /already\s*registered|exists?/i.test(serverMessage);
 
         if (isAlreadyRegistered) {
-          console.log('Number appears registered; trying login OTP as fallback...');
           try {
             const response = await loginUsingOtp({ empPhone: formData.cmpOfficialMob });
             if (response?.data?.success || response?.data?.status === 'success') {
@@ -176,7 +174,6 @@ export default function EmployerSignupPage() {
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to send OTP. Please try again.";
-      console.error('OTP send error:', e);
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -283,8 +280,6 @@ export default function EmployerSignupPage() {
         toast.error(response?.error || response?.message || "Registration failed");
       }
     } catch (error: unknown) {
-      console.error('Registration error:', error);
-      
       // Handle specific error cases
       const axiosStatus = (error as any)?.response?.status;
       if (axiosStatus === 422) {

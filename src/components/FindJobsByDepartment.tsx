@@ -45,9 +45,7 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
     try {
       setLoading(true);
       const response = await getOccupations();
-      
 
-      
       // Handle different response structures - try all possible paths
       let occupationData = [];
       
@@ -61,9 +59,7 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
       } else if (Array.isArray(response)) {
         occupationData = response;
       }
-      
-    
-      
+
       if (occupationData && occupationData.length > 0) {
         const processedOccupations = occupationData.map((item: any, index: number) => {
           return {
@@ -75,17 +71,14 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
           };
         });
 
-
         setOccupations(processedOccupations);
         
         // Fetch real job counts for top departments
         fetchJobCountsForDepartments(processedOccupations.slice(0, 6));
       } else {
-        console.error('No occupation data found in response. Full response:', response);
         setOccupations([]); // Set empty array - no mock data
       }
     } catch (error) {
-      console.error("Error fetching occupations:", error);
       setOccupations([]); // Set empty array on error
     } finally {
       setLoading(false);
@@ -116,8 +109,7 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
       });
       setJobCounts(countsMap);
     } catch (error) {
-      console.error("Error fetching job counts:", error);
-    }
+      }
   };
 
   const getIconUrl = (occupation: Occupation): string => {

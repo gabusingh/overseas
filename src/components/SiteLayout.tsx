@@ -17,7 +17,7 @@ function SiteLayout({ children, skipHraDataFetch = false }: SiteLayoutProps) {
         <main className="flex-1 pt-16 pb-12">
           {children}
         </main>
-        <Footer />
+        <Footer skipDataFetch={skipHraDataFetch} />
       </div>
     </HraDataProvider>
   );

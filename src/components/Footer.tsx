@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -8,14 +8,17 @@ import { useGlobalState } from "../contexts/GlobalProvider";
 import { toast } from "sonner";
 
 interface FooterProps {
-  skipDataFetch?: boolean; // Keep for backward compatibility
+  skipDataFetch?: boolean; 
 }
 
-export default function Footer({ skipDataFetch = false }: FooterProps) {
+const Footer = React.memo(function Footer({ skipDataFetch = false }: FooterProps) {
   const router = useRouter();
+  // Only use GlobalState when we need authentication checks (for restricted buttons)
+  // This avoids unnecessary API calls on pages that don't need user state
   const { globalState } = useGlobalState();
 
-  const quickLinks = [
+  // Memoize static data to prevent re-creation on every render
+  const quickLinks = useMemo(() => [
     {
       name: "Home",
       link: "/",
@@ -48,9 +51,9 @@ export default function Footer({ skipDataFetch = false }: FooterProps) {
       name: "Pricing",
       link: "/pricing"
     }
-  ];
+  ], []);
 
-  const socialLinks = [
+  const socialLinks = useMemo(() => [
     {
       link: "https://www.linkedin.com/company/findoverseasjobs?originalSubdomain=in",
       icon: "fa fa-linkedin",
@@ -71,10 +74,10 @@ export default function Footer({ skipDataFetch = false }: FooterProps) {
       link: "https://www.instagram.com/overseas.aijobs/?igsh=MTgxdHhkcHdsdWd5YQ%3D%3D",
       icon: "fa fa-instagram",
     },
-  ];
+  ], []);
 
-  // Access control handler for restricted links
-  const handleRestrictedAccess = (path: string) => {
+  // Access control handler for restricted links (memoized to prevent recreation)
+  const handleRestrictedAccess = useCallback((path: string) => {
     // Check if user is logged in
     if (!globalState.user) {
       // User not logged in - redirect to login
@@ -91,10 +94,14 @@ export default function Footer({ skipDataFetch = false }: FooterProps) {
     
     // User is logged in and is HR - navigate normally
     router.push(path);
-  };
+  }, [globalState.user, router]);
 
-  // No data fetching needed since Footer doesn't display occupations, countries, or skills
-  // This eliminates unnecessary API calls for pages that don't need this data
+  // PERFORMANCE OPTIMIZATION:
+  // - Footer is wrapped with React.memo to prevent unnecessary re-renders
+  // - Static data (links, social links) is memoized with useMemo
+  // - Handler functions are memoized with useCallback
+  // - No additional API calls are made by Footer itself
+  // - Uses existing globalState from provider (no new subscriptions)
 
   return (
     <footer className="bg-white border-t border-gray-200 text-gray-700 text-sm">
@@ -215,5 +222,7 @@ export default function Footer({ skipDataFetch = false }: FooterProps) {
       </div>
     </footer>
   );
-}
+});
+
+export default Footer;
 

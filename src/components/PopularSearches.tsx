@@ -23,25 +23,15 @@ const PopularSearches = React.memo(({
   className = ""
 }: PopularSearchesProps) => {
   
-  // Use provided data or fallback data
+  // Use only provided data - no fallback data
   const popularSearches = useMemo(() => {
     // If data is provided and not empty, use it
     if (data && data.length > 0) {
       return data.slice(0, maxItems);
     }
-
-    // Fallback data when no data is provided
-    const fallbackData: PopularSearchItem[] = [
-      { label: "Helper", value: 1, img: "/images/institute.png" },
-      { label: "Plumber", value: 2, img: "/images/institute.png" },
-      { label: "Electrician", value: 3, img: "/images/institute.png" },
-      { label: "Painter", value: 4, img: "/images/institute.png" },
-      { label: "Steel Fixer", value: 5, img: "/images/institute.png" },
-      { label: "Mason", value: 6, img: "/images/institute.png" },
-      { label: "Carpenter", value: 7, img: "/images/institute.png" }
-    ];
-
-    return fallbackData.slice(0, maxItems);
+    
+    // Return empty array if no data - don't show anything
+    return [];
   }, [data, maxItems]);
 
   // Memoize click handler
@@ -51,33 +41,31 @@ const PopularSearches = React.memo(({
     }
   }, [onSearchClick]);
 
-
-
-  // Memoize variant-specific styling
+  // Memoize variant-specific styling - Updated to match your design pattern
   const variantStyles = useMemo(() => {
     switch (variant) {
       case 'hero':
         return {
-          container: "mt-8 text-center",
-          title: "text-blue-100 mb-4",
-          button: "px-4 py-2 bg-white/20 text-white rounded-full text-sm hover:bg-white/30 transition-colors backdrop-blur-sm font-medium"
+          container: "mt-6 text-center",
+          title: "text-gray-700 mb-3 text-sm font-medium",
+          button: "px-4 py-2 bg-white/90 text-gray-800 rounded-full text-sm hover:bg-white hover:text-blue-600 transition-all duration-200 backdrop-blur-sm font-medium border border-white/50 hover:border-blue-200 shadow-lg hover:shadow-xl transform hover:scale-105"
         };
       case 'compact':
         return {
           container: "mt-4",
           title: "text-sm font-medium text-gray-600 mb-2",
-          button: "px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+          button: "px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 border border-blue-200 font-medium"
         };
       default:
         return {
-          container: "mt-8",
-          title: "text-lg font-semibold text-gray-800 mb-2",
-          button: "px-3 py-2 bg-white/95 backdrop-blur-sm text-gray-700 rounded-full text-sm hover:bg-white hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 hover:text-blue-700 font-medium"
+          container: "mt-6",
+          title: "text-lg font-semibold text-gray-800 mb-3",
+          button: "px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full text-sm transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg font-medium"
         };
     }
   }, [variant]);
 
-  // Memoize title text
+  // Memoize title text - Updated to be more concise
   const titleText = useMemo(() => {
     switch (variant) {
       case 'hero':
@@ -85,7 +73,7 @@ const PopularSearches = React.memo(({
       case 'compact':
         return "Popular:";
       default:
-        return "Popular searches";
+        return "Popular job searches";
     }
   }, [variant]);
 
@@ -101,6 +89,11 @@ const PopularSearches = React.memo(({
     }
   }, [variant]);
 
+  // Don't render anything if no popular searches available
+  if (!popularSearches || popularSearches.length === 0) {
+    return null;
+  }
+
   return (
     <div className={`${variantStyles.container} ${className}`}>
       <div className="text-center mb-4">
@@ -109,8 +102,8 @@ const PopularSearches = React.memo(({
           <p className="text-gray-600 text-sm">{subtitleText}</p>
         )}
       </div>
-      <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
-        {popularSearches.map((item, index) => (
+      <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
+        {popularSearches.slice(0, 6).map((item, index) => (
           <button
             key={`${item.value}-${index}`}
             className={variantStyles.button}

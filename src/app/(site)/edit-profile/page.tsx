@@ -49,7 +49,6 @@ export default function EditProfilePage() {
       return;
     }
     
-    console.log('EditProfile: Loading profile data...');
     loadProfileData(token);
   }, [router]);
 
@@ -171,12 +170,10 @@ export default function EditProfilePage() {
           setProfileData(initialProfileData);
         }
       } catch (empDataError) {
-        console.warn("Could not load complete profile data, using localStorage data:", empDataError);
         setProfileData(initialProfileData);
       }
       
     } catch (error) {
-      console.error("Error loading profile data:", error);
       toast.error("Failed to load profile data");
     } finally {
       setLoading(false);
@@ -285,7 +282,6 @@ export default function EditProfilePage() {
         formData.append("profile_image", profileImage);
       }
 
-      console.log('Saving profile data:', Object.fromEntries(formData));
       const response = await editProfile(formData, token);
       
       if (response) {
@@ -313,15 +309,12 @@ export default function EditProfilePage() {
         localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
         localStorage.setItem("user", JSON.stringify(updatedUser));
         
-        console.log('Profile data saved to localStorage:', updatedUser);
-        
         // Add a small delay to ensure localStorage is updated before navigation
         setTimeout(() => {
           router.push("/my-profile");
         }, 100);
       }
     } catch (error: any) {
-      console.error("Error updating profile:", error);
       toast.error(error.response?.data?.message || error.message || "Failed to update profile");
     } finally {
       setSaving(false);

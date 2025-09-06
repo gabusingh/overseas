@@ -9,6 +9,8 @@ import Link from "next/link";
 import { Filter, Search, TrendingUp, Globe, Briefcase, MapPin, DollarSign, Building2, Users, ExternalLink, Heart, Clock, Calendar, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { searchJobsByKey, getUserAwareJobList } from "../../../../services/job.service";
 import JobFilter from "../../../../components/JobFilter";
+import PopularSearches from "../../../../components/PopularSearches";
+import { extractOccupationsFromJobs } from "../../../../utils/popularKeywords";
 import { toast } from "sonner";
 
 // Interface for job data
@@ -67,6 +69,7 @@ export default function SearchResultsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [paginationType, setPaginationType] = useState<'pagination' | 'loadMore'>('loadMore');
+  const [popularOccupations, setPopularOccupations] = useState<Array<{label: string, value: number, img?: string}>>([]);
   
   const [payload, setPayload] = useState({
     jobOccupation: [] as number[],
@@ -91,10 +94,13 @@ export default function SearchResultsPage() {
         setLoadingMore(true);
       }
 
+      // Decode and clean the search key for better API compatibility
+      const decodedSearchKey = decodeURIComponent(searchKey).replace(/-/g, ' ');
+      
       const formData = new FormData();
-      formData.append('searchKey', searchKey);
+      formData.append('searchKey', decodedSearchKey);
       formData.append('page', page.toString());
-      formData.append('per_page', '10');
+      formData.append('per_page', '20'); // Increase results per page
 
       // Add filter payload
       if (payload.jobOccupation.length > 0) {
@@ -124,7 +130,6 @@ export default function SearchResultsPage() {
       try {
         response = await searchJobsByKey(formData);
       } catch (searchError) {
-        console.warn('Search API failed, falling back to user-aware job list:', searchError);
         response = await getUserAwareJobList(formData);
       }
       
@@ -144,6 +149,12 @@ export default function SearchResultsPage() {
         setCurrentPage(response.currentPage || page);
         setHasMore(page < totalPagesCount);
         setError(null);
+        
+        // Extract popular occupations from search results
+        if (newJobs.length > 0 && !append) {
+          const occupations = extractOccupationsFromJobs(newJobs, 6);
+          setPopularOccupations(occupations);
+        }
       } else {
         if (append) {
           setHasMore(false);
@@ -155,7 +166,6 @@ export default function SearchResultsPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching jobs:', error);
       setError('Failed to load jobs. Please try again.');
       if (append) {
         setHasMore(false);
@@ -210,7 +220,9 @@ export default function SearchResultsPage() {
   // Fetch initial data
   useEffect(() => {
     if (searchKey) {
-      setLocalSearchKey(searchKey);
+      // Decode the search key for display
+      const decodedKey = decodeURIComponent(searchKey).replace(/-/g, ' ');
+      setLocalSearchKey(decodedKey);
       fetchJobs(1, false);
     }
   }, [searchKey, fetchJobs]);
@@ -374,6 +386,18 @@ export default function SearchResultsPage() {
               <span>Latest positions</span>
             </div>
           </div>
+          
+          {/* Popular Searches from current results */}
+          {popularOccupations.length > 0 && (
+            <div className="mt-8">
+              <PopularSearches 
+                data={popularOccupations}
+                variant="compact"
+                maxItems={6}
+                className="mb-0"
+              />
+            </div>
+          )}
         </div>
 
         {/* Main Content Layout */}

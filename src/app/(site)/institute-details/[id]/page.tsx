@@ -25,9 +25,17 @@ import {
   GraduationCap,
   BookOpen,
   Shield,
-  Clock
+  Clock,
+  DollarSign,
+  User,
+  FileText,
+  PlayCircle,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
+import { getAllCourses } from "../../../../services/course.service";
+import { useGlobalState } from "../../../../contexts/GlobalProvider";
+import { withCache, cacheService } from "../../../../services/cache.service";
 
 interface InstituteDetail {
   id: number;
@@ -44,15 +52,47 @@ interface InstituteDetail {
   updated_at: string;
 }
 
+interface Course {
+  id: number;
+  course_name: string;
+  submission_date: string;
+  course_duration: string;
+  total_seats: string;
+  course_fee: string;
+  assessment_type: string;
+  course_type: string;
+  eligibility: string;
+  created_at: string;
+  course_image: string;
+  institute_details: {
+    institute_id: string;
+    email: string;
+    phone: string;
+    instituteName: string;
+    insRegNo: string;
+    affilatedBy: string;
+    insAddress: string;
+    insWebLink: string;
+    instituteID: string;
+    insSince: string;
+    profileImage: string;
+    created_at: string | null;
+  };
+}
+
 export default function InstituteDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const instituteId = params.id as string;
+  const { globalState } = useGlobalState();
   
   const [loading, setLoading] = useState(true);
   const [institute, setInstitute] = useState<InstituteDetail | null>(null);
   const [selectedTab, setSelectedTab] = useState<'overview' | 'contact' | 'courses'>('overview');
   const [showContactModal, setShowContactModal] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [dataCache, setDataCache] = useState<{[key: string]: any}>({});
 
   useEffect(() => {
     if (instituteId) {
@@ -60,30 +100,43 @@ export default function InstituteDetailsPage() {
     }
   }, [instituteId]);
 
+  useEffect(() => {
+    if (selectedTab === 'courses' && !courses.length) {
+      fetchCourses();
+    }
+  }, [selectedTab, institute]);
+
   const fetchInstituteDetails = async () => {
     setLoading(true);
     try {
       console.log('🔄 Fetching institute details for ID:', instituteId);
       
-      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-      
-      const res = await fetch('https://backend.overseas.ai/api/list-training-institute', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // Use cached data for institutes
+      const cachedData = await withCache(
+        `all_institutes`,
+        async () => {
+          const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+          
+          const res = await fetch('https://backend.overseas.ai/api/list-training-institute', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+          
+          if (!res.ok) {
+            throw new Error(`Failed to fetch institute details: ${res.status}`);
+          }
+          
+          const data = await res.json();
+          console.log('📊 Training Institutes API Response:', data);
+          return data;
         },
-        cache: 'no-store',
-      });
+        15 * 60 * 1000 // 15 minutes cache
+      );
       
-      if (!res.ok) {
-        throw new Error(`Failed to fetch institute details: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      console.log('📊 Training Institutes API Response:', data);
-      
-      const institutes = data?.data || [];
+      const institutes = cachedData?.data || [];
       const foundInstitute = institutes.find((inst: any) => inst.id.toString() === instituteId);
       
       if (!foundInstitute) {
@@ -99,6 +152,32 @@ export default function InstituteDetailsPage() {
       toast.error(error.message || 'Failed to load institute details. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCourses = async () => {
+    if (courses.length > 0) {
+      console.log('📦 Using cached courses data');
+      return;
+    }
+    
+    setLoadingCourses(true);
+    try {
+      const response = await getAllCourses();
+      if (response?.data) {
+        // Filter courses for this institute
+        const instituteCourses = response.data.filter((course: Course) => 
+          course.institute_details.institute_id === instituteId ||
+          course.institute_details.instituteName.toLowerCase().includes(institute?.instituteName.toLowerCase() || '')
+        );
+        setCourses(instituteCourses);
+        console.log('✅ Courses loaded and cached:', instituteCourses.length);
+      }
+    } catch (error: any) {
+      console.error('❌ Error fetching courses:', error);
+      toast.error('Failed to load courses. Please try again.');
+    } finally {
+      setLoadingCourses(false);
     }
   };
 
@@ -314,7 +393,7 @@ export default function InstituteDetailsPage() {
                 </div>
                 <div className="pt-4 border-t border-gray-200">
                   <Button 
-                    className="w-full bgBlue hover:bg-blue-700 h-10" 
+                    className="w-full bgBlue hover:bg-blue-700 text-white h-10" 
                     onClick={() => setSelectedTab('courses')}
                   >
                     <BookOpen className="w-4 h-4 mr-2" />
@@ -558,41 +637,97 @@ export default function InstituteDetailsPage() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-semibold text-gray-900">Available Courses</h3>
                   <Badge variant="secondary">
-                    {institute.course_count || '0'} courses available
+                    {courses.length} courses available
                   </Badge>
                 </div>
                 
-                {institute.course_count && parseInt(institute.course_count.toString()) > 0 ? (
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="text-center py-8">
-                        <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          {institute.course_count} Courses Available
-                        </h3>
-                        <p className="text-gray-600 mb-6">
-                          Contact the institute directly for detailed course information and enrollment.
-                        </p>
-                        <Button 
-                          onClick={() => setShowContactModal(true)}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          <Phone className="w-4 h-4 mr-2" />
-                          Contact for Course Details
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {loadingCourses ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                    <span className="ml-3 text-gray-600">Loading courses...</span>
+                  </div>
+                ) : courses.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {courses.map((course) => (
+                      <Card key={course.id} className="group hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/20 overflow-hidden">
+                        {/* Compact Header */}
+                        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 text-white relative">
+                          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10"></div>
+                          <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-1">
+                              <Badge className="bg-white/20 text-white border-0 text-xs px-2 py-1">
+                                {course.course_type}
+                              </Badge>
+                              <div className="w-8 h-8 bg-white/15 rounded-full flex items-center justify-center">
+                                <BookOpen className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
+                            <h4 className="font-semibold text-base leading-tight line-clamp-2">{course.course_name}</h4>
+                          </div>
+                        </div>
+                        
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* Compact Info Grid */}
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="flex items-center space-x-1 text-gray-600">
+                                <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <Clock className="w-2.5 h-2.5 text-blue-600" />
+                                </div>
+                                <span className="truncate">{course.course_duration}</span>
+                              </div>
+                              <div className="flex items-center space-x-1 text-gray-600">
+                                <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <Users className="w-2.5 h-2.5 text-green-600" />
+                                </div>
+                                <span className="truncate">{course.total_seats} seats</span>
+                              </div>
+                              <div className="flex items-center space-x-1 text-gray-600">
+                                <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <span className="text-[8px] font-semibold text-emerald-600">Fee</span>
+                                </div>
+                                <span className="truncate">₹{course.course_fee}</span>
+                              </div>
+                              <div className="flex items-center space-x-1 text-gray-600">
+                                <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <FileText className="w-2.5 h-2.5 text-purple-600" />
+                                </div>
+                                <span className="truncate">{course.assessment_type}</span>
+                              </div>
+                            </div>
+                            
+                            {course.eligibility && (
+                              <div className="p-2 bg-gray-50 rounded text-xs">
+                                <p className="text-gray-500 font-medium mb-1">Eligibility:</p>
+                                <p className="text-gray-700 line-clamp-2">{course.eligibility}</p>
+                              </div>
+                            )}
+                            
+                            {/* Action Button */}
+                            <Button 
+                              asChild
+                              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-xs text-white h-8"
+                            >
+                              <Link href={`/course-details/${course.id}`} className="flex items-center justify-center space-x-1">
+                                <PlayCircle className="w-3 h-3" />
+                                <span>View Details</span>
+                              </Link>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 ) : (
                   <Card>
                     <CardContent className="p-6">
                       <div className="text-center py-8">
                         <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          Course Information Not Available
+                          No Courses Available
                         </h3>
                         <p className="text-gray-600 mb-6">
-                          Please contact the institute directly to learn about their available courses and programs.
+                          This institute currently has no courses listed. Please contact them directly for more information.
                         </p>
                         <Button 
                           onClick={() => setShowContactModal(true)}

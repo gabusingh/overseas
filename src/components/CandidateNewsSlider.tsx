@@ -17,8 +17,7 @@ function CandidateNewsSlider() {
       const response = await getSuccessNotification();
       setNotifications(response?.notifications || []);
     } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
+      }
   };
 
   useEffect(() => {

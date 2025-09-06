@@ -108,8 +108,6 @@ export default function JobsLastWeekPage() {
       formData.append('page', page.toString());
       
       const response = await getThisWeekJob(formData);
-      console.log('Last Week Jobs Response:', response);
-      
       if (response?.jobs) {
         const newJobs = response.jobs as LastWeekJob[];
         const totalPagesCount = response.lastPage || 1;
@@ -134,7 +132,6 @@ export default function JobsLastWeekPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching last week jobs:', error);
       toast.error('Failed to load jobs. Please try again.');
       if (append) {
         setHasMore(false);

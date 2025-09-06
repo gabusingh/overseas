@@ -61,8 +61,7 @@ const TopCountriesHiring: React.FC<TopCountriesHiringProps> = ({ className = "",
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch countries data';
       setError(errorMessage);
       toast.error(errorMessage);
-      console.error('Error fetching countries:', err);
-    } finally {
+      } finally {
       setLoading(false);
     }
   }, [limit]);
@@ -104,7 +103,6 @@ const TopCountriesHiring: React.FC<TopCountriesHiringProps> = ({ className = "",
       router.push(`/jobs?country=${encodeURIComponent(country.name)}`);
       toast.success(`Exploring jobs in ${country.name}`);
     } catch (error) {
-      console.error('Navigation error:', error);
       toast.error('Unable to navigate to jobs page');
     }
   }, [router]);
