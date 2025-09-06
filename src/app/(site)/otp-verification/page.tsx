@@ -42,6 +42,7 @@ function OtpForm() {
         router.push("/my-profile");
       }
     } catch (error) {
+      console.error("OTP verification error:", error);
       toast.error("Invalid OTP. Please try again.");
     } finally {
       setLoading(false);

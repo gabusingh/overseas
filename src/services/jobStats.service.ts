@@ -38,6 +38,8 @@ export const getJobStatsByCategory = async (categoryId: number): Promise<JobStat
       growth: jobCount > 100 ? 'High' : jobCount > 50 ? 'Moderate' : 'Low'
     };
   } catch (error) {
+    console.warn(`Failed to fetch job stats for category ${categoryId}:`, error);
+    
     // Fallback to estimated data
     return {
       categoryId,
@@ -58,6 +60,7 @@ export const getBatchJobStatsByCategories = async (categoryIds: number[]): Promi
     const results = await Promise.all(promises);
     return results;
   } catch (error) {
+    console.error('Error fetching batch job stats:', error);
     return [];
   }
 };
@@ -98,6 +101,7 @@ export const getDetailedCategoryStats = async (categories: any[]): Promise<Categ
     
     return await Promise.all(statsPromises);
   } catch (error) {
+    console.error('Error fetching detailed category stats:', error);
     return [];
   }
 };
@@ -187,6 +191,7 @@ export const getTrendingCategories = async (categories: any[], limit: number = 6
       })
       .slice(0, limit);
   } catch (error) {
+    console.error('Error getting trending categories:', error);
     return [];
   }
 };
@@ -207,6 +212,7 @@ export const getTotalJobStats = async () => {
       newJobsToday: 150
     };
   } catch (error) {
+    console.error('Error fetching total job stats:', error);
     return {
       totalJobs: 0,
       totalCategories: 0,

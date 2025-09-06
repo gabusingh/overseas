@@ -11,6 +11,7 @@ export const languageTrainingData = async (id: string | number, accessToken: str
     });
     return response;
   } catch (error) {
+    console.error('Error fetching language training data:', error);
     throw error;
   }
 };

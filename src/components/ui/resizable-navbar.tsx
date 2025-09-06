@@ -10,6 +10,7 @@ import {
 
 import React, { useRef, useState } from "react";
 
+
 interface NavbarProps {
   children: React.ReactNode;
   className?: string;

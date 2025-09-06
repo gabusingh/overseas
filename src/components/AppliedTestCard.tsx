@@ -36,6 +36,7 @@ function AppliedTestCard({ v, getTestTradeListFunc }: AppliedTestCardProps) {
           v?.id,
           globalState?.user?.user?.id
         );
+        console.log(response);
         if (response?.message === "Application submitted successfully!") {
           toast.success("Application submitted successfully!");
           setTimeout(() => {

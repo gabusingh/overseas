@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
+    console.error('Registration API error:', error);
+    
     // Handle specific error responses from the external API
     if (error?.response?.data?.error) {
       const statusCode = error?.response?.status || 400;

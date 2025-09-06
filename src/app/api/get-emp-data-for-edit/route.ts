@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       
       // If backend returns 404 or other error, fall back to empty data
       if (backendResponse.status === 404) {
+        console.log('Backend endpoint /get-emp-data-for-edit not found, returning empty profile data (this is expected for new users)');
         return NextResponse.json({
           empName: '',
           empDob: '',
@@ -70,6 +71,8 @@ export async function GET(request: NextRequest) {
 
     } catch (fetchError: any) {
       // Network error or timeout - try fallback to get-emp-data endpoint
+      console.log('Primary endpoint /get-emp-data-for-edit unavailable, trying fallback to /get-emp-data:', fetchError.message);
+      
       try {
         // Try fallback endpoint
         const fallbackUrl = 'https://backend.overseas.ai/api/get-emp-data';
@@ -85,12 +88,15 @@ export async function GET(request: NextRequest) {
         
         if (fallbackResponse.ok) {
           const fallbackData = await fallbackResponse.json();
+          console.log('Successfully retrieved data from fallback endpoint');
           return NextResponse.json(fallbackData);
         }
       } catch (fallbackError: any) {
-        }
+        console.log('Fallback endpoint also failed:', fallbackError.message);
+      }
       
       // If both endpoints fail, return empty data to allow form to work
+      console.log('Both endpoints failed, returning empty profile data (this allows new users to fill the form)');
       return NextResponse.json({
         empName: '',
         empDob: '',
@@ -117,6 +123,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error: any) {
+    console.error('API route error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

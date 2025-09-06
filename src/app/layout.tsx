@@ -70,7 +70,8 @@ export default function RootLayout({
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                   for(let registration of registrations) {
                     registration.unregister();
-                    }
+                    console.log('SW unregistered for debugging');
+                  }
                 });
               }
             `,
@@ -84,9 +85,11 @@ export default function RootLayout({
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js')
                     .then(function(registration) {
-                      })
+                      console.log('SW registered: ', registration);
+                    })
                     .catch(function(registrationError) {
-                      });
+                      console.log('SW registration failed: ', registrationError);
+                    });
                 });
               }
             `,

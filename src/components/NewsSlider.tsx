@@ -27,6 +27,8 @@ function NewsSlider() {
     try {
       setLoading(true);
       const response = await getNewsFeedData();
+      console.log('News feed data:', response?.data);
+      
       // Process the news data and take first 4 items
       const newsData = (response?.data?.newsData || response?.data || []).slice(0, 4).map((item: any) => ({
         id: item.id,
@@ -43,6 +45,7 @@ function NewsSlider() {
       setNews(newsData);
       setError(null);
     } catch (error) {
+      console.error('Error fetching news feed:', error);
       setError('Failed to load news');
       
       // Fallback to mock data if API fails
