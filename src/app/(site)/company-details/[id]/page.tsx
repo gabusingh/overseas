@@ -231,7 +231,7 @@ export default function CompanyDetailsPage() {
               </div>
               <Badge 
                 variant="secondary" 
-                className={`${company.cmpApprovalSA === "1" ? 'bg-blue-500/20 text-white border-green-300' : 'bg-yellow-500/20 text-white border-yellow-300'} h-6`}
+                className={`${company.cmpApprovalSA === "1" ? 'bg-blue-500/20 text-white border-blue-300' : 'bg-yellow-500/20 text-white border-yellow-300'} h-6`}
               >
                 {company.cmpApprovalSA === "1" ? "Approved" : "Pending"}
               </Badge>
@@ -270,7 +270,7 @@ export default function CompanyDetailsPage() {
               </div>
               <div className="space-y-2">
                 <Button 
-                  className="w-full h-9 bg-blue-600 hover:bg-blue-700" 
+                  className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-white" 
                   onClick={() => router.push(`/jobs?company=${company.id}`)}
                 >
                   <Building className="w-4 h-4 mr-2" />
@@ -318,7 +318,7 @@ export default function CompanyDetailsPage() {
               </div>
               <div className="space-y-2">
                 <Button 
-                  className="w-full h-9 bg-blue-600 hover:bg-blue-700" 
+                  className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-white" 
                   onClick={() => setSelectedTab('contact')}
                 >
                   <Mail className="w-4 h-4 mr-2" />
@@ -363,7 +363,7 @@ export default function CompanyDetailsPage() {
                     <span>Licensed</span>
                   </div>
                   <div className="flex items-center p-2 bg-blue-50 rounded text-xs">
-                    <Award className="w-3 h-3 text-green-600 mr-2" />
+                    <Award className="w-3 h-3 text-blue-600 mr-2" />
                     <span>Verified</span>
                   </div>
                 </div>
@@ -436,7 +436,7 @@ export default function CompanyDetailsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {company.cmpWorkingDepartmentNames?.map((dept, index) => (
                     <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <CheckCircle className="w-4 h-4 text-blue-600" />
                       <span className="text-gray-700">{dept}</span>
                     </div>
                   ))}
@@ -471,7 +471,7 @@ export default function CompanyDetailsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 text-green-600" />
+                      <Mail className="w-5 h-5 text-blue-600" />
                       <div>
                         <p className="text-sm text-gray-500">Email</p>
                         <p className="font-medium">{company.cmpEmail}</p>
