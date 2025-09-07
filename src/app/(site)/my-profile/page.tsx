@@ -356,7 +356,7 @@ export default function MyProfilePage() {
                   {dashboardData?.applied_jobs_count || 0}
                 </p>
               </div>
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-green-600 text-sm">📝</span>
               </div>
             </div>
@@ -968,7 +968,7 @@ export default function MyProfilePage() {
                               <Badge 
                                 className={`text-xs px-3 py-1 ${
                                   job.applicationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
-                                  job.applicationStatus === 'approved' || job.applicationStatus === 'accepted' ? 'bg-green-100 text-green-800 border-green-300' :
+                                  job.applicationStatus === 'approved' || job.applicationStatus === 'accepted' ? 'bg-blue-100 text-green-800 border-green-300' :
                                   job.applicationStatus === 'shortlisted' ? 'bg-blue-100 text-blue-800 border-blue-300' :
                                   job.applicationStatus === 'interview' ? 'bg-purple-100 text-purple-800 border-purple-300' :
                                   job.applicationStatus === 'rejected' ? 'bg-red-100 text-red-800 border-red-300' :
@@ -1060,7 +1060,7 @@ export default function MyProfilePage() {
                               )}
                               
                               {(job.applicationStatus === 'approved' || job.applicationStatus === 'accepted') && (
-                                <Button size="sm" variant="outline" className="border-green-300 text-green-700 hover:bg-green-50">
+                                <Button size="sm" variant="outline" className="border-green-300 text-green-700 hover:bg-blue-50">
                                   <span className="mr-1">📄</span>
                                   View Offer
                                 </Button>
@@ -1201,7 +1201,7 @@ export default function MyProfilePage() {
                                 <Button 
                                   size="sm" 
                                   variant="outline" 
-                                  className="border-green-300 text-green-700 hover:bg-green-50"
+                                  className="border-green-300 text-green-700 hover:bg-blue-50"
                                   onClick={() => {
                                     // Navigate to job description page to apply
                                     router.push(`/job-description/${job.id}`);

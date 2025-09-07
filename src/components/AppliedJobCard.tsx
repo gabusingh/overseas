@@ -44,7 +44,7 @@ export default function AppliedJobCard({ job }: AppliedJobCardProps) {
       case "interviewed":
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "selected":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-blue-100 text-green-800 border-green-200";
       case "rejected":
         return "bg-red-100 text-red-800 border-red-200";
       default:
@@ -168,7 +168,7 @@ export default function AppliedJobCard({ job }: AppliedJobCardProps) {
                   variant="outline" 
                   className={`text-xs px-2 py-1 ${
                     job.interviewStatus === 0 ? 'bg-red-50 text-red-700 border-red-200' :
-                    job.interviewStatus === 5 ? 'bg-green-50 text-green-700 border-green-200' :
+                    job.interviewStatus === 5 ? 'bg-blue-50 text-green-700 border-green-200' :
                     'bg-blue-50 text-blue-700 border-blue-200'
                   }`}
                 >
@@ -230,7 +230,7 @@ export default function AppliedJobCard({ job }: AppliedJobCardProps) {
             <>
               <Button 
                 size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <i className="fa fa-download mr-1"></i>
                 Download Offer Letter
@@ -238,7 +238,7 @@ export default function AppliedJobCard({ job }: AppliedJobCardProps) {
               <Button 
                 variant="outline"
                 size="sm"
-                className="border-green-300 text-green-700 hover:bg-green-50"
+                className="border-green-300 text-green-700 hover:bg-blue-50"
               >
                 <i className="fa fa-file-text mr-1"></i>
                 View Contract

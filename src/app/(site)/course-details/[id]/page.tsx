@@ -156,8 +156,8 @@ export default function CourseDetailsPage() {
                     <p className="text-sm font-semibold text-gray-900">{course.course_duration}</p>
                   </div>
 
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-1">
                       <span className="text-[8px] font-bold text-white">Fee</span>
                     </div>
                     <p className="text-xs text-gray-600 mb-1">Course Fee</p>

@@ -231,7 +231,7 @@ export default function CompanyDetailsPage() {
               </div>
               <Badge 
                 variant="secondary" 
-                className={`${company.cmpApprovalSA === "1" ? 'bg-green-500/20 text-white border-green-300' : 'bg-yellow-500/20 text-white border-yellow-300'} h-6`}
+                className={`${company.cmpApprovalSA === "1" ? 'bg-blue-500/20 text-white border-green-300' : 'bg-yellow-500/20 text-white border-yellow-300'} h-6`}
               >
                 {company.cmpApprovalSA === "1" ? "Approved" : "Pending"}
               </Badge>
@@ -362,7 +362,7 @@ export default function CompanyDetailsPage() {
                     <CheckCircle className="w-3 h-3 text-blue-600 mr-2" />
                     <span>Licensed</span>
                   </div>
-                  <div className="flex items-center p-2 bg-green-50 rounded text-xs">
+                  <div className="flex items-center p-2 bg-blue-50 rounded text-xs">
                     <Award className="w-3 h-3 text-green-600 mr-2" />
                     <span>Verified</span>
                   </div>

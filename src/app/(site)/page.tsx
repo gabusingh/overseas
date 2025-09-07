@@ -316,7 +316,7 @@ export default function Home() {
             {successStories.slice(0, 4).map((story, index) => (
               <div key={index} className="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg p-6">
                 <div className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
                     <i className="fa fa-check-circle text-2xl text-green-600"></i>
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-2">Success Story</h3>

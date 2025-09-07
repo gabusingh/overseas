@@ -103,7 +103,7 @@ export default function CourseCard({ v, getCourseListFunc }: CourseCardProps) {
           </div>
           
           {v?.course_fee && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
+            <div className="bg-blue-50 border border-green-200 rounded-lg p-2 text-center">
               <span className="text-green-700 font-semibold text-lg">₹{v.course_fee}</span>
               {v?.total_seats && (
                 <span className="text-gray-500 text-xs ml-2">({v.total_seats} seats)</span>

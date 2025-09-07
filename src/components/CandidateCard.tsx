@@ -206,7 +206,7 @@ export default function CandidateCard({
                   size="sm" 
                   variant="outline" 
                   onClick={handleMarkCandidate}
-                  className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
+                  className="border-green-500 text-green-500 hover:bg-blue-500 hover:text-white"
                 >
                   Mark
                 </Button>

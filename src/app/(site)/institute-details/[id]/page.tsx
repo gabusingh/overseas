@@ -320,7 +320,7 @@ export default function InstituteDetailsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center space-x-2 mb-1">
-                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                     <Calendar className="w-4 h-4 text-white" />
                   </div>
                   <span className="font-semibold text-gray-900 text-sm">Established</span>
@@ -677,7 +677,7 @@ export default function InstituteDetailsPage() {
                                 <span className="truncate">{course.course_duration}</span>
                               </div>
                               <div className="flex items-center space-x-1 text-gray-600">
-                                <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                                   <Users className="w-2.5 h-2.5 text-green-600" />
                                 </div>
                                 <span className="truncate">{course.total_seats} seats</span>

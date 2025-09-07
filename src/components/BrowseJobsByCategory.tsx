@@ -329,7 +329,7 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
                     </span>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       category.growth === 'High' 
-                        ? 'bg-green-100 text-green-700' 
+                        ? 'bg-blue-100 text-green-700' 
                         : 'bg-yellow-100 text-yellow-700'
                     }`}>
                       {category.growth}

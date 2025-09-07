@@ -159,7 +159,7 @@ export default function HraViewJobsPage() {
 
   const getStatusBadge = (status: Job["status"]) => {
     const statusConfig = {
-      active: { bg: "bg-green-100 text-green-800", icon: "fa fa-play" },
+      active: { bg: "bg-blue-100 text-green-800", icon: "fa fa-play" },
       paused: { bg: "bg-yellow-100 text-yellow-800", icon: "fa fa-pause" },
       closed: { bg: "bg-red-100 text-red-800", icon: "fa fa-stop" },
       draft: { bg: "bg-gray-100 text-gray-800", icon: "fa fa-edit" }
@@ -497,7 +497,7 @@ export default function HraViewJobsPage() {
           
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <i className="fa fa-users text-green-600"></i>
               </div>
               <div className="ml-3">

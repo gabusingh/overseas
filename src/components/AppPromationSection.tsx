@@ -165,7 +165,7 @@ function AppPromationSection() {
             
             {/* Download Badge */}
             <motion.div
-              className="absolute bottom-20 right-0 bg-green-500 text-white px-4 py-2 rounded-2xl font-bold shadow-2xl z-20"
+              className="absolute bottom-20 right-0 bg-blue-500 text-white px-4 py-2 rounded-2xl font-bold shadow-2xl z-20"
               animate={{ 
                 y: [0, 10, 0],
                 rotate: [0, -2, 0]

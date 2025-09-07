@@ -190,7 +190,7 @@ export default function InstituteDashboardPage() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{enrollment.enrolledOn}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                enrollment.status === 'Completed' ? 'bg-green-100 text-green-800' : 
+                                enrollment.status === 'Completed' ? 'bg-blue-100 text-green-800' : 
                                 enrollment.status === 'Active' ? 'bg-blue-100 text-blue-800' : 
                                 enrollment.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
                               }`}>
@@ -240,7 +240,7 @@ export default function InstituteDashboardPage() {
                   <div className="mb-4">
                     <small className="text-gray-500 text-sm">Accreditation Status:</small>
                     <div className="flex items-center mt-2">
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold mr-2">Verified</span>
+                      <span className="bg-blue-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold mr-2">Verified</span>
                       <small className="text-green-600 text-sm">All certifications valid</small>
                     </div>
                   </div>
