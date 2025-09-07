@@ -244,12 +244,12 @@ export default function TradeTestCenterPage() {
           </div>
         
           <div className="text-center mt-8">
-            <button className="downloadButton mr-4">
+           {/*  <button className="downloadButton mr-4">
               Find Test Center
             </button>
             <button className="border textBlue border-blue-600 px-6 py-2 rounded-full hover:lightBlueBg transition-colors">
               Book Test Online
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
