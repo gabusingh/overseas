@@ -512,12 +512,12 @@ export default function TradeTestCenterDetailsPage() {
                       
                       {center.email && (
                         <div className="flex items-start space-x-3">
-                          <Mail className="w-5 h-5 text-green-600 mt-0.5" />
+                          <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
                           <div>
                             <div className="font-medium text-gray-900">Email</div>
                             <a 
                               href={`mailto:${center.email}`}
-                              className="text-green-600 hover:underline break-all"
+                              className="text-blue-600 hover:underline break-all"
                             >
                               {center.email}
                             </a>
@@ -527,14 +527,14 @@ export default function TradeTestCenterDetailsPage() {
                       
                       {center.insWebsite && (
                         <div className="flex items-start space-x-3">
-                          <Globe className="w-5 h-5 text-green-600 mt-0.5" />
+                          <Globe className="w-5 h-5 text-blue-600 mt-0.5" />
                           <div>
                             <div className="font-medium text-gray-900">Website</div>
                             <a 
                               href={center.insWebsite}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-green-600 hover:underline flex items-center"
+                              className="text-blue-600 hover:underline flex items-center"
                             >
                               Visit Website
                               <ExternalLink className="w-3 h-3 ml-1" />
@@ -545,7 +545,7 @@ export default function TradeTestCenterDetailsPage() {
                       
                       {center.insAddress && (
                         <div className="flex items-start space-x-3 md:col-span-2">
-                          <MapPin className="w-5 h-5 text-green-600 mt-0.5" />
+                          <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
                           <div>
                             <div className="font-medium text-gray-900">Address</div>
                             <p className="text-gray-600 leading-relaxed">{center.insAddress}</p>
@@ -626,24 +626,24 @@ export default function TradeTestCenterDetailsPage() {
               <CardContent className="space-y-4">
                 {center.phone && (
                   <div className="flex items-center space-x-3">
-                    <Phone className="w-5 h-5 text-green-600" />
-                    <a href={`tel:${center.phone}`} className="text-gray-600 hover:text-green-600">
+                    <Phone className="w-5 h-5 text-blue-600" />
+                    <a href={`tel:${center.phone}`} className="text-gray-600 hover:text-blue-600">
                       {center.phone}
                     </a>
                   </div>
                 )}
                 {center.email && (
                   <div className="flex items-center space-x-3">
-                    <Mail className="w-5 h-5 text-green-600" />
-                    <a href={`mailto:${center.email}`} className="text-gray-600 hover:text-green-600 break-all">
+                    <Mail className="w-5 h-5 text-blue-600" />
+                    <a href={`mailto:${center.email}`} className="text-gray-600 hover:text-blue-600 break-all">
                       {center.email}
                     </a>
                   </div>
                 )}
                 {center.insWebsite && (
                   <div className="flex items-center space-x-3">
-                    <Globe className="w-5 h-5 text-green-600" />
-                    <a href={center.insWebsite} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-green-600 flex items-center">
+                    <Globe className="w-5 h-5 text-blue-600" />
+                    <a href={center.insWebsite} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600 flex items-center">
                       Visit Website
                       <ExternalLink className="w-3 h-3 ml-1" />
                     </a>
@@ -651,7 +651,7 @@ export default function TradeTestCenterDetailsPage() {
                 )}
                 {center.insAddress && (
                   <div className="flex items-start space-x-3">
-                    <MapPin className="w-5 h-5 text-green-600 mt-0.5" />
+                    <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
                     <p className="text-gray-600 text-sm leading-relaxed">{center.insAddress}</p>
                   </div>
                 )}
