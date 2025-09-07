@@ -113,7 +113,7 @@ export default function SelectUserType({ onSelect, showTitle = true }: SelectUse
           Already have an account?{" "}
           <button 
             onClick={() => router.push("/login")}
-            className="text-[#17487f] hover:underline font-medium"
+            className="text-blue-600 hover:underline font-medium"
           >
             Sign In
           </button>

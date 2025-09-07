@@ -393,7 +393,7 @@ export default function InstituteDetailsPage() {
                 </div>
                 <div className="pt-4 border-t border-gray-200">
                   <Button 
-                    className="w-full bgBlue hover:bg-blue-700 text-white h-10" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10" 
                     onClick={() => setSelectedTab('courses')}
                   >
                     <BookOpen className="w-4 h-4 mr-2" />
@@ -408,7 +408,7 @@ export default function InstituteDetailsPage() {
           <Card className="shadow-sm border-0 bg-white">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg font-semibold">
-                <MapPin className="w-5 h-5 mr-3 textBlue" />
+                <MapPin className="w-5 h-5 mr-3 bg-blue-600 text-white" />
                 Contact & Location
               </CardTitle>
             </CardHeader>

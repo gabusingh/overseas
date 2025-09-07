@@ -319,7 +319,7 @@ export default function TradeTestCenterDetailsPage() {
                 </div>
                 <div className="pt-4 border-t border-gray-200">
                   <Button 
-                    className="w-full bgBlue hover:bg-blue-700 text-white h-10" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10" 
                     onClick={() => setSelectedTab('tests')}
                   >
                     <FileText className="w-4 h-4 mr-2" />
