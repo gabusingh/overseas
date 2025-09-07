@@ -698,7 +698,7 @@ export default function ResumeBuilding() {
                         {(Array.isArray(userDetails?.languageKnown) && userDetails?.languageKnown.length > 0) && (
                           <div>
                             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">
+                              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
                                 <i className="fa fa-language text-white text-sm"></i>
                               </div>
                               Languages
@@ -707,7 +707,7 @@ export default function ResumeBuilding() {
                               {userDetails.languageKnown.map((lang, index) => (
                                 <span
                                   key={index}
-                                  className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium"
+                                  className="px-3 py-1 bg-blue-100 text-green-800 rounded-full text-sm font-medium"
                                 >
                                   {lang}
                                 </span>

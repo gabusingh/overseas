@@ -38,7 +38,7 @@ export default function SelectUserType({ onSelect, showTitle = true }: SelectUse
       description: "Post jobs and hire skilled workers",
       icon: Building,
       route: "/employer-signup",
-      color: "bg-green-50 border-green-200 hover:bg-green-100 text-green-800",
+      color: "bg-blue-50 border-green-200 hover:bg-blue-100 text-green-800",
       iconColor: "text-green-600"
     },
     {
@@ -94,7 +94,7 @@ export default function SelectUserType({ onSelect, showTitle = true }: SelectUse
                     userType.type === 'candidate' 
                       ? 'border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-white'
                       : userType.type === 'employer'
-                      ? 'border-green-500 text-green-600 hover:bg-green-600 hover:text-white'
+                      ? 'border-green-500 text-green-600 hover:bg-blue-600 hover:text-white'
                       : userType.type === 'institute'
                       ? 'border-purple-500 text-purple-600 hover:bg-purple-600 hover:text-white'
                       : 'border-orange-500 text-orange-600 hover:bg-orange-600 hover:text-white'

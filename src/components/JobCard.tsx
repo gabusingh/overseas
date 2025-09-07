@@ -181,7 +181,7 @@ export default function JobCard({
       case 'shortlisted':
         return <Badge className="bg-yellow-100 text-yellow-800">Shortlisted</Badge>;
       case 'selected':
-        return <Badge className="bg-green-100 text-green-800">Selected</Badge>;
+        return <Badge className="bg-blue-100 text-green-800">Selected</Badge>;
       case 'rejected':
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       default:

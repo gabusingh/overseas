@@ -123,7 +123,7 @@ export default function DebugHRPage() {
       
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Detection Result</h2>
-        <div className={`p-4 rounded-lg ${isHrUser ? 'bg-green-100' : 'bg-red-100'}`}>
+        <div className={`p-4 rounded-lg ${isHrUser ? 'bg-blue-100' : 'bg-red-100'}`}>
           <p className="text-lg font-semibold">
             Is HR User: <span className={isHrUser ? 'text-green-600' : 'text-red-600'}>{isHrUser ? 'YES' : 'NO'}</span>
           </p>

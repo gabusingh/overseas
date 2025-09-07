@@ -56,7 +56,7 @@ function AppliedTestCard({ v, getTestTradeListFunc }: AppliedTestCardProps) {
     <Card className="mx-3 my-4 shadow-sm">
       <CardContent className="p-4">
         <div className="flex justify-start mb-3">
-          <Badge variant="secondary" className="bg-green-500 text-white">
+          <Badge variant="secondary" className="bg-blue-500 text-white">
             Total Seats: {v?.total_seats}
           </Badge>
         </div>
@@ -110,7 +110,7 @@ function AppliedTestCard({ v, getTestTradeListFunc }: AppliedTestCardProps) {
               Applied
             </Button>
           ) : (
-            <Badge className="bg-green-500 text-white px-4 py-2">
+            <Badge className="bg-blue-500 text-white px-4 py-2">
               Applied
             </Badge>
           )}

@@ -624,7 +624,7 @@ export default function RecommendedCandidatesPage() {
   };
 
   const getMatchScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-600 bg-green-100";
+    if (score >= 90) return "text-green-600 bg-blue-100";
     if (score >= 80) return "text-blue-600 bg-blue-100";
     if (score >= 70) return "text-yellow-600 bg-yellow-100";
     return "text-red-600 bg-red-100";
@@ -632,7 +632,7 @@ export default function RecommendedCandidatesPage() {
 
   const getWorkAuthBadge = (status: string) => {
     const statusConfig = {
-      authorized: { bg: "bg-green-100 text-green-800", icon: "fa-check-circle", text: "Authorized" },
+      authorized: { bg: "bg-blue-100 text-green-800", icon: "fa-check-circle", text: "Authorized" },
       citizen: { bg: "bg-blue-100 text-blue-800", icon: "fa-flag", text: "Citizen" },
       visa_required: { bg: "bg-yellow-100 text-yellow-800", icon: "fa-passport", text: "Visa Required" }
     };
@@ -652,7 +652,7 @@ export default function RecommendedCandidatesPage() {
     const statusConfig = {
       contacted: { bg: "bg-blue-100 text-blue-800", icon: "fa-envelope", text: "Contacted" },
       responded: { bg: "bg-purple-100 text-purple-800", icon: "fa-reply", text: "Responded" },
-      interested: { bg: "bg-green-100 text-green-800", icon: "fa-heart", text: "Interested" },
+      interested: { bg: "bg-blue-100 text-green-800", icon: "fa-heart", text: "Interested" },
       not_interested: { bg: "bg-red-100 text-red-800", icon: "fa-times", text: "Not Interested" }
     };
 
@@ -902,7 +902,7 @@ export default function RecommendedCandidatesPage() {
                 </button>
                 <button
                   onClick={() => router.push(`/bulk-hire?candidates=${selectedCandidates.join(',')}`)}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
                 >
                   <i className="fa fa-users mr-2"></i>
                   Bulk Hire
@@ -1013,7 +1013,7 @@ export default function RecommendedCandidatesPage() {
                         </div>
 
                         {/* Match Reasons */}
-                        <div className="bg-green-50 p-3 rounded-lg mb-3">
+                        <div className="bg-blue-50 p-3 rounded-lg mb-3">
                           <h4 className="text-sm font-medium text-green-800 mb-2">
                             <i className="fa fa-lightbulb mr-1"></i>
                             Why this candidate matches:

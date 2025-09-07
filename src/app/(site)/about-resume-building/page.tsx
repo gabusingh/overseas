@@ -96,7 +96,7 @@ export default function AboutResumeBuildingPage() {
                 </p>
               </div>
               <div className="text-center p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <i className="fa fa-search text-green-600 text-lg"></i>
                 </div>
                 <h3 className="text-base font-semibold text-gray-800 mb-2">ATS Optimized</h3>

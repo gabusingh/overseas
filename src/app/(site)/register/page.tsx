@@ -53,7 +53,7 @@ export default function RegisterPage() {
                 </div>
                 
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i className="fa fa-shield text-2xl text-green-300"></i>
                   </div>
                   <h3 className="text-lg font-semibold mb-2">Trusted Platform</h3>

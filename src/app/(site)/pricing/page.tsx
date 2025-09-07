@@ -88,7 +88,7 @@ export default function PricingPage() {
       <div className="mb-16">
         <div className="max-w-4xl mx-auto">
           <h2 className="subHeading textBlue text-center mb-8">100% Refund Guarantee – Apply Risk-Free</h2>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-8">
+          <div className="bg-blue-50 border border-green-200 rounded-lg p-8">
             <p className="text-lg text-gray-700 text-center mb-6">
               We understand that job hunting can be challenging. That&apos;s why we offer a full refund 
               for applications if you are rejected by the employer. Your payment will be credited 
@@ -97,7 +97,7 @@ export default function PricingPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
               <div className="flex flex-col items-center">
-                <div className="bg-green-100 rounded-full p-4 mb-3">
+                <div className="bg-blue-100 rounded-full p-4 mb-3">
                   <i className="fa fa-refresh textBlue text-2xl"></i>
                 </div>
                 <h4 className="font-semibold text-gray-900 mb-2">Automatic Refund</h4>
@@ -105,7 +105,7 @@ export default function PricingPage() {
               </div>
               
               <div className="flex flex-col items-center">
-                <div className="bg-green-100 rounded-full p-4 mb-3">
+                <div className="bg-blue-100 rounded-full p-4 mb-3">
                   <i className="fa fa-calendar textBlue text-2xl"></i>
                 </div>
                 <h4 className="font-semibold text-gray-900 mb-2">15 Business Days</h4>
@@ -113,7 +113,7 @@ export default function PricingPage() {
               </div>
               
               <div className="flex flex-col items-center">
-                <div className="bg-green-100 rounded-full p-4 mb-3">
+                <div className="bg-blue-100 rounded-full p-4 mb-3">
                   <i className="fa fa-question-circle textBlue text-2xl"></i>
                 </div>
                 <h4 className="font-semibold text-gray-900 mb-2">No Questions Asked</h4>

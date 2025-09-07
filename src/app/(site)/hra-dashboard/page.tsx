@@ -182,7 +182,7 @@ export default function HraDashboardPage() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{app.appliedOn}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                app.status === 'Hired' ? 'bg-green-100 text-green-800' : 
+                                app.status === 'Hired' ? 'bg-blue-100 text-green-800' : 
                                 app.status === 'Interview Scheduled' ? 'bg-yellow-100 text-yellow-800' : 
                                 app.status === 'Shortlisted' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                               }`}>

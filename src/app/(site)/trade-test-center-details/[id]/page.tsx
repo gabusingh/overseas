@@ -246,12 +246,12 @@ export default function TradeTestCenterDetailsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center space-x-2 mb-1">
-                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                     <Calendar className="w-4 h-4 text-white" />
                   </div>
                   <span className="font-semibold text-gray-900 text-sm">Established</span>
                 </div>
-                <div className="text-2xl font-bold text-green-600">{center.insSince || 'N/A'}</div>
+                <div className="text-2xl font-bold text-blue-600">{center.insSince || 'N/A'}</div>
                 <p className="text-xs text-gray-500 mt-1">Years of experience</p>
               </div>
             </div>
@@ -334,7 +334,7 @@ export default function TradeTestCenterDetailsPage() {
           <Card className="shadow-sm border-0 bg-white">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg font-semibold">
-                <MapPin className="w-5 h-5 mr-3 textBlue" />
+                <MapPin className="w-5 h-5 mr-3 bg-blue-600 text-white" />
                 Contact & Location
               </CardTitle>
             </CardHeader>
@@ -447,7 +447,7 @@ export default function TradeTestCenterDetailsPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <Award className="w-5 h-5 mr-2 text-green-600" />
+                      <Award className="w-5 h-5 mr-2 text-blue-600" />
                       Center Details
                     </CardTitle>
                   </CardHeader>
@@ -467,13 +467,13 @@ export default function TradeTestCenterDetailsPage() {
                       </div>
                       <div>
                         <span className="font-medium text-gray-900">Available Tests:</span>
-                        <span className="ml-2 text-green-600 font-medium">{center.test_count || '0'}</span>
+                        <span className="ml-2 text-blue-600 font-medium">{center.test_count || '0'}</span>
                       </div>
                     </div>
                     {center.insAddress && (
                       <div className="pt-4 border-t mt-4">
                         <span className="font-medium text-gray-900 flex items-center mb-2">
-                          <MapPin className="w-4 h-4 mr-1 text-green-600" />
+                          <MapPin className="w-4 h-4 mr-1 text-blue-600" />
                           Full Address:
                         </span>
                         <p className="text-gray-600 text-sm leading-relaxed">{center.insAddress}</p>
@@ -497,12 +497,12 @@ export default function TradeTestCenterDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {center.phone && (
                         <div className="flex items-start space-x-3">
-                          <Phone className="w-5 h-5 text-green-600 mt-0.5" />
+                          <Phone className="w-5 h-5 text-blue-600 mt-0.5" />
                           <div>
                             <div className="font-medium text-gray-900">Phone</div>
                             <a 
                               href={`tel:${center.phone}`}
-                              className="text-green-600 hover:underline"
+                              className="text-blue-600 hover:underline"
                             >
                               {center.phone}
                             </a>
@@ -601,7 +601,7 @@ export default function TradeTestCenterDetailsPage() {
                         </p>
                         <Button 
                           onClick={() => setShowContactModal(true)}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
                           <Phone className="w-4 h-4 mr-2" />
                           Contact Center

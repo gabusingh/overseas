@@ -35,7 +35,7 @@ export default function AppliedCourseCard({ course }: AppliedCourseCardProps) {
       case "approved":
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "enrolled":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-blue-100 text-green-800 border-green-200";
       case "completed":
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "rejected":
@@ -161,7 +161,7 @@ export default function AppliedCourseCard({ course }: AppliedCourseCardProps) {
           {course.applicationStatus === "approved" && (
             <Button 
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               Enroll Now
             </Button>

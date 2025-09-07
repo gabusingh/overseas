@@ -247,7 +247,7 @@ export default function JobsLastWeekPage() {
       case "international":
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "fresher":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-blue-100 text-green-800 border-green-200";
       case "any":
         return "bg-blue-100 text-blue-800 border-blue-200";
       default:
@@ -537,7 +537,7 @@ export default function JobsLastWeekPage() {
                                 <span className="font-medium">{job.country_location}</span>
                               </div>
                               <div className="flex items-center gap-3 text-gray-600">
-                                <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
                                   <Building2 className="w-4 h-4 text-green-600" />
                                 </div>
                                 <span className="font-medium">{job.occupation}</span>

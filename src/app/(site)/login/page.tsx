@@ -332,7 +332,7 @@ export default function LoginPage() {
 
                 {/* Resend OTP */}
                 {isOtpSent && (
-                  <div className="flex justify-between items-center bg-green-50 p-3 rounded-lg">
+                  <div className="flex justify-between items-center bg-blue-50 p-3 rounded-lg">
                     <span className="text-sm text-green-700">
                       OTP sent successfully!
                     </span>
@@ -342,7 +342,7 @@ export default function LoginPage() {
                       size="sm"
                       onClick={handleSendOtp}
                       disabled={isLoading}
-                      className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                      className="text-green-600 hover:text-green-700 hover:bg-blue-100"
                     >
                       Resend OTP
                     </Button>
@@ -388,7 +388,7 @@ export default function LoginPage() {
                   </Link>
                   <Link
                     href="/employer-signup"
-                    className="flex items-center justify-center px-4 py-2 border border-green-200 rounded-lg text-green-600 hover:bg-green-50 hover:border-green-300 font-medium transition-colors"
+                    className="flex items-center justify-center px-4 py-2 border border-green-200 rounded-lg text-green-600 hover:bg-blue-50 hover:border-green-300 font-medium transition-colors"
                   >
                     🏢 Register as Employer
                   </Link>
