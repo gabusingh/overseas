@@ -282,7 +282,7 @@ export default function TradeTestCenterDetailsPage() {
               <h3 className="font-semibold textBlue text-sm mb-2">Quick Contact</h3>
               <Button 
                 size="sm"
-                className="w-full bgBlue hover:bg-blue-700 h-8 text-xs"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs"
                 onClick={() => setShowContactModal(true)}
               >
                 Contact Now
