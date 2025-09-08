@@ -7,6 +7,8 @@ import { getOccupations, getCountriesForJobs, getNewsFeedData, getSuccessNotific
 import { getInstitutes } from '../../services/institute.service';
 import { getHraList } from '../../services/hra.service';
 import { toast } from 'sonner';
+import { StructuredData } from '../../components/SEOComponents';
+import { generateBreadcrumbLD, generateFAQLD } from '../../utils/seo.utils';
 
 // Lazy load heavy components
 const HeroSection = dynamic(() => import('../../components/HeroSection'), {
@@ -165,7 +167,8 @@ export default function Home() {
       setCachedData({ occupations, countries: countriesRes?.data || [] });
       
     } catch (error) {
-      toast.error('Failed to load essential data. Please refresh.');
+      console.error('Error loading critical home page data:', error);
+      toast.error('Failed to load some data. The page will still work with available features.');
       setLoading(false);
     }
   }, [getCachedData, setCachedData]);
@@ -197,6 +200,7 @@ export default function Home() {
       
     } catch (error) {
       // Don't show error toast for non-critical data
+      console.warn('Non-critical data fetch failed, continuing without it:', error);
     }
   }, []);
 
@@ -422,6 +426,56 @@ export default function Home() {
           </div>
         </div>
       </section>
+      
+      {/* FAQ Section for SEO */}
+      <section className="py-16 bg-white">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">Frequently Asked Questions</h2>
+          <div className="space-y-8">
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">How do I find international jobs through Overseas.ai?</h3>
+              <p className="text-gray-700">Simply browse our extensive job database, use our advanced search filters to find positions that match your skills and preferences, and apply directly through our platform. We also provide career guidance and interview preparation support.</p>
+            </div>
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">What training programs are available?</h3>
+              <p className="text-gray-700">We offer various training programs through our partner institutes, including technical skills, language training, and industry-specific certifications to enhance your employability for international positions.</p>
+            </div>
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Which countries offer the most job opportunities?</h3>
+              <p className="text-gray-700">Our platform features opportunities in various countries including Middle East, Europe, Asia-Pacific, and North America. The availability depends on your skill set and industry experience.</p>
+            </div>
+            <div className="pb-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Is there any cost to use Overseas.ai?</h3>
+              <p className="text-gray-700">Job seekers can browse and apply for positions completely free. Some premium services like advanced career counseling and specialized training may have associated costs.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Structured Data */}
+      <StructuredData data={[
+        generateBreadcrumbLD([
+          { name: 'Home', url: '/' }
+        ]),
+        generateFAQLD([
+          {
+            question: 'How do I find international jobs through Overseas.ai?',
+            answer: 'Simply browse our extensive job database, use our advanced search filters to find positions that match your skills and preferences, and apply directly through our platform. We also provide career guidance and interview preparation support.'
+          },
+          {
+            question: 'What training programs are available?',
+            answer: 'We offer various training programs through our partner institutes, including technical skills, language training, and industry-specific certifications to enhance your employability for international positions.'
+          },
+          {
+            question: 'Which countries offer the most job opportunities?',
+            answer: 'Our platform features opportunities in various countries including Middle East, Europe, Asia-Pacific, and North America. The availability depends on your skill set and industry experience.'
+          },
+          {
+            question: 'Is there any cost to use Overseas.ai?',
+            answer: 'Job seekers can browse and apply for positions completely free. Some premium services like advanced career counseling and specialized training may have associated costs.'
+          }
+        ])
+      ]} />
     </>
   );
 }

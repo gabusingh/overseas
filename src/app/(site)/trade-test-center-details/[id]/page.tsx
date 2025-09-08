@@ -395,7 +395,7 @@ export default function TradeTestCenterDetailsPage() {
                 
                 <div className="pt-4 border-t border-gray-200 flex gap-2">
                   <Button 
-                    className="flex-1 bgBlue hover:bg-blue-700 text-white h-10" 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-10" 
                     onClick={() => setShowContactModal(true)}
                   >
                     <Phone className="w-4 h-4 mr-2" />

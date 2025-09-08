@@ -1,5 +1,6 @@
 import { getJobList, JobDetail, getLatestJobsSafe } from './job.service';
 import { getOccupations } from './info.service';
+import { safeApiCall } from '../utils/auth.utils';
 
 interface PopularSearchItem {
   id: number;
@@ -80,14 +81,19 @@ async function getAllJobsForAnalysis(): Promise<any[]> {
       // Continue to supplement strategy
     }
     
-    // Strategy 2: Supplement with latest jobs API if available (skip if authentication issues)
-    try {
-      const latestJobsResponse = await getLatestJobsSafe();
-      
+    // Strategy 2: Supplement with latest jobs API if available (safe approach)
+    const latestJobsResponse = await safeApiCall(
+      () => getLatestJobsSafe(),
+      { 
+        requiresAuth: false, // This API might require auth but we'll handle it gracefully
+        fallbackValue: null,
+        description: 'latest jobs for popular search'
+      }
+    );
+    
+    if (latestJobsResponse) {
       let latestJobs: any[] = [];
-      if (latestJobsResponse === null) {
-        // Latest jobs API skipped due to authentication requirements
-      } else if (latestJobsResponse?.jobs) {
+      if (latestJobsResponse?.jobs) {
         latestJobs = latestJobsResponse.jobs;
       } else if (latestJobsResponse?.data) {
         latestJobs = latestJobsResponse.data;
@@ -105,9 +111,6 @@ async function getAllJobsForAnalysis(): Promise<any[]> {
         
         allJobs.push(...newLatestJobs);
       }
-      
-    } catch (error: any) {
-      // Continue without latest jobs - this is not critical for popular search
     }
     
     // Remove duplicates based on job ID

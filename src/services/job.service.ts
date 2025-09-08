@@ -424,31 +424,34 @@ export const userSavedJobsList = async (accessToken: string) => {
   }
 };
 
+// Deprecated: Use getLatestJobsSafe instead for better error handling
 export const getLatestJobs = async () => {
-  try {
-    const response = await axios.get(BASE_URL + 'get-latest-jobs');
-    return response.data;
-  } catch (error: any) {
-    // Provide specific error information
-    if (error?.response?.status === 401) {
-      } else if (error?.response?.status === 403) {
-      } else {
-      }
-    throw error;
-  }
+  console.warn('getLatestJobs is deprecated. Use getLatestJobsSafe for better authentication error handling.');
+  return getLatestJobsSafe();
 };
 
 // Safe version that doesn't throw on authentication errors
+// Use this for unauthenticated users (like home page visitors)
 export const getLatestJobsSafe = async () => {
   try {
     const response = await axios.get(BASE_URL + 'get-latest-jobs');
     return response.data;
   } catch (error: any) {
+    // Handle authentication errors gracefully
     if (error?.response?.status === 401 || error?.response?.status === 403) {
-      return null; // Return null instead of throwing
-    } else {
-      throw error; // Re-throw other errors
+      console.info('Latest jobs API requires authentication - skipping for unauthenticated users');
+      return null; // Return null instead of throwing for auth errors
     }
+    
+    // Handle server errors gracefully
+    if (error?.response?.status >= 500) {
+      console.warn('Server error while fetching latest jobs - continuing without latest jobs data');
+      return null;
+    }
+    
+    // Only throw for unexpected errors
+    console.error('Unexpected error fetching latest jobs:', error);
+    return null; // Be safe and return null for any other errors too
   }
 };
 
