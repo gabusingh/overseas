@@ -47,6 +47,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showNotRegisteredError, setShowNotRegisteredError] = useState(false);
 
   const validateMobile = (mobile: string) => /^\d{10}$/.test(mobile);
 
@@ -63,14 +64,24 @@ export default function LoginPage() {
         setIsOtpLogin(true);
         toast.success("OTP sent successfully");
       } else if (response?.data?.error === "Mobile number is not registered !") {
-        toast.error("Mobile number is not registered!");
+        setShowNotRegisteredError(true);
+        toast.error("❌ Mobile number is not registered! Please register first or check your number.");
       } else {
         toast.error("Failed to send OTP");
       }
     } catch (error: any) {
       console.error('OTP error:', error);
       const errorMessage = error?.response?.data?.error || "Failed to send OTP";
-      toast.error(errorMessage);
+      
+      // Check for specific "not registered" error messages
+      if (errorMessage.toLowerCase().includes('not registered') || 
+          errorMessage.toLowerCase().includes('not found') ||
+          errorMessage.toLowerCase().includes('does not exist')) {
+        setShowNotRegisteredError(true);
+        toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -172,12 +183,31 @@ export default function LoginPage() {
           router.push(redirectPath);
         }, 1000);
       } else {
-        toast.error((response?.data as any)?.error || "Invalid credentials");
+        const errorMsg = (response?.data as any)?.error || "Invalid credentials";
+        
+        // Check for specific "not registered" error messages
+        if (errorMsg.toLowerCase().includes('not registered') || 
+            errorMsg.toLowerCase().includes('not found') ||
+            errorMsg.toLowerCase().includes('does not exist')) {
+          setShowNotRegisteredError(true);
+          toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+        } else {
+          toast.error(errorMsg);
+        }
       }
     } catch (error: any) {
       console.error('Login error:', error);
       const errorMessage = error?.response?.data?.error || error?.message || "Login failed";
-      toast.error(errorMessage);
+      
+      // Check for specific "not registered" error messages
+      if (errorMessage.toLowerCase().includes('not registered') || 
+          errorMessage.toLowerCase().includes('not found') ||
+          errorMessage.toLowerCase().includes('does not exist')) {
+        setShowNotRegisteredError(true);
+        toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -259,9 +289,13 @@ export default function LoginPage() {
                     <Input
                       id="mobile"
                       type="tel"
+                      autoComplete="tel"
                       placeholder="Enter 10-digit mobile number"
                       value={mobile}
-                      onChange={(e) => setMobile(e.target.value)}
+                      onChange={(e) => {
+                        setMobile(e.target.value);
+                        setShowNotRegisteredError(false); // Clear error when user types
+                      }}
                       className="rounded-l-none flex-1 border-gray-300 focus:border-[#17487f] focus:ring-[#17487f] transition-colors"
                       maxLength={10}
                     />
@@ -283,6 +317,7 @@ export default function LoginPage() {
                     <Input
                       id="otp"
                       type="text"
+                      autoComplete="one-time-code"
                       placeholder="Enter 6-digit OTP"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
@@ -322,6 +357,7 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -342,6 +378,37 @@ export default function LoginPage() {
                     >
                       🔐 Login with OTP instead
                     </Button>
+                  </div>
+                )}
+
+                {/* Help Message for Unregistered Users */}
+                {showNotRegisteredError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <div className="text-sm text-red-800">
+                        <p className="font-semibold mb-2">❌ Account Not Found</p>
+                        <p className="mb-2">This mobile number is not registered in our system. You need to create an account first.</p>
+                        <p className="text-xs text-red-600">Choose your registration type below to get started.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* General Help Message */}
+                {!showNotRegisteredError && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="text-sm text-blue-800">
+                        <p className="font-medium mb-1">New to Overseas.ai?</p>
+                        <p>Create your account below to access global job opportunities.</p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -394,22 +461,34 @@ export default function LoginPage() {
                 </div>
 
                 {/* Registration Links */}
-                <div className="grid grid-cols-1 gap-3">
+                <div className={`grid grid-cols-1 gap-3 ${showNotRegisteredError ? 'ring-2 ring-red-200 rounded-lg p-3 bg-red-50/30' : ''}`}>
                   <Link
                     href="/candidate-register"
-                    className="flex items-center justify-center px-4 py-2 border border-blue-200 rounded-lg text-[#17487f] hover:bg-blue-50 hover:border-blue-300 font-medium transition-colors"
+                    className={`flex items-center justify-center px-4 py-2 border rounded-lg font-medium transition-colors ${
+                      showNotRegisteredError 
+                        ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-400' 
+                        : 'border-blue-200 text-[#17487f] hover:bg-blue-50 hover:border-blue-300'
+                    }`}
                   >
                     👤 Register as Job Seeker
                   </Link>
                   <Link
                     href="/employer-signup"
-                    className="flex items-center justify-center px-4 py-2 border border-green-200 rounded-lg text-green-600 hover:bg-green-50 hover:border-green-300 font-medium transition-colors"
+                    className={`flex items-center justify-center px-4 py-2 border rounded-lg font-medium transition-colors ${
+                      showNotRegisteredError 
+                        ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-400' 
+                        : 'border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300'
+                    }`}
                   >
                     🏢 Register as Employer
                   </Link>
                   <Link
                     href="/institute-signup"
-                    className="flex items-center justify-center px-4 py-2 border border-purple-200 rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-300 font-medium transition-colors"
+                    className={`flex items-center justify-center px-4 py-2 border rounded-lg font-medium transition-colors ${
+                      showNotRegisteredError 
+                        ? 'border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 hover:border-purple-400' 
+                        : 'border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300'
+                    }`}
                   >
                     🎓 Register as Institute
                   </Link>

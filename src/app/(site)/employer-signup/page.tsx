@@ -14,6 +14,7 @@ export default function EmployerSignupPage() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [userAlreadyExists, setUserAlreadyExists] = useState(false);
 
   type FormDataState = {
     countryCode: string;
@@ -76,6 +77,11 @@ export default function EmployerSignupPage() {
   const handleInputChange = (field: keyof FormDataState, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     clearError(field as keyof ErrorState);
+    
+    // Reset user already exists state when mobile number changes
+    if (field === 'cmpOfficialMob') {
+      setUserAlreadyExists(false);
+    }
   };
 
   const handleFileChange = (file: File | null) => {
@@ -136,6 +142,7 @@ export default function EmployerSignupPage() {
   const handleSendOtp = async () => {
     if (!validateOtpStep()) return;
     setIsLoading(true);
+    setUserAlreadyExists(false); // Reset user already exists state
     try {
       // For new HRA registrations, use the signup OTP endpoint first
       console.log('Sending OTP for new HRA registration...');
@@ -163,7 +170,8 @@ export default function EmployerSignupPage() {
             const response = await loginUsingOtp({ empPhone: formData.cmpOfficialMob });
             if (response?.data?.success || response?.data?.status === 'success') {
               setIsOtpSent(true);
-              toast.success(response?.data?.message || "OTP sent successfully (fallback)");
+              setUserAlreadyExists(true);
+              toast.warning("This mobile number is already registered. OTP sent for login. Please use the login page instead of registration.");
             } else {
               toast.error(serverMessage);
             }
@@ -256,8 +264,11 @@ export default function EmployerSignupPage() {
       // Use the HRA service to register
       const response = await registerHra(registrationData);
       
-      if (response?.success || response?.status === 'success') {
-        toast.success(response?.message || "Company registered successfully");
+      console.log('Registration response:', response);
+      
+      // Check for successful registration - API returns message and optionally access_token
+      if (response?.message && !response?.error) {
+        toast.success(response.message);
         
         // Handle successful registration
         if (response?.access_token) {
@@ -289,6 +300,7 @@ export default function EmployerSignupPage() {
       const axiosStatus = (error as any)?.response?.status;
       if (axiosStatus === 422) {
         const data = (error as any)?.response?.data;
+        console.log('Validation error data:', data);
         if (data?.errors && typeof data.errors === "object") {
           const mapped: ErrorState = {};
           Object.keys(data.errors).forEach((k) => {
@@ -395,6 +407,17 @@ export default function EmployerSignupPage() {
 
                           {isOtpSent && (
                             <>
+                              {userAlreadyExists && (
+                                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                                  <div className="flex items-center">
+                                    <i className="fa fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                                    <div className="text-sm text-yellow-800">
+                                      <p className="font-medium">Account Already Exists</p>
+                                      <p>This mobile number is already registered. You can verify the OTP to proceed, but we recommend using the <button type="button" onClick={() => router.push("/login")} className="text-blue-600 hover:text-blue-800 underline">login page</button> instead.</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                               <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                   Enter OTP
@@ -531,6 +554,7 @@ export default function EmployerSignupPage() {
                             </label>
                             <input
                               type="text"
+                              autoComplete="off"
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               placeholder="Enter PIN code"
                               value={formData.cmpPin}
@@ -582,6 +606,7 @@ export default function EmployerSignupPage() {
                             <div className="relative">
                               <input
                                 type={showPassword ? "text" : "password"}
+                                autoComplete="new-password"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Enter password"
                                 value={formData.password}
@@ -608,6 +633,7 @@ export default function EmployerSignupPage() {
                             <div className="relative">
                               <input
                                 type={showConfirmPassword ? "text" : "password"}
+                                autoComplete="new-password"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Confirm password"
                                 value={formData.password_confirmation}

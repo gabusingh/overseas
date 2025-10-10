@@ -21,6 +21,7 @@ export default function CandidateRegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [userAlreadyExists, setUserAlreadyExists] = useState(false);
   
   // Form states
   const [formData, setFormData] = useState({
@@ -102,6 +103,11 @@ export default function CandidateRegisterPage() {
         [field]: ""
       }));
     }
+    
+    // Reset user already exists state when mobile number changes
+    if (field === 'mobile') {
+      setUserAlreadyExists(false);
+    }
   };
 
   const handleSendOtp = async () => {
@@ -117,6 +123,7 @@ export default function CandidateRegisterPage() {
     }
 
     setIsLoading(true);
+    setUserAlreadyExists(false); // Reset user already exists state
     try {
       const response = await fetch("/api/auth/send-signup-otp", {
         method: "POST",
@@ -133,7 +140,27 @@ export default function CandidateRegisterPage() {
         setIsOtpSent(true);
         toast.success("OTP sent successfully to your mobile number");
       } else {
-        toast.error(data.message || "Failed to send OTP");
+        const serverMessage = data.message || "Failed to send OTP";
+        const isAlreadyRegistered = /already\s*registered|exists?/i.test(serverMessage);
+
+        if (isAlreadyRegistered) {
+          console.log('Number appears registered; trying login OTP as fallback...');
+          try {
+            const { loginUsingOtp } = await import('@/services/user.service');
+            const loginResponse = await loginUsingOtp({ empPhone: formData.mobile });
+            if (loginResponse?.data?.success || loginResponse?.data?.status === 'success') {
+              setIsOtpSent(true);
+              setUserAlreadyExists(true);
+              toast.warning("This mobile number is already registered. OTP sent for login. Please use the login page instead of registration.");
+            } else {
+              toast.error(serverMessage);
+            }
+          } catch (fallbackError) {
+            toast.error(serverMessage);
+          }
+        } else {
+          toast.error(serverMessage);
+        }
       }
     } catch (error) {
       toast.error("Failed to send OTP. Please try again.");
@@ -332,6 +359,17 @@ export default function CandidateRegisterPage() {
                       {/* OTP Input */}
                       {isOtpSent && (
                         <>
+                          {userAlreadyExists && (
+                            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                              <div className="flex items-center">
+                                <i className="fa fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                                <div className="text-sm text-yellow-800">
+                                  <p className="font-medium">Account Already Exists</p>
+                                  <p>This mobile number is already registered. You can verify the OTP to proceed, but we recommend using the <button type="button" onClick={() => router.push("/login")} className="text-blue-600 hover:text-blue-800 underline">login page</button> instead.</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Enter OTP

@@ -288,15 +288,29 @@ export const getHraDashboardAnalytics = async (token: string) => {
 
 export const createJob = async (formData: FormData, accessToken: string) => {
   try {
+    console.log('🚀 createJob service called');
+    console.log('🔗 API URL:', BASE_URL + 'create-job');
+    console.log('🔑 Access token length:', accessToken ? accessToken.length : 0);
+    console.log('📦 FormData entries:', Array.from(formData.entries()));
+    
     const response = await axios.post(BASE_URL + 'create-job', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         Authorization: `Bearer ${accessToken}`
       }
     });
+    
+    console.log('📥 createJob response:', {
+      status: response.status,
+      data: response.data,
+      headers: response.headers
+    });
+    
     return response;
-  } catch (error) {
-    console.error('Error creating job:', error);
+  } catch (error: any) {
+    console.error('❌ Error creating job:', error);
+    console.error('❌ Error response:', error?.response?.data);
+    console.error('❌ Error status:', error?.response?.status);
     throw error;
   }
 };
@@ -526,10 +540,17 @@ export const registerHra = async (registrationData: HraRegistrationData) => {
       }
     });
 
-    const response = await axios.post(`${BASE_URL}register-hra`, formData, {
+    // Use the local Next.js API route instead of calling external API directly
+    console.log('Sending HRA registration data to local API route');
+    const response = await axios.post('/api/register-hra', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+    });
+    
+    console.log('HRA registration response:', {
+      status: response.status,
+      data: response.data
     });
     
     return response.data;

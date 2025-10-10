@@ -97,7 +97,7 @@ function getFormValue(formData: FormDataValues, name: keyof FormDataType): FormF
   return formData[name] ?? "";
 }
 
-// Helper function to safely update form data
+  // Helper function to safely update form data
 function updateFormData(
   prevData: FormDataValues,
   name: keyof FormDataType,
@@ -105,6 +105,7 @@ function updateFormData(
 ): FormDataValues {
   return { ...prevData, [name]: value };
 }
+
 
 type FormDataType = {
   jobTitle: string;
@@ -159,6 +160,62 @@ const CreateJobs = () => {
   const [hrDetailsLoading, setHrDetailsLoading] = useState(false);
   const [formData, setFormData] = useState<FormDataValues>({} as FormDataValues);
   const [errors, setErrors] = useState<Partial<Record<keyof FormDataType, string>>>({});
+
+  // Function to populate form with demo data
+  const populateDemoData = () => {
+    console.log('🎭 Populating form with demo job data...');
+    setFormData(demoJobData);
+    setErrors({}); // Clear any existing errors
+    
+    // Load skills for the selected occupation (Construction)
+    if (demoJobData.jobOccupation) {
+      getSkillList(demoJobData.jobOccupation);
+    }
+    
+    toast.success('🎭 Demo job data loaded! You can now test the form or modify the details.');
+  };
+
+  // Demo job data for testing
+  const demoJobData: FormDataValues = {
+    jobTitle: "Senior Electrician",
+    jobOccupation: "1", // Construction
+    jobSkill: ["101", "102"], // Masonry, Carpentry
+    cmpNameACT: "Gulf Construction Co. Ltd",
+    jobLocationCountry: "United Arab Emirates",
+    jobDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+    jobVacancyNo: "25",
+    jobWages: "3500",
+    jobMode: "Offline",
+    jobInterviewPlace: "Kolkata Office - 123 Main Street",
+    jobInterviewDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+    jobWagesCurrencyType: "AED",
+    salary_negotiable: "Yes",
+    passport_type: "ECR/ECNR",
+    service_charge: "15000",
+    contract_period: "24",
+    expCerificateReq: "Yes",
+    DLReq: "No",
+    jobWorkVideoReq: "No",
+    jobExpReq: "Yes",
+    jobExpTypeReq: "international",
+    jobExpDuration: "3",
+    jobWorkingDay: "26",
+    jobWorkingHour: "8 hours/day",
+    jobOvertime: "As Per Company Requirement",
+    jobFood: "Free Food",
+    jobAccommodation: "Yes",
+    jobMedicalFacility: "Yes",
+    jobTransportation: "Yes",
+    jobAgeLimit: "45",
+    jobDescription: "We are looking for an experienced Senior Electrician to join our team in Dubai. The ideal candidate should have at least 3 years of international experience in electrical installations, maintenance, and troubleshooting. Must be able to work independently and as part of a team. Knowledge of local electrical codes and safety regulations is essential.",
+    jobPhoto: null,
+    hrName: "John Smith",
+    hrEmail: "john.smith@gulfconstruction.com",
+    hrNumber: "+971501234567",
+    companyJobID: "GC-2024-001",
+    languageRequired: ["English", "Hindi"],
+    jobArea: "Dubai, UAE"
+  };
 
   // Memoize formFields to ensure stable references
   const formFields = React.useMemo((): FieldConfig[] => [
@@ -939,6 +996,7 @@ const CreateJobs = () => {
 
   // Form validation function
   const validateForm = (): boolean => {
+    console.log('🔍 Starting form validation...');
     const newErrors: Partial<Record<keyof FormDataType, string>> = {};
     const missingFields: string[] = [];
     
@@ -949,14 +1007,21 @@ const CreateJobs = () => {
       'hrName', 'hrEmail', 'hrNumber'
     ];
     
+    console.log('📋 Required fields to validate:', requiredFields);
+    
     requiredFields.forEach(field => {
       const value = formData[field];
+      console.log(`🔍 Validating field ${field}:`, value);
+      
       if (!value || 
           (typeof value === 'string' && (value.trim() === '' || value.startsWith('_'))) ||
           (Array.isArray(value) && value.length === 0)) {
         const fieldLabel = fieldsByName[field]?.label || field;
         newErrors[field] = `${fieldLabel} is required`;
         missingFields.push(fieldLabel);
+        console.log(`❌ Field ${field} is missing or invalid`);
+      } else {
+        console.log(`✅ Field ${field} is valid`);
       }
     });
     
@@ -993,6 +1058,12 @@ const CreateJobs = () => {
     
     setErrors(newErrors);
     
+    console.log('📊 Validation results:', {
+      totalErrors: Object.keys(newErrors).length,
+      missingFields: missingFields.length,
+      errors: newErrors
+    });
+    
     // Show specific snackbar message for missing required fields
     if (missingFields.length > 0) {
       if (missingFields.length === 1) {
@@ -1014,7 +1085,10 @@ const CreateJobs = () => {
       toast.error(firstError || 'Please check your form inputs');
     }
     
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    console.log(`🏁 Form validation ${isValid ? 'PASSED' : 'FAILED'}`);
+    
+    return isValid;
   };
   
   
@@ -1022,15 +1096,21 @@ const CreateJobs = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 Form submission started');
+    console.log('📋 Form data:', formData);
+    
     // Clear previous errors
     setErrors({});
     
     // Validate form
+    console.log('🔍 Validating form...');
     if (!validateForm()) {
+      console.log('❌ Form validation failed');
       // Validation function already shows specific error messages
       return;
     }
     
+    console.log('✅ Form validation passed');
     setLoading(true);
 
     try {
@@ -1092,7 +1172,13 @@ const CreateJobs = () => {
       formDataInstance.append('submittedAt', new Date().toISOString());
       
       // Submit the form
+      console.log('📤 Submitting job data to API...');
+      console.log('🔑 Access token:', accessToken ? 'Found' : 'Not found');
+      console.log('📦 Form data instance entries:', Array.from(formDataInstance.entries()));
+      
       const response = await createJobByHr(formDataInstance, accessToken);
+      
+      console.log('📥 API Response received:', response);
       
       // Handle different response scenarios
       if (response && typeof response === 'object') {
@@ -1417,10 +1503,16 @@ const CreateJobs = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Job</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-gray-600 max-w-2xl mx-auto mb-4">
             Fill out the information below to post a new job opportunity. 
             All fields marked with <span className="text-red-500">*</span> are required.
           </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center gap-2 text-blue-700">
+              <span className="text-lg">💡</span>
+              <span className="text-sm font-medium">Tip: Use the "Load Demo Job" button below to quickly populate the form with sample data for testing!</span>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -1482,6 +1574,29 @@ const CreateJobs = () => {
             );
           })}
 
+          {/* Demo Data Section */}
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+              <div className="text-sm text-purple-700">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">🎭</span>
+                  <span className="font-medium">Need help getting started?</span>
+                </div>
+                <p>Load demo job data for a <strong>Senior Electrician</strong> position in Dubai with complete details including salary, benefits, and requirements.</p>
+              </div>
+              
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={populateDemoData}
+                className="px-6 py-2 h-11 border-purple-300 text-purple-700 hover:bg-purple-100 hover:border-purple-400"
+                disabled={loading}
+              >
+                🎭 Load Demo Job
+              </Button>
+            </div>
+          </div>
+
           {/* Submit Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
@@ -1503,6 +1618,7 @@ const CreateJobs = () => {
                 <Button 
                   type="submit" 
                   disabled={loading}
+                  onClick={() => console.log('🔘 Create Job Posting button clicked')}
                   className="px-8 py-2 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-sm"
                 >
                   {loading ? (
