@@ -1004,6 +1004,8 @@ const CreateJobs = () => {
     const requiredFields: (keyof FormDataType)[] = [
       'jobTitle', 'cmpNameACT', 'jobOccupation', 'jobLocationCountry', 
       'jobDeadline', 'jobVacancyNo', 'jobWages', 'jobWagesCurrencyType',
+      'jobWorkingDay', 'jobWorkingHour', 'jobOvertime', 'jobFood', 
+      'jobAccommodation', 'jobMedicalFacility', 'jobTransportation',
       'hrName', 'hrEmail', 'hrNumber'
     ];
     
@@ -1308,6 +1310,8 @@ const CreateJobs = () => {
     const error = errors[fieldName];
     const isRequired = ['jobTitle', 'cmpNameACT', 'jobOccupation', 'jobLocationCountry', 
                        'jobDeadline', 'jobVacancyNo', 'jobWages', 'jobWagesCurrencyType',
+                       'jobWorkingDay', 'jobWorkingHour', 'jobOvertime', 'jobFood', 
+                       'jobAccommodation', 'jobMedicalFacility', 'jobTransportation',
                        'hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
     
     // Check if this is an HR field that should show loading state
