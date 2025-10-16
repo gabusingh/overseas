@@ -268,18 +268,18 @@ export default function EmployerSignupPage() {
       
       // Check for successful registration - API returns message and optionally access_token
       if (response?.message && !response?.error) {
-        toast.success(response.message);
+        // Show success message to user
+        toast.success("Registration successful! Redirecting to login page...");
         
-        // Handle successful registration
+        // Handle successful registration - always redirect to login page
         if (response?.access_token) {
           try {
             localStorage.setItem("loggedUser", JSON.stringify(response));
             localStorage.setItem("access_token", response.access_token);
           } catch {}
-          setTimeout(() => router.push("/hra-dashboard"), 800);
-        } else {
-          setTimeout(() => router.push("/login?registered=1"), 800);
         }
+        // Always redirect to login page after successful registration with delay to show message
+        setTimeout(() => router.push("/login?registered=1"), 2000);
       } else {
         // Handle validation errors if provided
         if (response?.errors && typeof response.errors === "object") {

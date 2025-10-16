@@ -1204,9 +1204,9 @@ const CreateJobs = () => {
       setFormData({} as FormDataValues);
       setErrors({});
       
-      // Redirect with a small delay to show the success message
+      // Redirect to HR dashboard with a small delay to show the success message
       setTimeout(() => {
-        router.push("/jobs");
+        router.push("/hra-dashboard");
       }, 2000);
       
     } catch (error: any) {
