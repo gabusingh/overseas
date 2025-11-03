@@ -291,7 +291,20 @@ export default function EmployerSignupPage() {
           });
           setErrors((prev) => ({ ...prev, ...mapped }));
         }
-        toast.error(response?.error || response?.message || "Registration failed");
+        
+        const errorMessage = response?.error || response?.message || "Registration failed";
+        // Check if it's an "already registered" error
+        const isAlreadyRegistered = /already\s*registered/i.test(errorMessage.toLowerCase());
+        
+        if (isAlreadyRegistered) {
+          toast.error(errorMessage);
+          // Redirect to login page after showing the error
+          setTimeout(() => {
+            router.push("/login");
+          }, 2000);
+        } else {
+          toast.error(errorMessage);
+        }
       }
     } catch (error: unknown) {
       console.error('Registration error:', error);
@@ -313,7 +326,18 @@ export default function EmployerSignupPage() {
         toast.error(data?.error || "Validation error");
       } else {
         const message = (error instanceof Error && error.message) ? error.message : "Registration failed. Please try again.";
-        toast.error(message);
+        // Check if it's an "already registered" error
+        const isAlreadyRegistered = /already\s*registered/i.test(message.toLowerCase());
+        
+        if (isAlreadyRegistered) {
+          toast.error(message);
+          // Redirect to login page after showing the error
+          setTimeout(() => {
+            router.push("/login");
+          }, 2000);
+        } else {
+          toast.error(message);
+        }
       }
     } finally {
       setIsLoading(false);

@@ -210,9 +210,22 @@ export default function CandidateRegisterPage() {
           router.push("/my-profile");
         }, 1000);
       } else {
-        toast.error(data.error || "Registration failed");
+        const errorMessage = data.error || "Registration failed";
+        // Check if it's an "already registered" error
+        const isAlreadyRegistered = /already\s*registered/i.test(errorMessage.toLowerCase());
+        
+        if (isAlreadyRegistered) {
+          toast.error(errorMessage);
+          // Redirect to login page after showing the error
+          setTimeout(() => {
+            router.push("/login");
+          }, 2000);
+        } else {
+          toast.error(errorMessage);
+        }
       }
     } catch (error) {
+      console.error("Registration error:", error);
       toast.error("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);

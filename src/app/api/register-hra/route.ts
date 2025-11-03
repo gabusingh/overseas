@@ -53,23 +53,42 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json(responseData, { status: 201 });
     } else if (response.data?.error) {
+      const errorMessage = response.data.error;
+      // Check if user is already registered
+      const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(errorMessage.toLowerCase());
+      
       return NextResponse.json(
-        { error: response.data.error },
+        { 
+          error: isAlreadyRegistered 
+            ? 'This mobile number is already registered. Please use the login page instead.' 
+            : errorMessage 
+        },
         { status: 422 }
       );
     } else if (response.data?.msg) {
-      // Check if it's an error message
-      if (response.data.msg.toLowerCase().includes('invalid') || 
-          response.data.msg.toLowerCase().includes('error') ||
-          response.data.msg.toLowerCase().includes('failed')) {
+      const msgText = response.data.msg;
+      // Check if user is already registered
+      const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(msgText.toLowerCase());
+      
+      if (isAlreadyRegistered) {
         return NextResponse.json(
-          { error: response.data.msg },
+          { error: 'This mobile number is already registered. Please use the login page instead.' },
+          { status: 400 }
+        );
+      }
+      
+      // Check if it's an error message
+      if (msgText.toLowerCase().includes('invalid') || 
+          msgText.toLowerCase().includes('error') ||
+          msgText.toLowerCase().includes('failed')) {
+        return NextResponse.json(
+          { error: msgText },
           { status: 400 }
         );
       }
       // Otherwise treat as success message
       return NextResponse.json({
-        message: response.data.msg,
+        message: msgText,
         data: response.data
       }, { status: 201 });
     } else {
@@ -90,13 +109,29 @@ export async function POST(request: NextRequest) {
           { status: 422 }
         );
       } else if (error.response.data?.error) {
+        const errorMessage = error.response.data.error;
+        // Check if user is already registered
+        const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(errorMessage.toLowerCase());
+        
         return NextResponse.json(
-          { error: error.response.data.error },
+          { 
+            error: isAlreadyRegistered 
+              ? 'This mobile number is already registered. Please use the login page instead.' 
+              : errorMessage 
+          },
           { status: 422 }
         );
       } else if (error.response.data?.msg) {
+        const errorMessage = error.response.data.msg;
+        // Check if user is already registered
+        const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(errorMessage.toLowerCase());
+        
         return NextResponse.json(
-          { error: error.response.data.msg },
+          { 
+            error: isAlreadyRegistered 
+              ? 'This mobile number is already registered. Please use the login page instead.' 
+              : errorMessage 
+          },
           { status: 422 }
         );
       }
@@ -104,8 +139,16 @@ export async function POST(request: NextRequest) {
     
     // Handle other error responses
     if (error?.response?.data) {
+      const errorMessage = error.response.data?.error || error.response.data?.msg || 'Registration failed';
+      // Check if user is already registered
+      const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(errorMessage.toLowerCase());
+      
       return NextResponse.json(
-        { error: error.response.data?.error || error.response.data?.msg || 'Registration failed' },
+        { 
+          error: isAlreadyRegistered 
+            ? 'This mobile number is already registered. Please use the login page instead.' 
+            : errorMessage 
+        },
         { status: error.response?.status || 500 }
       );
     }
