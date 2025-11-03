@@ -1,3 +1,16 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace getResumeOtp() with useOtpRequest() from @/hooks/api/useAuth
+ * - Replace verifyResumeOtp() with useOtpLogin() from @/hooks/api/useAuth
+ * - Replace uploadResume() with useUploadDocument() from @/hooks/api/useUser
+ * 
+ * Example migration:
+ * Before: const data = await getResumeOtp(formData);
+ * After:  const { mutate } = useOtpRequest();
+ */
+
 import { apiRequest } from '@/utils/axiosConfig';
 
 // OTP and Authentication APIs - Use existing working endpoints

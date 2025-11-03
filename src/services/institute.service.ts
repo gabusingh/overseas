@@ -1,3 +1,15 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace listTrainingInstitute() with useInstitutes() from @/hooks/api/useInstitute
+ * - Replace getInstituteById() with useInstituteDetails() from @/hooks/api/useInstitute
+ * 
+ * Example migration:
+ * Before: const data = await listTrainingInstitute();
+ * After:  const { data } = useInstitutes();
+ */
+
 import axios from 'axios';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';

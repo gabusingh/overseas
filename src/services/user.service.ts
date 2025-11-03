@@ -1,3 +1,17 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace getUserDashboard() with useUserDashboard() from @/hooks/api/useUser
+ * - Replace getProfileStrength() with useProfileStrength() from @/hooks/api/useUser
+ * - Replace experienceList() with useExperiences() from @/hooks/api/useUser
+ * - Replace getUserDetails() with useUserProfile() from @/hooks/api/useUser
+ * 
+ * Example migration:
+ * Before: const data = await getUserDashboard(token);
+ * After:  const { data } = useUserDashboard();
+ */
+
 import axios from 'axios';
 import { apiRequest } from '../utils/axiosConfig';
 import { handleApiError } from '../utils/errorHandler';

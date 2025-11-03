@@ -1,3 +1,16 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace getNotifications() with useNotifications() from @/hooks/api/useNotifications
+ * - Replace markNotificationRead() with useMarkNotificationRead() from @/hooks/api/useNotifications
+ * - Replace deleteNotification() with useDeleteNotification() from @/hooks/api/useNotifications
+ * 
+ * Example migration:
+ * Before: const data = await getNotifications(token);
+ * After:  const { data } = useNotifications();
+ */
+
 import axios from 'axios';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';

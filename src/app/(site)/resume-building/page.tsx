@@ -6,11 +6,11 @@ import html2canvas from "html2canvas";
 import Select from "react-select";
 import { useRouter } from "next/navigation";
 import {
-  updateResumeApi,
-  updateResumeExperience,
-  updateResumeLicence,
-  updatePassport,
-} from "../../../services/resume.service";
+  useUpdateResume,
+  useUpdateResumeExperience,
+  useUpdateResumeLicense,
+  useUpdatePassport,
+} from "../../../hooks/api/useResume";
 import { ResumePreview, BuilderSidebar } from "../../../components/resume-builder/ResumeBuilderComponents";
 import ResumeBuilderModals from "./ResumeBuilderModals";
 import { getStoredUser, getStoredToken, isAuthenticated } from "../../../lib/auth";
@@ -125,6 +125,12 @@ const TECHNICAL_EDUCATION = [
 export default function ResumeBuilding() {
   const router = useRouter();
   
+  // Use React Query hooks for mutations
+  const updateResumeMutation = useUpdateResume();
+  const updateResumeExperienceMutation = useUpdateResumeExperience();
+  const updateResumeLicenseMutation = useUpdateResumeLicense();
+  const updatePassportMutation = useUpdatePassport();
+  
   // State management
   const [userDetails, setUserDetails] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
@@ -228,6 +234,12 @@ export default function ResumeBuilding() {
   
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Get loading state from mutations
+  const isAnyMutationLoading = updateResumeMutation.isPending || 
+    updateResumeExperienceMutation.isPending || 
+    updateResumeLicenseMutation.isPending || 
+    updatePassportMutation.isPending;
 
   const [experienceForm, setExperienceForm] = useState<Partial<Experience>>({
     organisationName: '',
@@ -882,7 +894,7 @@ export default function ResumeBuilding() {
           setLanguageKnown={setLanguageKnow}
           EDUCATION_LEVELS={EDUCATION_LEVELS}
           TECHNICAL_EDUCATION={TECHNICAL_EDUCATION}
-          isLoading={isLoading}
+          isLoading={isAnyMutationLoading}
           sendOtp={() => {}} // No longer used - keeping for compatibility
           verifyOtp={() => {}} // No longer used - keeping for compatibility
           updateResume={updateResume}

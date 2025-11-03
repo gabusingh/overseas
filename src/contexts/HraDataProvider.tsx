@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * @deprecated This context is deprecated. Use React Query hooks from @/hooks/api/useHra instead.
+ * 
+ * Migration guide:
+ * - Replace useHraData() with useHrDashboard() for dashboard data
+ * - Replace useHraData() with useHrProfile() for HR profile data
+ * - Replace useHraData() with useHrJobs() for HR jobs
+ * 
+ * Example migration:
+ * Before: const { dashboardData, loading, error } = useHraData();
+ * After:  const { data: dashboardData, isLoading: loading, error } = useHrDashboard();
+ */
+
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { getHraDashboardAnalytics, getHraDashboardData, getAllCreatedJobs, getJobsPostedByHra, HraDashboardData } from '@/services/hra.service';
 

@@ -1,3 +1,18 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace getHraDashboardData() with useHrDashboard() from @/hooks/api/useHra
+ * - Replace getHrDetails() with useHrProfile() from @/hooks/api/useHra
+ * - Replace getJobsPostedByHra() with useHrJobs() from @/hooks/api/useHra
+ * - Replace getAllCreatedJobs() with useHrJobs() from @/hooks/api/useHra
+ * - Replace getHraDashboardAnalytics() with useHrDashboard() from @/hooks/api/useHra
+ * 
+ * Example migration:
+ * Before: const data = await getHraDashboardData(token);
+ * After:  const { data } = useHrDashboard();
+ */
+
 import axios from 'axios';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';

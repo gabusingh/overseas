@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createJobByHr, getEnhancedHrDetails } from "@/services/hra.service";
+import { useCreateJob, useHrProfile } from "@/hooks/api/useHra";
 import { 
-  getCountries, 
-  getOccupations, 
-  getSkillsByOccuId 
-} from "@/services/info.service";
+  useCountries, 
+  useOccupations, 
+  useSkills 
+} from "@/hooks/api/useInfo";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -153,13 +153,28 @@ type ErrorType = Partial<Record<keyof FormDataType, string>>;
 const CreateJobs = () => {
   const router = useRouter();
   const [skillList, setSkillList] = useState<SelectOption[]>([]);
-  const [countryList, setCountryList] = useState<SelectOption[]>([]);
   const [currencyList, setCurrencyList] = useState<SelectOption[]>([]);
-  const [occupations, setOccupations] = useState<SelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [hrDetailsLoading, setHrDetailsLoading] = useState(false);
   const [formData, setFormData] = useState<FormDataValues>({} as FormDataValues);
   const [errors, setErrors] = useState<Partial<Record<keyof FormDataType, string>>>({});
+
+  // Use React Query hooks for data fetching
+  const { data: countriesData, isLoading: countriesLoading } = useCountries();
+  const { data: occupationsData, isLoading: occupationsLoading } = useOccupations();
+  const { data: hrProfile, isLoading: hrProfileLoading } = useHrProfile();
+  const createJobMutation = useCreateJob();
+
+  // Transform data for compatibility
+  const countryList = countriesData?.map(country => ({
+    label: country.name,
+    value: country.name
+  })) || [];
+
+  const occupations = occupationsData?.map(occupation => ({
+    label: occupation.name,
+    value: occupation.id.toString()
+  })) || [];
 
   // Function to populate form with demo data
   const populateDemoData = () => {
@@ -652,132 +667,18 @@ const CreateJobs = () => {
   };
 
   // Effect hooks for data fetching
+  // Set currency list (static data)
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        // First try to load data from the backend
-        console.log('🔄 Fetching data from API...');
-        
-        // Attempt to fetch from cached API
-        try {
-          console.log('🚀 Using cached API calls for better performance...');
-          const [countriesRes, occupationsRes] = await Promise.all([
-            getCountries().catch(err => {
-              console.error('Error fetching countries:', err);
-              throw err; // Rethrow to trigger fallback
-            }),
-            getOccupations().catch(err => {
-              console.error('Error fetching occupations:', err);
-              throw err; // Rethrow to trigger fallback
-            })
-          ]);
-          
-          console.log('📊 Raw API responses:', { countriesRes, occupationsRes });
-          
-          // 1. Handle countries data (expecting { countries: [...] } or { data: [...] } structure)
-          const countriesData = countriesRes?.countries || countriesRes?.data || [];
-          if (Array.isArray(countriesData) && countriesData.length > 0) {
-            const validCountries = countriesData.filter((country: any) => 
-              country && typeof country === 'object' && country.name && country.id
-            );
-            
-            if (validCountries.length > 0) {
-              setCountryList(
-                validCountries.map((country: any) => ({
-                  label: country.name,
-                  value: country.name,
-                }))
-              );
-              console.log('✅ Countries loaded from API:', validCountries.length);
-            } else {
-              throw new Error('No valid countries found in API response');
-            }
-          } else {
-            throw new Error('Countries API response format invalid');
-          }
-
-          // 2. Handle occupations data (expecting { occupation: [...] } or { data: [...] } structure)
-          const occupationsData = occupationsRes?.occupation || occupationsRes?.data || [];
-          if (Array.isArray(occupationsData) && occupationsData.length > 0) {
-            const validOccupations = occupationsData.filter((occupation: any) => 
-              occupation && typeof occupation === 'object' && 
-              (occupation.occupation || occupation.name || occupation.title) && occupation.id
-            );
-            
-            if (validOccupations.length > 0) {
-              setOccupations(
-                validOccupations.map((occupation: any) => ({
-                  label: occupation.occupation || occupation.name || occupation.title,
-                  value: occupation.id.toString(),
-                }))
-              );
-              console.log('✅ Occupations loaded from API:', validOccupations.length);
-            } else {
-              throw new Error('No valid occupations found in API response');
-            }
-          } else {
-            throw new Error('Occupations API response format invalid');
-          }
-          
-        } catch (apiError) {
-          console.error('⚠️ API data loading failed:', apiError);
-          console.log('⚙️ Using fallback data instead');
-          
-          // Use fallback data
-          setCountryList(
-            fallbackCountries.map(country => ({
-              label: country.name,
-              value: country.name,
-            }))
-          );
-          console.log('✅ Fallback countries loaded:', fallbackCountries.length);
-          
-          setOccupations(
-            fallbackOccupations.map(occupation => ({
-              label: occupation.name,
-              value: occupation.id.toString(),
-            }))
-          );
-          console.log('✅ Fallback occupations loaded:', fallbackOccupations.length);
-          
-          // Notify user that we're using fallback data
-          toast.info('Using offline data. Some features may be limited.');
-        }
-
-        // Set currency list (this is static data)
-        setCurrencyList([
-          { label: "USD", value: "USD" },
-          { label: "INR", value: "INR" },
-          { label: "AED", value: "AED" },
-          { label: "SAR", value: "SAR" },
-          { label: "KWD", value: "KWD" },
-          { label: "QAR", value: "QAR" },
-          { label: "BHD", value: "BHD" },
-          { label: "OMR", value: "OMR" },
-        ]);
-        
-        console.log('✅ Currency list set with 8 currencies');
-        
-      } catch (error) {
-        console.error("❌ Error fetching initial data:", error);
-        // Even if there's an error, set empty arrays to prevent crashes
-        setCountryList([]);
-        setOccupations([]);
-        setCurrencyList([
-          { label: "USD", value: "USD" },
-          { label: "INR", value: "INR" },
-          { label: "AED", value: "AED" },
-          { label: "SAR", value: "SAR" },
-          { label: "KWD", value: "KWD" },
-          { label: "QAR", value: "QAR" },
-          { label: "BHD", value: "BHD" },
-          { label: "OMR", value: "OMR" },
-        ]);
-        toast.error("Some form data couldn't be loaded. You can still create jobs, but some dropdown options may be limited.");
-      }
-    };
-
-    fetchInitialData();
+    setCurrencyList([
+      { label: "USD", value: "USD" },
+      { label: "INR", value: "INR" },
+      { label: "AED", value: "AED" },
+      { label: "SAR", value: "SAR" },
+      { label: "KWD", value: "KWD" },
+      { label: "QAR", value: "QAR" },
+      { label: "BHD", value: "BHD" },
+      { label: "OMR", value: "OMR" },
+    ]);
   }, []);
 
   // Effect to fetch and prefill HR details
@@ -808,7 +709,8 @@ const CreateJobs = () => {
         console.log('🚀 Calling getEnhancedHrDetails API...');
         
         // Call HR details API
-        const hrDetailsResponse = await getEnhancedHrDetails(accessToken);
+        // HR details are now managed by React Query hooks
+        const hrDetailsResponse = hrProfile;
         console.log('📊 FULL HR Details Response:', JSON.stringify(hrDetailsResponse, null, 2));
         console.log('🔍 Response type:', typeof hrDetailsResponse);
         console.log('🔍 Response keys:', hrDetailsResponse ? Object.keys(hrDetailsResponse) : 'null');
@@ -818,38 +720,38 @@ const CreateJobs = () => {
           console.log('🔍 Processing HR details response...');
           
           // Extract HR details with ALL possible field combinations
-          const hrName = hrDetailsResponse.name || hrDetailsResponse.hrName || hrDetailsResponse.empName || hrDetailsResponse.full_name || '';
-          const hrEmail = hrDetailsResponse.email || hrDetailsResponse.hrEmail || hrDetailsResponse.empEmail || hrDetailsResponse.email_address || '';
-          const hrNumber = hrDetailsResponse.phone || hrDetailsResponse.hrContact || hrDetailsResponse.empMobile || hrDetailsResponse.phone_number || hrDetailsResponse.mobile || '';
-          const companyName = hrDetailsResponse.company_name || hrDetailsResponse.cmpName || hrDetailsResponse.company || '';
+          const hrName = (hrDetailsResponse as any).name || (hrDetailsResponse as any).hrName || hrDetailsResponse.empName || (hrDetailsResponse as any).full_name || '';
+          const hrEmail = (hrDetailsResponse as any).email || (hrDetailsResponse as any).hrEmail || hrDetailsResponse.empEmail || (hrDetailsResponse as any).email_address || '';
+          const hrNumber = (hrDetailsResponse as any).phone || (hrDetailsResponse as any).hrContact || hrDetailsResponse.empMobile || (hrDetailsResponse as any).phone_number || (hrDetailsResponse as any).mobile || '';
+          const companyName = (hrDetailsResponse as any).company_name || (hrDetailsResponse as any).cmpName || (hrDetailsResponse as any).company || '';
           
           console.log('🎯 ALL FIELD EXTRACTION ATTEMPTS:');
           console.log('  - hrName attempts:', {
-            name: hrDetailsResponse.name,
-            hrName: hrDetailsResponse.hrName,
+            name: (hrDetailsResponse as any).name,
+            hrName: (hrDetailsResponse as any).hrName,
             empName: hrDetailsResponse.empName,
-            full_name: hrDetailsResponse.full_name,
+            full_name: (hrDetailsResponse as any).full_name,
             final: hrName
           });
           console.log('  - hrEmail attempts:', {
-            email: hrDetailsResponse.email,
-            hrEmail: hrDetailsResponse.hrEmail,
+            email: (hrDetailsResponse as any).email,
+            hrEmail: (hrDetailsResponse as any).hrEmail,
             empEmail: hrDetailsResponse.empEmail,
-            email_address: hrDetailsResponse.email_address,
+            email_address: (hrDetailsResponse as any).email_address,
             final: hrEmail
           });
           console.log('  - hrNumber attempts:', {
-            phone: hrDetailsResponse.phone,
-            hrContact: hrDetailsResponse.hrContact,
+            phone: (hrDetailsResponse as any).phone,
+            hrContact: (hrDetailsResponse as any).hrContact,
             empMobile: hrDetailsResponse.empMobile,
-            phone_number: hrDetailsResponse.phone_number,
-            mobile: hrDetailsResponse.mobile,
+            phone_number: (hrDetailsResponse as any).phone_number,
+            mobile: (hrDetailsResponse as any).mobile,
             final: hrNumber
           });
           console.log('  - companyName attempts:', {
-            company_name: hrDetailsResponse.company_name,
-            cmpName: hrDetailsResponse.cmpName,
-            company: hrDetailsResponse.company,
+            company_name: (hrDetailsResponse as any).company_name,
+            cmpName: (hrDetailsResponse as any).cmpName,
+            company: (hrDetailsResponse as any).company,
             final: companyName
           });
           
@@ -927,66 +829,19 @@ const CreateJobs = () => {
 
       console.log('🔍 Fetching skills for occupation ID:', occuId);
       
-      try {
-        const skillsResponse = await getSkillsByOccuId(occuId);
-        console.log('🔍 Skills Response:', skillsResponse);
+      // Use React Query hook for skills
+      const { data: skillsData } = useSkills();
+      
+      if (skillsData && skillsData.length > 0) {
+        const skillOptions = skillsData.map(skill => ({
+          label: skill.skill || (skill as any).name,
+          value: skill.id.toString()
+        }));
         
-        // Handle skills data (expecting { skills: [...] } structure)
-        if (skillsResponse?.skills && Array.isArray(skillsResponse.skills)) {
-          const validSkills = skillsResponse.skills.filter((skill: any) => 
-            skill && typeof skill === 'object' && (skill.skill || skill.name) && skill.id
-          );
-          
-          if (validSkills.length > 0) {
-            // Remove duplicates based on skill name and preserve skill ID
-            const uniqueSkills = validSkills.reduce((acc: any[], skill: any) => {
-              const skillName = skill.skill || skill.name;
-              const skillId = skill.id;
-              const existingIndex = acc.findIndex(s => s.label === skillName);
-              
-              if (existingIndex === -1) {
-                // New skill, add it with ID as value for backend
-                acc.push({
-                  label: skillName,
-                  value: skillId.toString(), // Send skill ID to backend
-                  skillId: skillId, // Keep ID for reference
-                  skillName: skillName // Keep name for display
-                });
-              }
-              return acc;
-            }, []);
-            
-            setSkillList(uniqueSkills);
-            console.log('✅ Skills loaded from API (unique):', uniqueSkills.length);
-            return;
-          } else {
-            throw new Error('No valid skills found in API response');
-          }
-        } else {
-          throw new Error('Skills API response format invalid');
-        }
-        
-      } catch (apiError) {
-        console.warn('⚠️ API skills loading failed:', apiError);
-        console.log('⚙️ Using fallback skills for occupation:', occuId);
-        
-        // Use fallback skills data with IDs
-        const fallbackSkillsForOccupation = fallbackSkills[id as keyof typeof fallbackSkills] || [];
-        
-        if (fallbackSkillsForOccupation.length > 0) {
-          setSkillList(
-            fallbackSkillsForOccupation.map((skill: any) => ({
-              label: skill.name,
-              value: skill.id.toString(), // Use skill ID as value
-              skillId: skill.id,
-              skillName: skill.name
-            }))
-          );
-          console.log('✅ Fallback skills loaded:', fallbackSkillsForOccupation.length);
-        } else {
-          console.warn('⚠️ No fallback skills available for occupation:', occuId);
-          setSkillList([]);
-        }
+        setSkillList(skillOptions);
+        console.log('✅ Set skill list:', skillOptions);
+      } else {
+        setSkillList([]);
       }
     } catch (error) {
       console.error("❌ Error in getSkillList:", error);
@@ -1178,7 +1033,7 @@ const CreateJobs = () => {
       console.log('🔑 Access token:', accessToken ? 'Found' : 'Not found');
       console.log('📦 Form data instance entries:', Array.from(formDataInstance.entries()));
       
-      const response = await createJobByHr(formDataInstance, accessToken);
+      const response = await createJobMutation.mutateAsync(formDataInstance);
       
       console.log('📥 API Response received:', response);
       

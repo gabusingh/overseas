@@ -1,3 +1,17 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace getCountries() with useCountries() from @/hooks/api/useInfo
+ * - Replace getOccupations() with useOccupations() from @/hooks/api/useInfo
+ * - Replace getSkills() with useSkills() from @/hooks/api/useInfo
+ * - Replace getNewsFeed() with useNewsFeed() from @/hooks/api/useInfo
+ * 
+ * Example migration:
+ * Before: const data = await getCountries();
+ * After:  const { data } = useCountries();
+ */
+
 import axios from 'axios';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';

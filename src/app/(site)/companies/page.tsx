@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
-import { getHraList } from "../../../services/hra.service";
+import { useAllCompanies } from "../../../hooks/api/useHra";
 import { Star, Users, ExternalLink, Search } from "lucide-react";
 import {
   Select,
@@ -28,75 +28,19 @@ interface Company {
 
 export default function Companies() {
   const router = useRouter();
-  const [hraList, setHraList] = useState<Company[]>([]);
   const [filteredArray, setFilteredArray] = useState<Company[]>([]);
   const [searchKey, setSearchKey] = useState("");
   const [sortName, setSortName] = useState<string>("");
   const [sortSince, setSortSince] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  
+  // Use React Query hook for companies data
+  const { data: hraList = [], isLoading: loading, error } = useAllCompanies();
   const employerRegisterRef = useRef<HTMLDivElement>(null);
 
-  const getHraListFunc = async () => {
-    try {
-      const response = await getHraList();
-
-
-      // Check different possible response structures
-      let companyData = [];
-
-      if (response?.cmpData && Array.isArray(response.cmpData)) {
-        companyData = response.cmpData;
-        console.log('✅ Found cmpData array with', companyData.length, 'companies');
-      } else if (response?.data && Array.isArray(response.data)) {
-        companyData = response.data;
-        console.log('✅ Found data array with', companyData.length, 'companies');
-      } else if (Array.isArray(response)) {
-        companyData = response;
-        console.log('✅ Response is direct array with', companyData.length, 'companies');
-      } else {
-        console.warn('⚠️ Unknown response structure, trying to find companies...');
-        // Try to find any array in the response
-        for (const [key, value] of Object.entries(response || {})) {
-          if (Array.isArray(value) && value.length > 0 && value[0]?.cmpName) {
-            companyData = value;
-            console.log(`✅ Found companies in ${key} with`, companyData.length, 'items');
-            break;
-          }
-        }
-      }
-
-      console.log('🎯 Final company data:', companyData);
-
-      if (companyData.length > 0) {
-        console.log('✅ Setting', companyData.length, 'companies in state');
-        setHraList(companyData);
-        setFilteredArray(companyData);
-      } else {
-        console.warn('⚠️ No companies found in response');
-        setHraList([]);
-        setFilteredArray([]);
-      }
-
-    } catch (error) {
-      console.error("❌ Error fetching HRA list:", error);
-      console.error("❌ Error details:", {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : 'No stack trace',
-        response: (error as any)?.response?.data || 'No response data'
-      });
-
-      // Set empty arrays on error
-      setHraList([]);
-      setFilteredArray([]);
-    } finally {
-      console.log('🏁 Company fetch completed, setting loading to false');
-      setLoading(false);
-    }
-  };
-
+  // Update filtered array when hraList changes
   useEffect(() => {
-    getHraListFunc();
-  }, []);
+    setFilteredArray(hraList);
+  }, [hraList]);
 
   // Debounce search for better UX
   useEffect(() => {

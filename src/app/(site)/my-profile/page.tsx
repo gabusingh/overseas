@@ -6,9 +6,9 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { toast } from "sonner";
 import Link from "next/link";
-import { getUserDashboard, getProfileStrength, experienceList, passportView, getUserDetails, getEmpDataForEdit } from "../../../services/user.service";
-import { getAppliedJobs, getSavedJobs } from "../../../services/job.service";
-import { getNotifications } from "../../../services/notification.service";
+import { useUserProfile, useUserDashboard, useProfileStrength, useExperiences, useDocuments, useAppliedJobs, useSavedJobs } from "../../../hooks/api/useUser";
+import { useAppliedJobs as useAppliedJobsHook, useSavedJobs as useSavedJobsHook } from "../../../hooks/api/useJobs";
+import { useNotifications } from "../../../hooks/api/useNotifications";
 
 interface User {
   id: number;
@@ -48,44 +48,33 @@ interface DashboardData {
 }
 
 export default function MyProfilePage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [experiences, setExperiences] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [appliedJobs, setAppliedJobs] = useState<any[]>([]);
-  const [savedJobs, setSavedJobs] = useState<any[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setGlobalState } = require("@/contexts/GlobalProvider").useGlobalState();
 
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    // Try both possible localStorage keys for user data (loggedUser and user)
-    let userData = localStorage.getItem("loggedUser") || localStorage.getItem("user");
-    
-    if (!token || !userData) {
-      router.push("/login");
-      return;
-    }
-    
-    try {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      loadUserData(token);
-      
-      // Handle tab query parameter
-      const tabParam = searchParams.get('tab');
-      if (tabParam && ['overview', 'personal', 'experience', 'applied', 'saved', 'notifications', 'documents'].includes(tabParam)) {
-        setActiveTab(tabParam);
-      }
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      router.push("/login");
-    }
-  }, [router, searchParams]);
+  // Use new React Query hooks
+  const { data: user, isLoading: userLoading } = useUserProfile();
+  const { data: dashboardData, isLoading: dashboardLoading } = useUserDashboard();
+  const { data: profileStrength } = useProfileStrength();
+  const { data: experiences, isLoading: experiencesLoading } = useExperiences();
+  const { data: documents, isLoading: documentsLoading } = useDocuments();
+  const { data: notifications, isLoading: notificationsLoading } = useNotifications();
+  const { data: appliedJobs, isLoading: appliedJobsLoading } = useAppliedJobsHook();
+  const { data: savedJobs, isLoading: savedJobsLoading } = useSavedJobsHook();
 
+  const loading = userLoading || dashboardLoading;
+
+  useEffect(() => {
+    // Handle tab query parameter
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['overview', 'personal', 'experience', 'applied', 'saved', 'notifications', 'documents'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // Data is now automatically fetched via React Query hooks
+  // No need for manual loadUserData function
   const loadUserData = async (token: string) => {
     try {
       const [
@@ -684,7 +673,7 @@ export default function MyProfilePage() {
                     <div className="flex items-center gap-2">
                       {notifications.filter(n => !n.is_read && !n.isRead && !n.read_at).length > 0 && (
                         <Badge variant="destructive" className="text-xs px-2 py-1">
-                          {notifications.filter(n => !n.is_read && !n.isRead && !n.read_at).length} New
+                          {notifications?.filter(n => !n.is_read && !n.isRead && !n.read_at).length || 0} New
                         </Badge>
                       )}
                       <Button 
@@ -692,10 +681,10 @@ export default function MyProfilePage() {
                         variant="outline"
                         onClick={async () => {
                           const token = localStorage.getItem('access_token');
-                          if (token && notifications.some(n => !n.is_read && !n.isRead)) {
+                          if (token && notifications?.some(n => !n.is_read && !n.isRead)) {
                             try {
                               // Mark all as read
-                              setNotifications(prev => prev.map(n => ({ ...n, is_read: true, isRead: true })));
+                              // Notifications are now managed by React Query
                               toast.success('All notifications marked as read');
                             } catch (error) {
                               console.error('Error marking notifications as read:', error);
@@ -709,7 +698,7 @@ export default function MyProfilePage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {notifications.length > 0 ? (
+                  {notifications && notifications.length > 0 ? (
                     <div className="space-y-3 max-h-[600px] overflow-y-auto">
                       {notifications.map((notification) => {
                         // Extract notification details with proper field mapping

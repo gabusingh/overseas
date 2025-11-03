@@ -1,3 +1,19 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace getUserAwareJobList() with useJobs() from @/hooks/api/useJobs
+ * - Replace getJobById() with useJobById() from @/hooks/api/useJobs
+ * - Replace applyJobApi() with useApplyJob() from @/hooks/api/useJobs
+ * - Replace saveJobById() with useSaveJob() from @/hooks/api/useJobs
+ * - Replace getAppliedJobs() with useAppliedJobs() from @/hooks/api/useJobs
+ * - Replace getSavedJobs() with useSavedJobs() from @/hooks/api/useJobs
+ * 
+ * Example migration:
+ * Before: const data = await getUserAwareJobList(formData);
+ * After:  const { data } = useJobs(filters);
+ */
+
 import axios from 'axios';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';

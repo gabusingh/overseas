@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GlobalStateProvider } from '../contexts/GlobalProvider';
+import { QueryProvider } from '../providers/QueryProvider';
 import { CookieConsent } from '../components/CookieConsent';
 
 const geistSans = Geist({
@@ -100,10 +101,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <GlobalStateProvider>
-          {children}
-          <CookieConsent />
-        </GlobalStateProvider>
+        <QueryProvider>
+          <GlobalStateProvider>
+            {children}
+            <CookieConsent />
+          </GlobalStateProvider>
+        </QueryProvider>
       </body>
     </html>
   );

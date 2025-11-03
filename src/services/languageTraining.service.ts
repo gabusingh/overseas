@@ -1,3 +1,14 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace languageTrainingData() with useCourseDetails() from @/hooks/api/useCourses
+ * 
+ * Example migration:
+ * Before: const data = await languageTrainingData(id, token);
+ * After:  const { data } = useCourseDetails(id);
+ */
+
 import axios from 'axios';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';

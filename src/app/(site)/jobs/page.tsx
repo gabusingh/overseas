@@ -6,8 +6,8 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import Link from "next/link";
 import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart } from "lucide-react";
-import { getUserAwareJobList, saveJobById, applyJobApi } from "../../../services/job.service";
-import { getOccupations, getCountries } from "../../../services/info.service";
+import { useJobs, useApplyJob, useSaveJob, useRemoveSavedJob, useSavedJobs } from "../../../hooks/api/useJobs";
+import { useOccupations, useCountries } from "../../../hooks/api/useInfo";
 import JobFilter from "../../../components/JobFilter";
 import SearchComponent from "../../../components/SearchComponent";
 import ProfileCompletionModal from "../../../components/ProfileCompletionModal";
@@ -39,20 +39,10 @@ interface Job {
 }
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  // const [loadingMore, setLoadingMore] = useState(false); // Removed with load more functionality
   const [showFilter, setShowFilter] = useState(false);
-  const [savedJobs, setSavedJobs] = useState<(string | number)[]>([]);
-  // const [searchTerm, setSearchTerm] = useState(''); // Removed as not used
-  // Pagination removed
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalJobs, setTotalJobs] = useState(0);
-  // const [hasMore, setHasMore] = useState(true); // Removed with load more functionality
-  // const [sortBy, setSortBy] = useState('latest'); // Removed as not used
-  // const [paginationType, setPaginationType] = useState<'pagination' | 'loadMore'>('pagination'); // Removed as only pagination is used
+  const [pageNo, setPageNo] = useState(1);
   const [payload, setPayload] = useState({
     jobOccupation: [] as number[],
     jobLocationCountry: [] as number[],
@@ -63,17 +53,43 @@ export default function JobsPage() {
     sortBy: ""
   });
 
-  const [categories, setCategories] = useState<Array<{label: string, value: number, count?: number}>>([]);
-  const [countries, setCountries] = useState<Array<{label: string, value: number, count?: number}>>([]);
-  
   const router = useRouter();
-  // const searchParams = useSearchParams(); // Removed as not used
   const { globalState } = useGlobalState();
-  const [pageNo, setPageNo] = useState(1);
-  // const observerRef = useRef<IntersectionObserver | null>(null); // Removed
-  // const loadMoreRef = useRef<HTMLDivElement>(null); // Removed
   const containerRef = useRef(null);
   const isInView = useInView(containerRef, { once: true });
+
+  // Use new React Query hooks
+  const { data: jobsData, isLoading: loading, error } = useJobs({
+    ...payload,
+    page: pageNo,
+    per_page: 10
+  });
+  
+  const { data: savedJobsData } = useSavedJobs();
+  const applyJobMutation = useApplyJob();
+  const saveJobMutation = useSaveJob();
+  const removeSavedJobMutation = useRemoveSavedJob();
+  
+  const { data: categoriesData } = useOccupations();
+  const { data: countriesData } = useCountries();
+
+  // Transform data for compatibility
+  const jobs = jobsData?.data || [];
+  const totalJobs = jobsData?.total || 0;
+  const totalPages = jobsData?.last_page || 0;
+  const savedJobs = savedJobsData?.map(job => job.id) || [];
+  
+  const categories = categoriesData?.map(item => ({
+    label: item.title || item.name,
+    value: item.id,
+    count: item.job_count
+  })) || [];
+  
+  const countries = countriesData?.map(item => ({
+    label: item.name,
+    value: item.id,
+    count: item.job_count
+  })) || [];
 
   // Indian language words for "Job"
   const jobWords = [
@@ -102,35 +118,31 @@ export default function JobsPage() {
       return;
     }
 
-    const payload = {
-      id: jobId,
-      "apply-job": "",
-    };
-    
-    try {
-      const response = await applyJobApi(
-        payload,
-        globalState?.user?.access_token
-      );
-      if (response?.data?.msg == "Job Applied Successfully") {
-        toast.success(response?.data?.msg);
-      } else if (response?.data?.error === "You did not fill mandatory fields.") {
-        // Show profile completion modal instead of redirecting
-        setSelectedJobId(jobId);
-        setShowProfileModal(true);
-      } else {
-        toast.error(response?.data?.error || "Something went wrong");
+    applyJobMutation.mutate(
+      { jobId, coverLetter: "" },
+      {
+        onSuccess: (response) => {
+          if (response?.data?.msg === "Job Applied Successfully") {
+            toast.success(response?.data?.msg);
+          } else if (response?.data?.error === "You did not fill mandatory fields.") {
+            setSelectedJobId(jobId);
+            setShowProfileModal(true);
+          } else {
+            toast.error(response?.data?.error || "Something went wrong");
+          }
+        },
+        onError: (error: any) => {
+          console.error('Apply job error:', error);
+          const errorMessage = error?.response?.data?.error || error?.message || "Internal Server Error";
+          if (errorMessage === "You did not fill mandatory fields.") {
+            setSelectedJobId(jobId);
+            setShowProfileModal(true);
+          } else {
+            toast.error(errorMessage);
+          }
+        }
       }
-    } catch (error: unknown) {
-      console.error('Apply job error:', error);
-      const errorMessage = (error as any)?.response?.data?.error || (error as any)?.message || "Internal Server Error";
-      if (errorMessage === "You did not fill mandatory fields.") {
-        setSelectedJobId(jobId);
-        setShowProfileModal(true);
-      } else {
-        toast.error(errorMessage);
-      }
-    }
+    );
   };
 
   // Save job function
@@ -143,18 +155,7 @@ export default function JobsPage() {
       return;
     }
 
-    try {
-      const response = await saveJobById(jobId, globalState?.user?.access_token);
-      if (response?.data?.msg === "Job saved successfully") {
-        toast.success("Job saved successfully!");
-        setSavedJobs(prev => [...prev, jobId]);
-      } else {
-        toast.error(response?.data?.error || "Failed to save job");
-      }
-    } catch (error: unknown) {
-      console.error('Save job error:', error);
-      toast.error((error as any)?.response?.data?.error || "Failed to save job");
-    }
+    saveJobMutation.mutate(jobId);
   };
 
   // fetchJobs function removed - functionality moved to useEffect and handlePageChange
@@ -196,141 +197,11 @@ export default function JobsPage() {
   // }, [paginationType, hasMore, loadingMore, handleLoadMore]);
 
   // Fetch jobs for current pageNo (pagination enabled)
-  useEffect(() => {
-    const loadJobs = async () => {
-      try {
-        setLoading(true);
-        const perPage = 10; // default page size fallback
-        const formData = new FormData();
-        formData.append('pageNo', String(pageNo));
+  // Jobs are now automatically fetched via React Query hooks
+  // No need for manual useEffect for data fetching
 
-        // Add filter payload
-        if (payload.jobOccupation.length > 0) {
-          // Keeping existing format for backend compatibility
-          payload.jobOccupation.forEach(id => formData.append('jobOccupation[]', id.toString()));
-        }
-        if (payload.jobLocationCountry.length > 0) {
-          // Send as single key with JSON array to match backend expectation
-          formData.append('jobLocationCountry', JSON.stringify(payload.jobLocationCountry));
-        }
-        if (payload.passportType) {
-          formData.append('passportType', payload.passportType);
-        }
-        if (payload.languageRequired.length > 0) {
-          payload.languageRequired.forEach(lang => formData.append('languageRequired[]', lang));
-        }
-        if (payload.contractPeriod) {
-          formData.append('contractPeriod', payload.contractPeriod);
-        }
-        if (payload.jobExpTypeReq) {
-          formData.append('jobExpTypeReq', payload.jobExpTypeReq);
-        }
-        if (payload.sortBy) {
-          formData.append('sortBy', payload.sortBy);
-        }
-
-        const response = await getUserAwareJobList(formData);
-        const pageJobs = (response as any)?.jobs || (response as any)?.data || [];
-        const totalCount = (response as any)?.totalJobs || (response as any)?.total || pageJobs.length;
-        const lastPageFromServer = (response as any)?.lastPage || Math.ceil(totalCount / perPage) || 1;
-
-        setJobs(Array.isArray(pageJobs) ? pageJobs : []);
-        setTotalJobs(totalCount);
-        setTotalPages(lastPageFromServer);
-      } catch (error: any) {
-        console.error('Error fetching jobs:', error);
-        
-        // Check for specific error types
-        if (error?.response?.status === 500) {
-          toast.error('Server is temporarily unavailable. Showing offline mode.');
-          // Set empty jobs but don't crash
-          setJobs([]);
-          setTotalJobs(0);
-          setTotalPages(1);
-        } else if (error?.response?.status === 503) {
-          toast.error('Service is under maintenance. Please try again later.');
-          setJobs([]);
-          setTotalJobs(0);
-          setTotalPages(1);
-        } else {
-          toast.error('Failed to load jobs. Please check your connection and try again.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadJobs();
-  }, [payload, pageNo]);
-
-  // Fetch categories and countries
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        console.log('🔄 Fetching occupations...');
-        const response = await getOccupations();
-        console.log('📊 Occupations response:', response);
-        
-        const occupationData = response?.data || response?.occupation || [];
-        if (Array.isArray(occupationData) && occupationData.length > 0) {
-          const categories = occupationData.map((item: any) => ({
-            id: item.id,
-            title: item.title || item.name || item.occupation,
-            name: item.title || item.name || item.occupation,
-            label: item.title || item.name || item.occupation,
-            value: item.id,
-            img: `/images/institute.png`,
-            count: 0
-          }));
-          setCategories(categories);
-          console.log('✅ Categories loaded:', categories.length);
-        } else {
-          throw new Error('No valid categories found');
-        }
-      } catch (error) {
-        console.error('❌ Error fetching categories:', error);
-        // Set empty array - no fallback data
-        setCategories([]);
-        toast.error('Failed to load job categories. Please refresh the page.');
-      }
-    };
-
-    const fetchCountries = async () => {
-      try {
-        console.log('🔄 Fetching countries...');
-        const response = await getCountries();
-        console.log('📊 Countries response:', response);
-        
-        const countryData = response?.countries || response?.data || [];
-        if (Array.isArray(countryData) && countryData.length > 0) {
-          const countries = countryData.map((item: any) => ({
-            label: item.name,
-            value: item.id,
-            count: 0
-          }));
-          setCountries(countries);
-          console.log('✅ Countries loaded:', countries.length);
-        } else {
-          throw new Error('No valid countries found');
-        }
-      } catch (error) {
-        console.error('❌ Error fetching countries:', error);
-        // Fallback countries
-        const fallbackCountries = [
-          { label: "United Arab Emirates", value: 1, count: 0 },
-          { label: "Saudi Arabia", value: 2, count: 0 },
-          { label: "Qatar", value: 3, count: 0 },
-          { label: "Kuwait", value: 4, count: 0 },
-          { label: "Singapore", value: 7, count: 0 },
-        ];
-        setCountries(fallbackCountries);
-        toast.info('Using offline countries. Some features may be limited.');
-      }
-    };
-
-    fetchCategories();
-    fetchCountries();
-  }, []);
+  // Categories and countries are now automatically fetched via React Query hooks
+  // No need for manual useEffect for data fetching
 
   // Format date
   const formatDate = (dateString?: string) => {

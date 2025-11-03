@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
-import { getAllDocApi, addPassportApi, addCvApi, addHighestEduCertificate, addDrivingLicense, addCovidCertificateApi, addOtherDoc } from "../../../services/user.service";
+import { useDocuments, useUploadPassport, useUploadCv, useUploadEduCertificate, useUploadDrivingLicense, useUploadCovidCertificate, useUploadOtherDocs } from "../../../hooks/api/useUser";
 
 interface Document {
   id: string;
@@ -20,10 +20,31 @@ interface Document {
 
 export default function MyDocumentsPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [documents, setDocuments] = useState<Document[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [activeCategory, setActiveCategory] = useState("all");
+
+  // Use React Query hooks for data fetching and mutations
+  const { data: documentsData, isLoading: loading, error } = useDocuments();
+  const uploadPassportMutation = useUploadPassport();
+  const uploadCvMutation = useUploadCv();
+  const uploadEduCertificateMutation = useUploadEduCertificate();
+  const uploadDrivingLicenseMutation = useUploadDrivingLicense();
+  const uploadCovidCertificateMutation = useUploadCovidCertificate();
+  const uploadOtherDocsMutation = useUploadOtherDocs();
+
+  // Transform data for compatibility
+  const documents = documentsData?.map((doc: any) => ({
+    id: doc.id?.toString() || Math.random().toString(),
+    name: doc.file_name || doc.document_name || doc.name || 'Unknown Document',
+    type: doc.file_type || doc.document_type || 'pdf',
+    category: doc.category || doc.document_category || 'other',
+    uploadDate: doc.created_at ? doc.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+    fileUrl: doc.file_url || doc.document_url || '#',
+    fileSize: doc.file_size || 'Unknown',
+    status: (doc.status === 'verified' || doc.status === 'approved') ? 'approved' : 
+           (doc.status === 'rejected' || doc.status === 'declined') ? 'rejected' : 'pending',
+    expiryDate: doc.expiry_date
+  })) || [];
 
   const documentCategories = [
     { key: "all", label: "All Documents", icon: "fa fa-folder" },
@@ -46,49 +67,7 @@ export default function MyDocumentsPage() {
     { category: "other", name: "Reference Letters", required: false }
   ];
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
-  const fetchDocuments = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      // Fetch real documents from API
-      const response = await getAllDocApi(token);
-      
-      if (response?.data) {
-        // Transform API response to match our Document interface
-        const docs: Document[] = (response.data || []).map((doc: any) => ({
-          id: doc.id?.toString() || Math.random().toString(),
-          name: doc.file_name || doc.document_name || doc.name || 'Unknown Document',
-          type: doc.file_type || doc.document_type || 'pdf',
-          category: doc.category || doc.document_category || 'other',
-          uploadDate: doc.created_at ? doc.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-          fileUrl: doc.file_url || doc.document_url || '#',
-          fileSize: doc.file_size || 'Unknown',
-          status: (doc.status === 'verified' || doc.status === 'approved') ? 'approved' : 
-                 (doc.status === 'rejected' || doc.status === 'declined') ? 'rejected' : 'pending',
-          expiryDate: doc.expiry_date
-        }));
-        setDocuments(docs);
-      } else {
-        // If no documents or API returns empty, set empty array
-        setDocuments([]);
-      }
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-      // On error, still set empty array instead of showing error for better UX
-      setDocuments([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Data is now fetched automatically via React Query hooks
 
   const filteredDocuments = activeCategory === "all" 
     ? documents 
@@ -136,44 +115,38 @@ export default function MyDocumentsPage() {
       // Call appropriate API based on document category
       switch (category) {
         case 'identity':
-          // For identity documents, use passport API as primary
           formData.append('passport_file', file);
-          uploadResponse = await addPassportApi(formData, token);
+          uploadResponse = await uploadPassportMutation.mutateAsync(formData);
           break;
         case 'education':
-          // For educational documents
           formData.append('highest_edu_file', file);
-          uploadResponse = await addHighestEduCertificate(formData, token);
+          uploadResponse = await uploadEduCertificateMutation.mutateAsync(formData);
           break;
         case 'experience':
-          // For experience documents, use CV API
           formData.append('cv_file', file);
-          uploadResponse = await addCvApi(formData, token);
+          uploadResponse = await uploadCvMutation.mutateAsync(formData);
           break;
         case 'certificates':
-          // For certificates, use driving license API or other docs
           if (file.name.toLowerCase().includes('driving') || file.name.toLowerCase().includes('license')) {
             formData.append('dl_file', file);
-            uploadResponse = await addDrivingLicense(formData, token);
+            uploadResponse = await uploadDrivingLicenseMutation.mutateAsync(formData);
           } else {
             formData.append('other_docs', file);
-            uploadResponse = await addOtherDoc(formData, token);
+            uploadResponse = await uploadOtherDocsMutation.mutateAsync(formData);
           }
           break;
         case 'medical':
-          // For medical documents, use COVID certificate API or other docs
           if (file.name.toLowerCase().includes('covid') || file.name.toLowerCase().includes('vaccination')) {
             formData.append('covid_file', file);
-            uploadResponse = await addCovidCertificateApi(formData, token);
+            uploadResponse = await uploadCovidCertificateMutation.mutateAsync(formData);
           } else {
             formData.append('other_docs', file);
-            uploadResponse = await addOtherDoc(formData, token);
+            uploadResponse = await uploadOtherDocsMutation.mutateAsync(formData);
           }
           break;
         default:
-          // For other documents
           formData.append('other_docs', file);
-          uploadResponse = await addOtherDoc(formData, token);
+          uploadResponse = await uploadOtherDocsMutation.mutateAsync(formData);
           break;
       }
 

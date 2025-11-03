@@ -3,9 +3,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { getOccupations, getCountriesForJobs, getNewsFeedData, getSuccessNotification } from '../../services/info.service';
-import { getInstitutes } from '../../services/institute.service';
-import { getHraList } from '../../services/hra.service';
+import { useOccupations, useCountries, useNewsFeed, useSuccessNotifications } from '../../hooks/api/useInfo';
+import { useInstitutes } from '../../hooks/api/useInstitute';
+import { useAllCompanies } from '../../hooks/api/useHra';
 import { toast } from 'sonner';
 
 // Lazy load heavy components
@@ -91,131 +91,33 @@ const LoadingSkeleton = () => (
 
 export default function Home() {
   const router = useRouter();
-  const [departmentList, setDepartmentList] = useState<Department[]>([]);
-  const [countryList, setCountryList] = useState<Country[]>([]);
-  const [companyList, setCompanyList] = useState<Company[]>([]);
-  const [instituteList, setInstituteList] = useState<Institute[]>([]);
-  const [newsList, setNewsList] = useState<NewsItem[]>([]);
-  const [successStories, setSuccessStories] = useState<unknown[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalNews, setModalNews] = useState<NewsItem | null>(null);
 
+  // Use React Query hooks for data fetching
+  const { data: occupationsData, isLoading: occupationsLoading } = useOccupations();
+  const { data: countriesData, isLoading: countriesLoading } = useCountries();
+  const { data: companiesData, isLoading: companiesLoading } = useAllCompanies();
+  const { data: institutesData, isLoading: institutesLoading } = useInstitutes();
+  const { data: newsData, isLoading: newsLoading } = useNewsFeed();
+  const { data: successData, isLoading: successLoading } = useSuccessNotifications();
 
-  // Cache key for localStorage
-  const CACHE_KEY = 'overseas_home_data';
-  const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+  // Transform data for compatibility
+  const departmentList = occupationsData?.map((item: any) => ({
+    id: item.id,
+    title: item.title || item.name || item.occupation,
+    name: item.title || item.name || item.occupation,
+    label: item.title || item.name || item.occupation,
+    value: item.id,
+    img: `/images/institute.png`,
+  })) || [];
 
-  // Check cache first
-  const getCachedData = useCallback(() => {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_DURATION) {
-          return data;
-        }
-      }
-    } catch (error) {
-      console.warn('Cache read error:', error);
-    }
-    return null;
-  }, []);
+  const countryList = countriesData || [];
+  const companyList = companiesData || [];
+  const instituteList = institutesData || [];
+  const newsList = newsData?.slice(0, 6) || [];
+  const successStories = successData || [];
 
-  // Cache data to localStorage
-  const setCachedData = useCallback((data: unknown) => {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        data,
-        timestamp: Date.now()
-      }));
-    } catch (error) {
-      console.warn('Cache write error:', error);
-    }
-  }, []);
-
-  // Fetch critical data first (Hero section needs)
-  const fetchCriticalData = useCallback(async () => {
-    try {
-      const cachedData = getCachedData();
-      if (cachedData && typeof cachedData === 'object') {
-        // Use cached data immediately
-        setDepartmentList((cachedData as any).occupations || []);
-        setCountryList((cachedData as any).countries || []);
-        setLoading(false);
-        toast.success('Loaded from cache!');
-        return;
-      }
-
-      // Fetch only critical data for initial render
-      const [occupationsRes, countriesRes] = await Promise.all([
-        getOccupations(),
-        getCountriesForJobs()
-      ]);
-
-      const occupations = occupationsRes?.data?.map((item: any) => ({
-        id: item.id,
-        title: item.title || item.name || item.occupation,
-        name: item.title || item.name || item.occupation,
-        label: item.title || item.name || item.occupation,
-        value: item.id,
-        img: `/images/institute.png`,
-      })) || [];
-      
-      setDepartmentList(occupations);
-      setCountryList(countriesRes?.data || []);
-      setLoading(false);
-
-      // Cache the critical data
-      setCachedData({ occupations, countries: countriesRes?.data || [] });
-      
-    } catch (error) {
-      console.error('Error loading critical data:', error);
-      toast.error('Failed to load essential data. Please refresh.');
-      setLoading(false);
-    }
-  }, [getCachedData, setCachedData]);
-
-  // Fetch non-critical data in background
-  const fetchSecondaryData = useCallback(async () => {
-    try {
-      // Stagger secondary data loading
-      setTimeout(async () => {
-        const [companiesRes, institutesRes] = await Promise.all([
-          getHraList(),
-          getInstitutes()
-        ]);
-        
-        setCompanyList(companiesRes?.cmpData || []);
-        setInstituteList(institutesRes?.data || []);
-      }, 100);
-
-      // Load news and success stories even later
-      setTimeout(async () => {
-        const [newsRes, successRes] = await Promise.all([
-          getNewsFeedData(),
-          getSuccessNotification()
-        ]);
-        
-        setNewsList(newsRes?.data?.newsData?.slice(0, 6) || []);
-        setSuccessStories(successRes?.notifications?.slice(0, 8) || []);
-      }, 500);
-      
-    } catch (error) {
-      console.error('Error loading secondary data:', error);
-      // Don't show error toast for non-critical data
-    }
-  }, []);
-
-  // Main fetch function that orchestrates progressive loading
-  const fetchData = useCallback(async () => {
-    await fetchCriticalData();
-    fetchSecondaryData();
-  }, [fetchCriticalData, fetchSecondaryData]);
-
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const loading = occupationsLoading || countriesLoading;
 
   if (loading) {
     return <LoadingSkeleton />;

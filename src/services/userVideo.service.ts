@@ -1,3 +1,15 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace getWorkVideo() with useUserDocuments() from @/hooks/api/useUser
+ * - Replace uploadWorkVideo() with useUploadDocument() from @/hooks/api/useUser
+ * 
+ * Example migration:
+ * Before: const data = await getWorkVideo(token);
+ * After:  const { data } = useUserDocuments();
+ */
+
 import axios from 'axios';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';

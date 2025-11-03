@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * @deprecated This context is deprecated. Use React Query hooks from @/hooks/api/useHra instead.
+ * 
+ * Migration guide:
+ * - Replace useHrProfile() with useHrProfile() from @/hooks/api/useHra
+ * - Replace useHrProfile() with useHrDashboard() for dashboard data
+ * 
+ * Example migration:
+ * Before: const { hrProfile, loading, error } = useHrProfile();
+ * After:  const { data: hrProfile, isLoading: loading, error } = useHrProfile();
+ */
+
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { HrDetails, getEnhancedHrDetails } from '@/services/hra.service';
 import { toast } from 'sonner';

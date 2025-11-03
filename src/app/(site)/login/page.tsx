@@ -10,11 +10,7 @@ import { X, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import Head from "next/head";
-import {
-  loginUsingPassword,
-  loginUsingOtp,
-  verifyOtpForLogin,
-} from "@/services/user.service";
+import { useLogin, useOtpLogin, useVerifyOtp } from "@/hooks/api/useAuth";
 import { useGlobalState } from "@/contexts/GlobalProvider";
 import { isAuthenticated } from "@/lib/auth";
 
@@ -41,13 +37,20 @@ export default function LoginPage() {
       router.replace('/');
     }
   }, [router]);
+  
   const [isOtpLogin, setIsOtpLogin] = useState(false);
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [showNotRegisteredError, setShowNotRegisteredError] = useState(false);
+
+  // Use new React Query hooks
+  const loginMutation = useLogin();
+  const otpLoginMutation = useOtpLogin();
+  const verifyOtpMutation = useVerifyOtp();
+
+  const isLoading = loginMutation.isPending || otpLoginMutation.isPending || verifyOtpMutation.isPending;
 
   const validateMobile = (mobile: string) => /^\d{10}$/.test(mobile);
 
@@ -56,35 +59,38 @@ export default function LoginPage() {
       toast.error("Please enter a valid 10-digit mobile number");
       return;
     }
-    setIsLoading(true);
-    try {
-      const response = await loginUsingOtp({ empPhone: mobile });
-      if (response?.data?.msg === "Otp Sent Succefully.") {
-        setIsOtpSent(true);
-        setIsOtpLogin(true);
-        toast.success("OTP sent successfully");
-      } else if (response?.data?.error === "Mobile number is not registered !") {
-        setShowNotRegisteredError(true);
-        toast.error("❌ Mobile number is not registered! Please register first or check your number.");
-      } else {
-        toast.error("Failed to send OTP");
+    
+    otpLoginMutation.mutate(
+      { empPhone: mobile },
+      {
+        onSuccess: (response) => {
+          if (response?.data?.msg === "Otp Sent Succefully.") {
+            setIsOtpSent(true);
+            setIsOtpLogin(true);
+            toast.success("OTP sent successfully");
+          } else if (response?.data?.error === "Mobile number is not registered !") {
+            setShowNotRegisteredError(true);
+            toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+          } else {
+            toast.error("Failed to send OTP");
+          }
+        },
+        onError: (error: any) => {
+          console.error('OTP error:', error);
+          const errorMessage = error?.response?.data?.error || "Failed to send OTP";
+          
+          // Check for specific "not registered" error messages
+          if (errorMessage.toLowerCase().includes('not registered') || 
+              errorMessage.toLowerCase().includes('not found') ||
+              errorMessage.toLowerCase().includes('does not exist')) {
+            setShowNotRegisteredError(true);
+            toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+          } else {
+            toast.error(errorMessage);
+          }
+        }
       }
-    } catch (error: any) {
-      console.error('OTP error:', error);
-      const errorMessage = error?.response?.data?.error || "Failed to send OTP";
-      
-      // Check for specific "not registered" error messages
-      if (errorMessage.toLowerCase().includes('not registered') || 
-          errorMessage.toLowerCase().includes('not found') ||
-          errorMessage.toLowerCase().includes('does not exist')) {
-        setShowNotRegisteredError(true);
-        toast.error("❌ Mobile number is not registered! Please register first or check your number.");
-      } else {
-        toast.error(errorMessage);
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,111 +111,129 @@ export default function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      let response;
-      if (isOtpLogin) {
-        response = await verifyOtpForLogin({ empPhone: mobile, otp });
-      } else {
-        response = await loginUsingPassword({ empPhone: mobile, password });
-      }
-
-      if (response?.data?.access_token) {
-        // Clear any existing auth data first to avoid conflicts
-        localStorage.removeItem("user");
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("loggedUser");
-        
-        // Store user data properly for auth compatibility
-        const userData = {
-          id: response.data.user.id,
-          type: response.data.user.type,
-          email: response.data.user.email,
-          phone: response.data.user.phone,
-          name: (response.data.user as any).name || (response.data.user as any).empName || ''
-        };
-        
-        // Debug logging to track user type
-        console.log('=== LOGIN DEBUG ===');
-        console.log('Response data:', response.data);
-        console.log('User data:', userData);
-        console.log('User type:', userData.type);
-        console.log('==================');
-        
-        localStorage.setItem("user", JSON.stringify(userData));
-        localStorage.setItem("access_token", response.data.access_token);
-        // Legacy compatibility
-        localStorage.setItem("loggedUser", JSON.stringify(response.data));
-        
-        // Refresh global state
-        await setUserData();
-        
-        toast.success("User logged in successfully");
-        
-        // Check if there's a redirect URL from the login request
-        let redirectPath = "/";
-        
-        if (redirectUrl && redirectUrl.startsWith('/')) {
-          // Use the redirect URL if provided and valid
-          redirectPath = decodeURIComponent(redirectUrl);
-          console.log('Using redirect URL:', redirectPath);
-        } else {
-          // Fall back to user type-based redirection
-          const userType = response?.data?.user?.type;
-          
-          console.log('Determining redirect for user type:', userType);
-          
-          switch (userType) {
-            case "person":
-              redirectPath = "/my-profile";
-              break;
-            case "company":
-              redirectPath = "/hra-dashboard";
-              console.log('Redirecting to HR dashboard');
-              break;
-            case "institute":
-              redirectPath = "/institute-dashboard";
-              break;
-            default:
-              console.warn('Unknown user type:', userType, 'redirecting to home');
-              redirectPath = "/";
-              break;
+    if (isOtpLogin) {
+      verifyOtpMutation.mutate(
+        { empPhone: mobile, otp },
+        {
+          onSuccess: (response) => {
+            handleLoginSuccess(response);
+          },
+          onError: (error: any) => {
+            handleLoginError(error);
           }
         }
-        
-        console.log('Final redirect path:', redirectPath);
-        
-        setTimeout(() => {
-          router.push(redirectPath);
-        }, 1000);
+      );
+    } else {
+      loginMutation.mutate(
+        { empPhone: mobile, password },
+        {
+          onSuccess: (response) => {
+            handleLoginSuccess(response);
+          },
+          onError: (error: any) => {
+            handleLoginError(error);
+          }
+        }
+      );
+    }
+  };
+
+  const handleLoginSuccess = (response: any) => {
+    if (response?.data?.access_token) {
+      // Clear any existing auth data first to avoid conflicts
+      localStorage.removeItem("user");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("loggedUser");
+      
+      // Store user data properly for auth compatibility
+      const userData = {
+        id: response.data.user.id,
+        type: response.data.user.type,
+        email: response.data.user.email,
+        phone: response.data.user.phone,
+        name: (response.data.user as any).name || (response.data.user as any).empName || ''
+      };
+      
+      // Debug logging to track user type
+      console.log('=== LOGIN DEBUG ===');
+      console.log('Response data:', response.data);
+      console.log('User data:', userData);
+      console.log('User type:', userData.type);
+      console.log('==================');
+      
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("access_token", response.data.access_token);
+      // Legacy compatibility
+      localStorage.setItem("loggedUser", JSON.stringify(response.data));
+      
+      // Refresh global state
+      setUserData();
+      
+      toast.success("User logged in successfully");
+      
+      // Check if there's a redirect URL from the login request
+      let redirectPath = "/";
+      
+      if (redirectUrl && redirectUrl.startsWith('/')) {
+        // Use the redirect URL if provided and valid
+        redirectPath = decodeURIComponent(redirectUrl);
+        console.log('Using redirect URL:', redirectPath);
       } else {
-        const errorMsg = (response?.data as any)?.error || "Invalid credentials";
+        // Fall back to user type-based redirection
+        const userType = response?.data?.user?.type;
         
-        // Check for specific "not registered" error messages
-        if (errorMsg.toLowerCase().includes('not registered') || 
-            errorMsg.toLowerCase().includes('not found') ||
-            errorMsg.toLowerCase().includes('does not exist')) {
-          setShowNotRegisteredError(true);
-          toast.error("❌ Mobile number is not registered! Please register first or check your number.");
-        } else {
-          toast.error(errorMsg);
+        console.log('Determining redirect for user type:', userType);
+        
+        switch (userType) {
+          case "person":
+            redirectPath = "/my-profile";
+            break;
+          case "company":
+            redirectPath = "/hra-dashboard";
+            console.log('Redirecting to HR dashboard');
+            break;
+          case "institute":
+            redirectPath = "/institute-dashboard";
+            break;
+          default:
+            console.warn('Unknown user type:', userType, 'redirecting to home');
+            redirectPath = "/";
+            break;
         }
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      const errorMessage = error?.response?.data?.error || error?.message || "Login failed";
+      
+      console.log('Final redirect path:', redirectPath);
+      
+      setTimeout(() => {
+        router.push(redirectPath);
+      }, 1000);
+    } else {
+      const errorMsg = (response?.data as any)?.error || "Invalid credentials";
       
       // Check for specific "not registered" error messages
-      if (errorMessage.toLowerCase().includes('not registered') || 
-          errorMessage.toLowerCase().includes('not found') ||
-          errorMessage.toLowerCase().includes('does not exist')) {
+      if (errorMsg.toLowerCase().includes('not registered') || 
+          errorMsg.toLowerCase().includes('not found') ||
+          errorMsg.toLowerCase().includes('does not exist')) {
         setShowNotRegisteredError(true);
         toast.error("❌ Mobile number is not registered! Please register first or check your number.");
       } else {
-        toast.error(errorMessage);
+        toast.error(errorMsg);
       }
-    } finally {
-      setIsLoading(false);
+    }
+  };
+
+  const handleLoginError = (error: any) => {
+    console.error('Login error:', error);
+    const errorMessage = error?.response?.data?.error || error?.message || "Login failed";
+    
+    // Check for specific "not registered" error messages
+    if (errorMessage.toLowerCase().includes('not registered') || 
+        errorMessage.toLowerCase().includes('not found') ||
+        errorMessage.toLowerCase().includes('does not exist')) {
+      setShowNotRegisteredError(true);
+      toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+    } else {
+      toast.error(errorMessage);
     }
   };
 

@@ -4,13 +4,20 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
-import { useHraData } from "@/contexts/HraDataProvider";
+import { useHrDashboard, useHrProfile, useHrUserId, useIsHrUser } from "@/hooks/api/useHra";
+import { useLogout } from "@/hooks/api/useAuth";
 
 export default function HraDashboardPage() {
   const router = useRouter();
-  const { dashboardData, loading, error, fetchHraData } = useHraData();
+  
+  // Use new React Query hooks
+  const { data: dashboardData, isLoading: loading, error } = useHrDashboard();
+  const { data: hrProfile } = useHrProfile();
+  const { data: hrUserId } = useHrUserId();
+  const { data: isHrUser } = useIsHrUser();
+  const logoutMutation = useLogout();
+  
   const [userData, setUserData] = useState<any>(null);
-  const { setGlobalState } = require("@/contexts/GlobalProvider").useGlobalState();
 
   const stats = [
     { title: "Active Job Postings", value: dashboardData?.totalPostedJobs?.toString() || "0", icon: "fa fa-briefcase" },
@@ -39,7 +46,6 @@ export default function HraDashboardPage() {
     try {
       const token = localStorage.getItem("access_token");
       const user = localStorage.getItem("loggedUser");
-      const userSimple = localStorage.getItem("user");
       
       if (!token || !user) {
         console.log('No token or user data found, redirecting to login');
@@ -48,17 +54,15 @@ export default function HraDashboardPage() {
       }
 
       const userData = JSON.parse(user);
-      const userSimpleData = userSimple ? JSON.parse(userSimple) : null;
+      setUserData(userData);
       
-      // Check if user is a company (HR) user
-      const userType = userData?.user?.type || userData?.type || userSimpleData?.type;
-      console.log('HR Dashboard - User type check:', userType);
-      
-      if (userType !== 'company') {
-        console.log('User is not a company type, redirecting based on type:', userType);
+      // Check if user is a company (HR) user using the new hook
+      if (!isHrUser) {
+        console.log('User is not a company type, redirecting based on type');
         toast.error('Access denied. This dashboard is only for HR/Company users.');
         
         // Redirect to appropriate dashboard based on user type
+        const userType = userData?.user?.type || userData?.type;
         switch (userType) {
           case 'person':
             router.push('/my-profile');
@@ -72,11 +76,6 @@ export default function HraDashboardPage() {
         }
         return;
       }
-      
-      setUserData(userData);
-
-      // Use context to fetch HRA data with caching
-      await fetchHraData();
     } catch (error) {
       console.error("Error initializing dashboard:", error);
       toast.error("Failed to initialize dashboard. Please try again.");
@@ -84,11 +83,7 @@ export default function HraDashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("loggedUser");
-    localStorage.removeItem("access_token");
-    setGlobalState((prev: any) => ({ ...prev, user: null }));
-    toast.success("Logged out successfully");
-    router.push("/");
+    logoutMutation.mutate();
   };
 
   const handleNavigation = (path: string) => {
@@ -126,7 +121,7 @@ export default function HraDashboardPage() {
                 <i className="fa fa-tachometer mr-3"></i>
                 HRA Dashboard
               </h1>
-              <p className="text-lg text-gray-600">Welcome back, {userData?.cmpData?.cmpName || "Company"}! Here's your recruitment overview.</p>
+              <p className="text-lg text-gray-600">Welcome back, {hrProfile?.cmpData?.cmpName || userData?.cmpData?.cmpName || "Company"}! Here's your recruitment overview.</p>
             </div>
             <button 
               onClick={handleLogout}
@@ -180,7 +175,7 @@ export default function HraDashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {recentApplications.map((app, index) => (
+                        {recentApplications.map((app: any, index: number) => (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{app.candidateName}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{app.jobTitle}</td>

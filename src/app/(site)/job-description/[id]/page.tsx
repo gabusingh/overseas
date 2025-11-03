@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../../components
 import { Button } from '../../../../components/ui/button';
 import { Badge } from '../../../../components/ui/badge';
 import { Separator } from '../../../../components/ui/separator';
-import { getJobById, applyJobApi, saveJobById } from '../../../../services/job.service';
+import { useJobById, useApplyJob, useSaveJob, useRemoveSavedJob, useSavedJobs } from '../../../../hooks/api/useJobs';
 import { useGlobalState } from '../../../../contexts/GlobalProvider';
 import { getStoredToken } from '../../../../lib/auth';
 import { toast } from 'sonner';
@@ -102,94 +102,20 @@ export default function JobDescriptionPage() {
   const params = useParams();
   const router = useRouter();
   const { globalState } = useGlobalState();
-  const [jobData, setJobData] = useState<JobData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [applying, setApplying] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [isWishListed, setIsWishListed] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  useEffect(() => {
-    if (params.id) {
-      fetchJobDetails();
-    }
-  }, [params.id]);
+  // Use new React Query hooks
+  const { data: jobData, isLoading: loading, error } = useJobById(params.id as string);
+  const { data: savedJobsData } = useSavedJobs();
+  const applyJobMutation = useApplyJob();
+  const saveJobMutation = useSaveJob();
+  const removeSavedJobMutation = useRemoveSavedJob();
 
-  const fetchJobDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await getJobById(params.id as string);
-      
-      // Extract job data from different possible response structures
-      let jobResponse = null;
-      if (response?.data?.jobs) {
-        jobResponse = response.data.jobs;
-      } else if (response?.jobs) {
-        jobResponse = response.jobs;
-      } else if (response?.data) {
-        jobResponse = response.data;
-      }
-      
-      if (jobResponse) {
-        // Map the API response to our JobData interface
-        const mappedJobData: JobData = {
-          id: jobResponse.id,
-          jobID: jobResponse.jobID,
-          jobTitle: jobResponse.jobTitle,
-          jobDescription: jobResponse.jobDescription || '',
-          jobWages: jobResponse.jobWages || 0,
-          jobWagesCurrencyType: jobResponse.jobWagesCurrencyType || '',
-          jobLocationCountry: jobResponse.jobLocationCountry || { id: 0, name: '', countryFlag: '' },
-          occupation: {
-            id: parseInt(jobResponse.jobOccupation_id) || 0,
-            title: jobResponse.jobOccupation || '',
-            name: jobResponse.jobOccupation || ''
-          },
-          cmpName: jobResponse.cmpName || jobResponse.companyName || '',
-          companyName: jobResponse.companyName || jobResponse.cmpName || '',
-          jobVacancyNo: parseInt(jobResponse.jobVacancyNo) || 0,
-          jobAgeLimit: jobResponse.jobAgeLimit || '',
-          passport_type: jobResponse.passportType || '',
-          passportType: jobResponse.passportType || '',
-          contract_period: jobResponse.contract_period || '',
-          jobExpDuration: jobResponse.jobExpDuration || '',
-          jobExpTypeReq: jobResponse.jobExpTypeReq || '',
-          jobMode: jobResponse.jobMode || '',
-          jobWorkingDay: jobResponse.jobWorkingDay || '',
-          jobWorkingHour: jobResponse.jobWorkingHour || '',
-          jobOvertime: jobResponse.jobOvertime || '',
-          salary_negotiable: jobResponse.salary_negotiable || false,
-          jobDeadline: jobResponse.jobDeadline || '',
-          jobPhoto: jobResponse.jobPhoto || '',
-          totalAppliedCandidates: jobResponse.totalAppliedCandidates || 0,
-          appliedStatus: jobResponse.appliedStatus || false,
-          required_documents: jobResponse.required_documents || [],
-          jobBenefits: jobResponse.jobBenefits || [],
-          jobPerks: jobResponse.jobPerks || [],
-          company: jobResponse.company || null,
-          isWishListed: jobResponse.isWishListed || false,
-          jobPublishedDate: jobResponse.jobPublishedDate || jobResponse.created_at || '',
-          jobLocation: jobResponse.jobLocation || '',
-          jobType: jobResponse.jobType || '',
-          jobCategory: jobResponse.jobCategory || '',
-          skills: jobResponse.skills || [],
-          jobAccommodation: jobResponse.jobAccommodation || '',
-          jobFood: jobResponse.jobFood || ''
-        };
-        
-        setJobData(mappedJobData);
-        setIsWishListed(mappedJobData.isWishListed || false);
-      } else {
-        throw new Error('Job not found');
-      }
-    } catch (error) {
-      console.error('Error fetching job details:', error);
-      toast.error('Failed to load job details. Please try again.');
-      router.push('/jobs');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Check if job is saved
+  const isWishListed = savedJobsData?.some(job => job.id === parseInt(params.id as string)) || false;
+
+  // Job data is now automatically fetched via React Query hooks
+  // No need for manual fetchJobDetails function
 
   const handleApplyJob = async () => {
     // Check authentication exactly like the old code using globalState
@@ -203,40 +129,29 @@ export default function JobDescriptionPage() {
 
     if (!jobData) return;
 
-    let payload = {
-      id: jobData.id,
-      "apply-job": "",
-    };
-    
-    setApplying(true);
-    
-    try {
-      let response = await applyJobApi(
-        payload,
-        globalState?.user?.access_token
-      );
-      if (response?.data?.msg == "Job Applied Successfully") {
-        toast.success(response?.data?.msg);
-        // Update applied status
-        setJobData(prev => prev ? {...prev, appliedStatus: true} : prev);
-      } else if (response?.data?.error === "You did not fill mandatory fields.") {
-        // Show profile completion modal instead of redirecting
-        setShowProfileModal(true);
-      } else {
-        toast.error(response?.data?.error || "Something went wrong");
+    applyJobMutation.mutate(
+      { jobId: jobData.id, coverLetter: "" },
+      {
+        onSuccess: (response) => {
+          if (response?.data?.msg === "Job Applied Successfully") {
+            toast.success(response?.data?.msg);
+          } else if (response?.data?.error === "You did not fill mandatory fields.") {
+            setShowProfileModal(true);
+          } else {
+            toast.error(response?.data?.error || "Something went wrong");
+          }
+        },
+        onError: (error: any) => {
+          console.error('Apply job error:', error);
+          const errorMessage = error?.response?.data?.error || error?.message || "Internal Server Error";
+          if (errorMessage === "You did not fill mandatory fields.") {
+            setShowProfileModal(true);
+          } else {
+            toast.error(errorMessage);
+          }
+        }
       }
-    } catch (error: any) {
-      console.error('Apply job error:', error);
-      const errorMessage = error?.response?.data?.error || error?.message || "Internal Server Error";
-      if (errorMessage === "You did not fill mandatory fields.") {
-        // Show profile completion modal instead of redirecting
-        setShowProfileModal(true);
-      } else {
-        toast.error(errorMessage);
-      }
-    } finally {
-      setApplying(false);
-    }
+    );
   };
 
   const handleSaveJob = async () => {
@@ -249,21 +164,10 @@ export default function JobDescriptionPage() {
 
     if (!jobData) return;
 
-    try {
-      setSaving(true);
-      const response = await saveJobById(jobData.id, accessToken);
-      
-      if (response?.data?.success) {
-        setIsWishListed(!isWishListed);
-        toast.success(isWishListed ? 'Job removed from saved jobs' : 'Job saved successfully!');
-      } else {
-        toast.error('Failed to save job');
-      }
-    } catch (error) {
-      console.error('Error saving job:', error);
-      toast.error('Failed to save job. Please try again.');
-    } finally {
-      setSaving(false);
+    if (isWishListed) {
+      removeSavedJobMutation.mutate(jobData.id);
+    } else {
+      saveJobMutation.mutate(jobData.id);
     }
   };
 
@@ -298,10 +202,11 @@ export default function JobDescriptionPage() {
     );
   }
 
-  if (!jobData) {
+  if (error || !jobData) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Job Not Found</h1>
+        <p className="text-gray-600 mb-4">The job you're looking for doesn't exist or has been removed.</p>
         <Link href="/jobs">
           <Button>Browse All Jobs</Button>
         </Link>
@@ -639,9 +544,9 @@ export default function JobDescriptionPage() {
                         <Button 
                           className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" 
                           onClick={handleApplyJob}
-                          disabled={applying}
+                          disabled={applyJobMutation.isPending}
                         >
-                          {applying ? (
+                          {applyJobMutation.isPending ? (
                             <div className="flex items-center gap-2">
                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                               Applying...
@@ -659,12 +564,12 @@ export default function JobDescriptionPage() {
                         variant="outline" 
                         className="w-full border-2 hover:bg-red-50 hover:border-red-300" 
                         onClick={handleSaveJob}
-                        disabled={saving}
+                        disabled={saveJobMutation.isPending || removeSavedJobMutation.isPending}
                       >
-                        {saving ? (
+                        {(saveJobMutation.isPending || removeSavedJobMutation.isPending) ? (
                           <div className="flex items-center gap-2">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                            Saving...
+                            {isWishListed ? 'Removing...' : 'Saving...'}
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">

@@ -1,3 +1,15 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace getJobStats() with useJobStats() from @/hooks/api/useInfo
+ * - Replace getCompanyStats() with useCompanyStats() from @/hooks/api/useInfo
+ * 
+ * Example migration:
+ * Before: const data = await getJobStats();
+ * After:  const { data } = useJobStats();
+ */
+
 import axios from 'axios';
 import { getJobByDepartment, getJobByCountry } from './job.service';
 

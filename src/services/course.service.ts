@@ -1,3 +1,16 @@
+/**
+ * @deprecated This service file is deprecated. Use React Query hooks from @/hooks/api/ instead.
+ * 
+ * Migration guide:
+ * - Replace getAllCourses() with useAllCourses() from @/hooks/api/useCourses
+ * - Replace getCourseById() with useCourseDetails() from @/hooks/api/useCourses
+ * - Replace applyCourse() with useApplyCourse() from @/hooks/api/useCourses
+ * 
+ * Example migration:
+ * Before: const data = await getAllCourses();
+ * After:  const { data } = useAllCourses();
+ */
+
 import axios from 'axios';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';
