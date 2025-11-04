@@ -162,22 +162,17 @@ export default function EmployerSignupPage() {
         toast.success(data.message || "OTP sent successfully");
       } else {
         const serverMessage = data.message || data.error || "Failed to send OTP. Please ensure your mobile number is valid.";
-        const isAlreadyRegistered = /already\s*registered|exists?/i.test(serverMessage);
+        const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(serverMessage.toLowerCase());
 
         if (isAlreadyRegistered) {
-          console.log('Number appears registered; trying login OTP as fallback...');
-          try {
-            const response = await loginUsingOtp({ empPhone: formData.cmpOfficialMob });
-            if (response?.data?.success || response?.data?.status === 'success') {
-              setIsOtpSent(true);
-              setUserAlreadyExists(true);
-              toast.warning("This mobile number is already registered. OTP sent for login. Please use the login page instead of registration.");
-            } else {
-              toast.error(serverMessage);
-            }
-          } catch (fallbackError) {
-            toast.error(serverMessage);
-          }
+          // User is already registered - show toast and redirect to login
+          toast.error("This mobile number is already registered. Please use the login page instead.", {
+            duration: 3000,
+          });
+          // Wait a bit longer to ensure toast is visible before redirecting
+          setTimeout(() => {
+            router.push("/login");
+          }, 3000);
         } else {
           toast.error(serverMessage);
         }
@@ -297,11 +292,14 @@ export default function EmployerSignupPage() {
         const isAlreadyRegistered = /already\s*registered/i.test(errorMessage.toLowerCase());
         
         if (isAlreadyRegistered) {
-          toast.error(errorMessage);
-          // Redirect to login page after showing the error
+          toast.error("This mobile number is already registered. Please use the login page instead.", {
+            duration: 3000,
+            description: "Redirecting to login page..."
+          });
+          // Wait a bit longer to ensure toast is visible before redirecting
           setTimeout(() => {
             router.push("/login");
-          }, 2000);
+          }, 3000);
         } else {
           toast.error(errorMessage);
         }
@@ -330,11 +328,14 @@ export default function EmployerSignupPage() {
         const isAlreadyRegistered = /already\s*registered/i.test(message.toLowerCase());
         
         if (isAlreadyRegistered) {
-          toast.error(message);
-          // Redirect to login page after showing the error
+          toast.error("This mobile number is already registered. Please use the login page instead.", {
+            duration: 3000,
+            description: "Redirecting to login page..."
+          });
+          // Wait a bit longer to ensure toast is visible before redirecting
           setTimeout(() => {
             router.push("/login");
-          }, 2000);
+          }, 3000);
         } else {
           toast.error(message);
         }

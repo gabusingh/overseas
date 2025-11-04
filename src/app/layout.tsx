@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GlobalStateProvider } from '../contexts/GlobalProvider';
 import { CookieConsent } from '../components/CookieConsent';
+import { Toaster } from '@/components/ui/sonner';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -103,6 +104,7 @@ export default function RootLayout({
         <GlobalStateProvider>
           {children}
           <CookieConsent />
+          <Toaster />
         </GlobalStateProvider>
       </body>
     </html>

@@ -141,23 +141,17 @@ export default function CandidateRegisterPage() {
         toast.success("OTP sent successfully to your mobile number");
       } else {
         const serverMessage = data.message || "Failed to send OTP";
-        const isAlreadyRegistered = /already\s*registered|exists?/i.test(serverMessage);
+        const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(serverMessage.toLowerCase());
 
         if (isAlreadyRegistered) {
-          console.log('Number appears registered; trying login OTP as fallback...');
-          try {
-            const { loginUsingOtp } = await import('@/services/user.service');
-            const loginResponse = await loginUsingOtp({ empPhone: formData.mobile });
-            if (loginResponse?.data?.success || loginResponse?.data?.status === 'success') {
-              setIsOtpSent(true);
-              setUserAlreadyExists(true);
-              toast.warning("This mobile number is already registered. OTP sent for login. Please use the login page instead of registration.");
-            } else {
-              toast.error(serverMessage);
-            }
-          } catch (fallbackError) {
-            toast.error(serverMessage);
-          }
+          // User is already registered - show toast and redirect to login
+          toast.error("This mobile number is already registered. Please use the login page instead.", {
+            duration: 3000,
+          });
+          // Wait a bit longer to ensure toast is visible before redirecting
+          setTimeout(() => {
+            router.push("/login");
+          }, 3000);
         } else {
           toast.error(serverMessage);
         }
@@ -215,11 +209,14 @@ export default function CandidateRegisterPage() {
         const isAlreadyRegistered = /already\s*registered/i.test(errorMessage.toLowerCase());
         
         if (isAlreadyRegistered) {
-          toast.error(errorMessage);
-          // Redirect to login page after showing the error
+          toast.error("This mobile number is already registered. Please use the login page instead.", {
+            duration: 3000,
+            description: "Redirecting to login page..."
+          });
+          // Wait a bit longer to ensure toast is visible before redirecting
           setTimeout(() => {
             router.push("/login");
-          }, 2000);
+          }, 3000);
         } else {
           toast.error(errorMessage);
         }
