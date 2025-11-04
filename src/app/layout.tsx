@@ -4,6 +4,7 @@ import "./globals.css";
 import { GlobalStateProvider } from '../contexts/GlobalProvider';
 import { QueryProvider } from '../providers/QueryProvider';
 import { CookieConsent } from '../components/CookieConsent';
+import { Toaster } from '@/components/ui/sonner';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -101,12 +102,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <QueryProvider>
-          <GlobalStateProvider>
-            {children}
-            <CookieConsent />
-          </GlobalStateProvider>
-        </QueryProvider>
+        <GlobalStateProvider>
+          {children}
+          <CookieConsent />
+        </GlobalStateProvider>
       </body>
     </html>
   );

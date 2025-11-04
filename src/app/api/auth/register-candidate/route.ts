@@ -60,35 +60,73 @@ export async function POST(request: NextRequest) {
         message: 'Registration successful! Welcome to Overseas.ai'
       });
     } else if (response?.data?.error) {
+      const errorMessage = response.data.error;
+      // Check if user is already registered
+      const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(errorMessage.toLowerCase());
+      
       return NextResponse.json(
-        { error: response.data.error },
+        { 
+          error: isAlreadyRegistered 
+            ? 'This mobile number is already registered. Please use the login page instead.' 
+            : errorMessage 
+        },
         { status: 400 }
       );
-    } else if (response?.data?.msg && response.data.msg.includes('Invalid')) {
-      return NextResponse.json(
-        { error: response.data.msg },
-        { status: 400 }
-      );
-    } else {
-      return NextResponse.json(
-        { error: 'Registration failed. Please try again.' },
-        { status: 500 }
-      );
+    } else if (response?.data?.msg) {
+      const errorMessage = response.data.msg;
+      // Check if it's an "already registered" message
+      const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(errorMessage.toLowerCase());
+      
+      // Only treat as error if it's not an "already registered" message
+      if (isAlreadyRegistered) {
+        return NextResponse.json(
+          { error: 'This mobile number is already registered. Please use the login page instead.' },
+          { status: 400 }
+        );
+      } else if (errorMessage.includes('Invalid')) {
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: 400 }
+        );
+      }
     }
+    
+    return NextResponse.json(
+      { error: 'Registration failed. Please try again.' },
+      { status: 500 }
+    );
   } catch (error: any) {
     console.error('Registration API error:', error);
     
     // Handle specific error responses from the external API
     if (error?.response?.data?.error) {
+      const errorMessage = error.response.data.error;
       const statusCode = error?.response?.status || 400;
+      
+      // Check if user is already registered
+      const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(errorMessage.toLowerCase());
+      
       return NextResponse.json(
-        { error: error.response.data.error },
+        { 
+          error: isAlreadyRegistered 
+            ? 'This mobile number is already registered. Please use the login page instead.' 
+            : errorMessage 
+        },
         { status: statusCode }
       );
     } else if (error?.response?.data?.msg) {
+      const errorMessage = error.response.data.msg;
       const statusCode = error?.response?.status || 400;
+      
+      // Check if user is already registered
+      const isAlreadyRegistered = /already\s*registered|exists?|duplicate/i.test(errorMessage.toLowerCase());
+      
       return NextResponse.json(
-        { error: error.response.data.msg },
+        { 
+          error: isAlreadyRegistered 
+            ? 'This mobile number is already registered. Please use the login page instead.' 
+            : errorMessage 
+        },
         { status: statusCode }
       );
     }
