@@ -13,9 +13,12 @@
  * After:  const { data } = useHrDashboard();
  */
 
-import axios from 'axios';
-
-const BASE_URL = 'https://backend.overseas.ai/api/';
+import { 
+  makeGetRequest, 
+  makeFormDataRequest, 
+  makeJsonRequest,
+  endpoints 
+} from '../lib/api/helpers';
 
 // Interface for company data
 interface Company {
@@ -158,10 +161,7 @@ export interface HraRegistrationData {
 
 export const getAllCompanies = async (token: string) => {
   try {
-    const response = await axios.get(`${BASE_URL}get-all-companies`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    return await makeGetRequest(endpoints.hr.getAllCompanies);
   } catch (error) {
     console.error("Error fetching all companies:", error);
     throw error;
@@ -171,10 +171,7 @@ export const getAllCompanies = async (token: string) => {
 // Function to get HRA/Company list for public companies page
 export const getHraList = async () => {
   try {
-
-    const response = await axios.get(`${BASE_URL}get-all-companies`);
-
-    return response.data;
+    return await makeGetRequest(endpoints.hr.getAllCompanies);
   } catch (error) {
     console.error("Error fetching HRA list:", error);
     throw error;
@@ -183,10 +180,7 @@ export const getHraList = async () => {
 
 export const getCompanyDetails = async (companyId: string, token: string) => {
   try {
-    const response = await axios.get(`${BASE_URL}company/${companyId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    return await makeGetRequest(endpoints.hr.getCompanyById(Number(companyId)));
   } catch (error) {
     console.error("Error fetching company details:", error);
     throw error;
@@ -195,29 +189,26 @@ export const getCompanyDetails = async (companyId: string, token: string) => {
 
 export const getJobsPostedByHra = async (hraId: string, token: string) => {
   try {
-    const response = await axios.get(`${BASE_URL}jobs-posted-by-hra/${hraId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await makeGetRequest(endpoints.hr.getJobsPostedByHra(hraId));
     
     // Log the raw response for debugging
     console.log('🔍 Raw jobs API response:', {
-      status: response.status,
-      data: response.data,
-      dataType: typeof response.data,
-      isArray: Array.isArray(response.data)
+      data: response,
+      dataType: typeof response,
+      isArray: Array.isArray(response)
     });
     
     // Return the response data directly - let the caller handle the structure
-    return response.data;
+    return response;
   } catch (error: any) {
     console.error("Error fetching jobs posted by HRA:", {
       message: error.message,
-      status: error.response?.status,
-      data: error.response?.data
+      status: error.status,
+      data: error.data
     });
     
     // If it's a 404 or no data found, return empty structure instead of throwing
-    if (error.response?.status === 404 || error.message?.includes('not found')) {
+    if (error.status === 404 || error.message?.includes('not found')) {
       console.log('📭 No jobs found for this HRA - returning empty result');
       return {}; // This matches the current API behavior
     }
@@ -228,10 +219,7 @@ export const getJobsPostedByHra = async (hraId: string, token: string) => {
 
 export const getHrDetails = async (token: string): Promise<HrDetails> => {
   try {
-    const response = await axios.get(`${BASE_URL}get-hr-details`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    return await makeGetRequest<HrDetails>(endpoints.hr.getHrData);
   } catch (error) {
     console.error("Error fetching HR details:", error);
     throw error;
@@ -288,13 +276,7 @@ export const getEnhancedHrDetails = async (token: string): Promise<any | null> =
 
 export const getHraDashboardAnalytics = async (token: string) => {
   try {
-    const response = await axios.get(
-      `${BASE_URL}get-hra-dashboard-analytics`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-    return response.data;
+    return await makeGetRequest(endpoints.hr.getHrDashboardAnalytics);
   } catch (error) {
     console.error("Error fetching HRA dashboard analytics:", error);
     throw error;
@@ -304,28 +286,19 @@ export const getHraDashboardAnalytics = async (token: string) => {
 export const createJob = async (formData: FormData, accessToken: string) => {
   try {
     console.log('🚀 createJob service called');
-    console.log('🔗 API URL:', BASE_URL + 'create-job');
+    console.log('🔗 API URL:', endpoints.hr.createJob);
     console.log('🔑 Access token length:', accessToken ? accessToken.length : 0);
     console.log('📦 FormData entries:', Array.from(formData.entries()));
     
-    const response = await axios.post(BASE_URL + 'create-job', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
+    const response = await makeFormDataRequest(endpoints.hr.createJob, formData);
     
-    console.log('📥 createJob response:', {
-      status: response.status,
-      data: response.data,
-      headers: response.headers
-    });
+    console.log('📥 createJob response:', response);
     
     return response;
   } catch (error: any) {
     console.error('❌ Error creating job:', error);
-    console.error('❌ Error response:', error?.response?.data);
-    console.error('❌ Error status:', error?.response?.status);
+    console.error('❌ Error response:', error?.data);
+    console.error('❌ Error status:', error?.status);
     throw error;
   }
 };
@@ -337,7 +310,7 @@ export const createJobByHr = createJob;
 export const getHraDashboardData = async (token: string): Promise<HraDashboardData> => {
   try {
     const response = await getHraDashboardAnalytics(token);
-    const data = response.data || response;
+    const data = response;
 
     // Transform the API response to include backward compatibility
     const transformedData: HraDashboardData = {
@@ -401,13 +374,7 @@ export const getHraJobs = async (hraId: string, accessToken: string) => {
 
 export const editJob = async (jobId: number, formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + `edit-job/${jobId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(`${endpoints.hr.updateJob}/${jobId}`, formData);
   } catch (error) {
     console.error('Error editing job:', error);
     throw error;
@@ -416,12 +383,9 @@ export const editJob = async (jobId: number, formData: FormData, accessToken: st
 
 export const getJobApplications = async (jobId: number, accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + `job-applications/${jobId}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+    return await makeGetRequest(endpoints.hr.getCandidateApplications, {
+      params: { jobId }
     });
-    return response;
   } catch (error) {
     console.error('Error fetching job applications:', error);
     throw error;
@@ -432,12 +396,7 @@ export const getRecommendedCandidates = async (jobId?: number, accessToken?: str
   try {
     // Using the correct API endpoint with typo "recommandations" as per backend
     const url = jobId ? `get-job-wise-recommandations/${jobId}` : 'recommended-candidates';
-    const response = await axios.get(BASE_URL + url, {
-      headers: accessToken ? {
-        Authorization: `Bearer ${accessToken}`
-      } : {}
-    });
-    return response;
+    return await makeGetRequest(url);
   } catch (error) {
     console.error('Error fetching recommended candidates:', error);
     throw error;
@@ -447,12 +406,7 @@ export const getRecommendedCandidates = async (jobId?: number, accessToken?: str
 // Alternative function name matching the API typo
 export const getJobWiseRecommandations = async (jobId: number, accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + `get-job-wise-recommandations/${jobId}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(`get-job-wise-recommandations/${jobId}`);
   } catch (error) {
     console.error('Error fetching job recommendations:', error);
     throw error;
@@ -461,12 +415,7 @@ export const getJobWiseRecommandations = async (jobId: number, accessToken: stri
 
 export const getHraNotifications = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + 'hra-notifications', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest('hra-notifications');
   } catch (error) {
     console.error('Error fetching HRA notifications:', error);
     throw error;
@@ -475,13 +424,7 @@ export const getHraNotifications = async (accessToken: string) => {
 
 export const createBulkHire = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + 'bulk-hire', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest('bulk-hire', formData);
   } catch (error) {
     console.error('Error creating bulk hire:', error);
     throw error;
@@ -492,13 +435,7 @@ export const createBulkHire = async (formData: FormData, accessToken: string) =>
 export const getAllCreatedJobs = async (token: string) => {
   try {
     const formData = new FormData();
-    const response = await axios.post(`${BASE_URL}all-created-jobs`, formData, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest('all-created-jobs', formData);
   } catch (error) {
     console.error('Error fetching all created jobs:', error);
     throw error;
@@ -510,14 +447,7 @@ export const getAppliedCandidatesList = async (token: string, pageNo: number = 1
   try {
     const formData = new FormData();
     formData.append('pageNo', pageNo.toString());
-
-    const response = await axios.post(`${BASE_URL}applied-candidates-list`, formData, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest('applied-candidates-list', formData);
   } catch (error) {
     console.error('Error fetching applied candidates list:', error);
     throw error;
@@ -527,12 +457,7 @@ export const getAppliedCandidatesList = async (token: string, pageNo: number = 1
 // Get notifications for HRA
 export const getNotifications = async (token: string) => {
   try {
-    const response = await axios.get(`${BASE_URL}get-notifications`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return response.data;
+    return await makeGetRequest('get-notifications');
   } catch (error) {
     console.error('Error fetching notifications:', error);
     throw error;
@@ -557,18 +482,11 @@ export const registerHra = async (registrationData: HraRegistrationData) => {
 
     // Use the local Next.js API route instead of calling external API directly
     console.log('Sending HRA registration data to local API route');
-    const response = await axios.post('/api/register-hra', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await makeFormDataRequest('/api/register-hra', formData);
     
-    console.log('HRA registration response:', {
-      status: response.status,
-      data: response.data
-    });
+    console.log('HRA registration response:', response);
     
-    return response.data;
+    return response;
   } catch (error) {
     console.error('Error registering HRA:', error);
     throw error;
@@ -584,8 +502,7 @@ export const sendHraOtp = async (phone: string, countryCode: string) => {
     formData.append('countryCode', countryCode);
     formData.append('type', 'hra');
 
-    const response = await axios.post(`${BASE_URL}get-otp`, formData);
-    return response.data;
+    return await makeFormDataRequest(endpoints.auth.getOtp, formData);
   } catch (error) {
     console.error('Error sending HRA OTP:', error);
     throw error;
@@ -600,8 +517,7 @@ export const verifyHraOtp = async (phone: string, otp: string, countryCode: stri
     formData.append('countryCode', countryCode);
     formData.append('type', 'hra');
 
-    const response = await axios.post(`${BASE_URL}register-person-step1`, formData);
-    return response.data;
+    return await makeFormDataRequest(endpoints.auth.registerPersonStep1, formData);
   } catch (error) {
     console.error('Error verifying HRA OTP:', error);
     throw error;

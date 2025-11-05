@@ -21,7 +21,7 @@ import {
   getEmpDataForEdit
 } from "../services/user.service";
 import { handleApiError, isNetworkError, isValidationError } from "../utils/errorHandler";
-import { createFormDataRequest } from "../utils/axiosConfig";
+import { createFormDataFromObject } from "../lib/api/helpers";
 import { validateProfileData, formatProfileData, sanitizeFormData } from "../utils/dataValidation";
 import { applyJobApi } from "../services/job.service";
 import { useGlobalState } from "../contexts/GlobalProvider";
@@ -325,7 +325,7 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
 
       // Format and sanitize the data before creating FormData
       const formattedData = formatProfileData(profileData);
-      const formData = createFormDataRequest(formattedData);
+      const formData = createFormDataFromObject(formattedData);
       const sanitizedFormData = sanitizeFormData(formData);
 
       // Submit profile completion (this might need to be split into multiple API calls)

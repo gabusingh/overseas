@@ -12,9 +12,11 @@
  * After:  const { data } = useCountries();
  */
 
-import axios from 'axios';
-
-const BASE_URL = 'https://backend.overseas.ai/api/';
+import { 
+  makeGetRequest, 
+  makeJsonRequest,
+  endpoints 
+} from '../lib/api/helpers';
 
 interface StateResponse {
   data: Array<{ id: number; name: string }>;
@@ -43,8 +45,7 @@ interface HomeDataResponse {
 
 export const getState = async (): Promise<StateResponse> => {
   try {
-    const response = await axios.get(BASE_URL + 'state-list');
-    return response;
+    return await makeGetRequest('state-list') as any;
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -53,10 +54,9 @@ export const getState = async (): Promise<StateResponse> => {
 
 export const getDistrict = async (stateId: number): Promise<DistrictResponse> => {
   try {
-    const response = await axios.get(BASE_URL + 'district-list', {
-      params: { state_id: stateId },
-    });
-    return response.data;
+    return await makeGetRequest('district-list', {
+      params: { state_id: stateId }
+    }) as any;
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -65,8 +65,7 @@ export const getDistrict = async (stateId: number): Promise<DistrictResponse> =>
 
 export const getOccupations = async (): Promise<OccupationResponse> => {
   try {
-    const response = await axios.get(BASE_URL + 'get-occupations');
-    return response.data;
+    return await makeGetRequest(endpoints.jobs.getOccupations) as any;
   } catch (error) {
     console.error('Error fetching occupations:', error);
     throw error;
@@ -75,9 +74,9 @@ export const getOccupations = async (): Promise<OccupationResponse> => {
 
 export const getSkillsByOccuId = async (occuId: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'get-occupations/' + occuId);
-    console.log('🔍 Raw skills API response for occupation', occuId, ':', response.data);
-    return response.data;
+    const response = await makeGetRequest(`get-occupations/${occuId}`);
+    console.log('🔍 Raw skills API response for occupation', occuId, ':', response);
+    return response;
   } catch (error) {
     console.error('Error fetching skills for occupation', occuId, ':', error);
     throw error;
@@ -86,9 +85,9 @@ export const getSkillsByOccuId = async (occuId: number) => {
 
 export const getCountries = async (): Promise<CountryResponse> => {
   try {
-    const response = await axios.get(BASE_URL + 'country-list');
-    console.log('🔍 Raw countries API response:', response.data);
-    return response.data;
+    const response = await makeGetRequest(endpoints.info.getCountries);
+    console.log('🔍 Raw countries API response:', response);
+    return response as any;
   } catch (error) {
     console.error('Error fetching countries:', error);
     throw error;
@@ -97,8 +96,7 @@ export const getCountries = async (): Promise<CountryResponse> => {
 
 export const getCountriesForJobs = async (): Promise<CountryResponse> => {
   try {
-    const response = await axios.get(BASE_URL + 'country-list-for-jobs');
-    return response.data;
+    return await makeGetRequest(endpoints.info.getCountriesForJobs) as any;
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -107,8 +105,7 @@ export const getCountriesForJobs = async (): Promise<CountryResponse> => {
 
 export const getHomeData = async (): Promise<HomeDataResponse> => {
   try {
-    const response = await axios.get(BASE_URL + 'home-page-data');
-    return response.data;
+    return await makeGetRequest('home-page-data') as any;
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -117,8 +114,7 @@ export const getHomeData = async (): Promise<HomeDataResponse> => {
 
 export const getSuccessNotification = async () => {
   try {
-    const response = await axios.get(BASE_URL + 'show-success-notification');
-    return response.data;
+    return await makeGetRequest(endpoints.info.getSuccessNotifications);
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -127,10 +123,9 @@ export const getSuccessNotification = async () => {
 
 export const getPs = async (districtId: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'ps-list', {
+    return await makeGetRequest('ps-list', {
       params: { district_id: districtId }
     });
-    return response;
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -139,10 +134,9 @@ export const getPs = async (districtId: number) => {
 
 export const getPanchayat = async (psId: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'panchayat-list', {
+    return await makeGetRequest('panchayat-list', {
       params: { ps_id: psId }
     });
-    return response;
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -151,10 +145,9 @@ export const getPanchayat = async (psId: number) => {
 
 export const getVillage = async (psId: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'village-list', {
+    return await makeGetRequest('village-list', {
       params: { ps_id: psId }
     });
-    return response;
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -163,8 +156,7 @@ export const getVillage = async (psId: number) => {
 
 export const getCountryCode = async () => {
   try {
-    const response = await axios.get(BASE_URL + 'country-code-list');
-    return response;
+    return await makeGetRequest('country-code-list');
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -173,8 +165,7 @@ export const getCountryCode = async () => {
 
 export const getVersionCode = async () => {
   try {
-    const response = await axios.get(BASE_URL + 'check-version');
-    return response;
+    return await makeGetRequest('check-version');
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -183,9 +174,9 @@ export const getVersionCode = async () => {
 
 export const getNewsFeedData = async () => {
   try {
-    const response = await axios.get(BASE_URL + 'get-news-feed');
+    const response = await makeGetRequest(endpoints.info.getNewsFeed);
     // Map API response to NewsItem[]
-    const newsData = response.data?.newsData || [];
+    const newsData = response?.newsData || [];
     const mapped = newsData.map((item: any) => ({
       news_title: item.ArticleTitle || '',
       news_description: item.summary || '',
@@ -203,10 +194,9 @@ export const getNewsFeedData = async () => {
 
 export const getCompanies = async (page: number = 1) => {
   try {
-    const response = await axios.get(BASE_URL + 'get-companies', {
+    return await makeGetRequest(endpoints.hr.getCompanies, {
       params: { page }
     });
-    return response;
   } catch (error) {
     console.error('Error fetching companies:', error);
     throw error;
@@ -215,8 +205,7 @@ export const getCompanies = async (page: number = 1) => {
 
 export const getCompanyById = async (id: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'company/' + id);
-    return response;
+    return await makeGetRequest(endpoints.hr.getCompanyById(id));
   } catch (error) {
     console.error('Error fetching company details:', error);
     throw error;
@@ -225,8 +214,7 @@ export const getCompanyById = async (id: number) => {
 
 export const getTradeTestCenters = async () => {
   try {
-    const response = await axios.get(BASE_URL + 'get-trade-test-centers');
-    return response;
+    return await makeGetRequest('get-trade-test-centers');
   } catch (error) {
     console.error('Error fetching trade test centers:', error);
     throw error;
@@ -237,15 +225,13 @@ export const getTradeTestCenters = async () => {
 export const getTopCountriesHiring = async () => {
   try {
     // Use the correct working API endpoint
-    const response = await axios.get(BASE_URL + 'country-list-for-jobs');
-    return response.data;
+    return await makeGetRequest(endpoints.info.getCountriesForJobs);
   } catch (error) {
     console.error('Error fetching top countries hiring:', error);
     
     // Fallback 1: Try the general countries endpoint
     try {
-      const fallbackResponse = await axios.get(BASE_URL + 'getCountriesForJobs');
-      return fallbackResponse.data;
+      return await makeGetRequest('getCountriesForJobs');
     } catch (fallbackError) {
       console.error('Fallback API also failed:', fallbackError);
       throw fallbackError;

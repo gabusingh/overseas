@@ -12,11 +12,12 @@
  * After:  const { data } = useUserDashboard();
  */
 
-import axios from 'axios';
-import { apiRequest } from '../utils/axiosConfig';
-import { handleApiError } from '../utils/errorHandler';
-
-const BASE_URL = 'https://backend.overseas.ai/api/';
+import { 
+  makeGetRequest, 
+  makeFormDataRequest, 
+  makeJsonRequest,
+  endpoints 
+} from '../lib/api/helpers';
 
 interface LoginResponse {
   data: {
@@ -33,8 +34,14 @@ interface LoginResponse {
 
 export const loginUsingPassword = async (params: { empPhone: string; password: string } | FormData): Promise<LoginResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "passsword-login", params);
-    return response;
+    const formData = params instanceof FormData ? params : new FormData();
+    if (!(params instanceof FormData)) {
+      Object.entries(params).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+    }
+    const response = await makeFormDataRequest(endpoints.auth.passwordLogin, formData);
+    return response as any;
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -43,12 +50,7 @@ export const loginUsingPassword = async (params: { empPhone: string; password: s
 
 export const getSummarizedVideo = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "get-summarized-video", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.user.getSummarizedVideo);
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -57,8 +59,13 @@ export const getSummarizedVideo = async (accessToken: string) => {
 
 export const loginUsingOtp = async (params: { empPhone: string } | FormData) => {
   try {
-    const response = await axios.post(BASE_URL + "otp-request", params);
-    return response;
+    const formData = params instanceof FormData ? params : new FormData();
+    if (!(params instanceof FormData)) {
+      Object.entries(params).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+    }
+    return await makeFormDataRequest(endpoints.auth.otpRequest, formData);
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -67,8 +74,14 @@ export const loginUsingOtp = async (params: { empPhone: string } | FormData) => 
 
 export const verifyOtpForLogin = async (params: { empPhone: string; otp: string } | FormData): Promise<LoginResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "otp-login", params);
-    return response;
+    const formData = params instanceof FormData ? params : new FormData();
+    if (!(params instanceof FormData)) {
+      Object.entries(params).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+    }
+    const response = await makeFormDataRequest(endpoints.auth.otpLogin, formData);
+    return response as any;
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -77,13 +90,7 @@ export const verifyOtpForLogin = async (params: { empPhone: string; otp: string 
 
 export const signUp = async (formData: FormData) => {
   try {
-    const response = await axios.post(BASE_URL + "get-otp", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'Accept': 'application/json'
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.auth.getOtp, formData);
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -92,8 +99,7 @@ export const signUp = async (formData: FormData) => {
 
 export const verifyOtpForSignUp = async (formData: FormData) => {
   try {
-    const response = await axios.post(BASE_URL + "register-person-step1", formData);
-    return response;
+    return await makeFormDataRequest(endpoints.auth.registerPersonStep1, formData);
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -102,13 +108,7 @@ export const verifyOtpForSignUp = async (formData: FormData) => {
 
 export const registerUserStep1 = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "user-profile-complete-step2", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.user.completeProfileStep2, formData);
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -117,13 +117,7 @@ export const registerUserStep1 = async (formData: FormData, accessToken: string)
 
 export const registerUserStep2 = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "user-profile-complete-step3", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.user.completeProfileStep3, formData);
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -132,13 +126,7 @@ export const registerUserStep2 = async (formData: FormData, accessToken: string)
 
 export const addExperienceStep2 = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "add-experience-step2", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.addExperienceStep2, formData);
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -147,13 +135,7 @@ export const addExperienceStep2 = async (formData: FormData, accessToken: string
 
 export const editExperienceStepApi = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "edit-experience", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.editExperience, formData);
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -162,12 +144,7 @@ export const editExperienceStepApi = async (formData: FormData, accessToken: str
 
 export const getAllExperience = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "experience-list", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.user.experienceList);
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -176,13 +153,7 @@ export const getAllExperience = async (accessToken: string) => {
 
 export const uploadWorkVideo = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "store-work-video", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.storeWorkVideo, formData);
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -191,12 +162,7 @@ export const uploadWorkVideo = async (formData: FormData, accessToken: string) =
 
 export const submitContactQuery = async (formData: FormData) => {
   try {
-    const response = await axios.post(BASE_URL + "contact-us", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.contact.contactUs, formData);
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -206,14 +172,8 @@ export const submitContactQuery = async (formData: FormData) => {
 export const editProfile = async (formData: FormData, accessToken: string) => {
   try {
     console.log('Attempting to update profile with enhanced API client...');
-    const response = await apiRequest.post(
-      "user-complete-profile-edit", 
-      formData, 
-      accessToken, 
-      'multipart/form-data',
-      2 // Allow 2 retries for network issues
-    );
-    console.log('Profile update successful:', response.status);
+    const response = await makeFormDataRequest(endpoints.user.editProfile, formData);
+    console.log('Profile update successful');
     return response;
   } catch (error: any) {
     console.error('Error updating profile:', {
@@ -224,7 +184,7 @@ export const editProfile = async (formData: FormData, accessToken: string) => {
     });
     
     // Provide more specific error messages
-    if (error.message?.includes('Network Error') || !navigator.onLine) {
+    if (error.message?.includes('Network Error') || (typeof navigator !== 'undefined' && !navigator.onLine)) {
       const networkError = new Error('Network connection failed. Please check your internet connection and try again.');
       (networkError as any).isNetworkError = true;
       throw networkError;
@@ -244,12 +204,7 @@ export const editProfile = async (formData: FormData, accessToken: string) => {
 
 export const getProfileStrength = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "user-improve-profile", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.user.getProfileStrength);
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -258,12 +213,7 @@ export const getProfileStrength = async (accessToken: string) => {
 
 export const getUserDashboard = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "user-dashboard-applied-datas", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeGetRequest(endpoints.user.getUserDashboard);
   } catch (error) {
     console.error('Error fetching user dashboard:', error);
     throw error;
@@ -272,12 +222,7 @@ export const getUserDashboard = async (accessToken: string) => {
 
 export const getEmpData = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "get-emp-data", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeGetRequest(endpoints.user.getEmpData);
   } catch (error) {
     console.error('Error fetching employee data:', error);
     throw error;
@@ -333,87 +278,74 @@ export const getEmpDataForEdit = async (accessToken: string) => {
 
 export const profileCompleteStep2 = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await apiRequest.post(
-      "user-profile-complete-step2", 
-      formData, 
-      accessToken, 
-      'multipart/form-data'
-    );
-    return response?.data || {};
+    return await makeFormDataRequest(endpoints.user.completeProfileStep2, formData);
   } catch (error) {
     console.error('Error completing profile step 2:', error);
-    // Re-throw the enhanced error from our interceptors
     throw error;
   }
 };
 
 export const profileCompleteStep3 = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "user-profile-complete-step3", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.user.completeProfileStep3, formData);
   } catch (error) {
     console.error('Error completing profile step 3:', error);
     throw error;
   }
 };
 
+// Consolidated passport functions - use passport-upload endpoint (standardized)
 export const passportUpload = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "passport-upload", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.user.passportUpload, formData);
   } catch (error) {
     console.error('Error uploading passport:', error);
     throw error;
   }
 };
 
+// Alias for compatibility - use same endpoint
+export const addPassportApi = passportUpload;
+
 export const passportView = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "passport-view", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeGetRequest(endpoints.user.passportView);
   } catch (error) {
     console.error('Error fetching passport:', error);
     throw error;
   }
 };
 
+// Alias using view-passport endpoint (both work, standardize to passport-view)
+export const getPassportDetails = async (accessToken: string) => {
+  try {
+    // Try passport-view first, fallback to view-passport if needed
+    try {
+      return await makeGetRequest(endpoints.user.passportView);
+    } catch {
+      return await makeGetRequest(endpoints.user.viewPassport);
+    }
+  } catch (error) {
+    console.error('Error fetching passport details:', error);
+    throw error;
+  }
+};
+
 export const passportEdit = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "passport-edit", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.user.passportEdit, formData);
   } catch (error) {
     console.error('Error editing passport:', error);
     throw error;
   }
 };
 
+// Alias for compatibility
+export const editPassportApi = passportEdit;
+
 export const experienceList = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "experience-list", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeGetRequest(endpoints.user.experienceList);
   } catch (error) {
     console.error('Error fetching experience list:', error);
     throw error;
@@ -422,12 +354,7 @@ export const experienceList = async (accessToken: string) => {
 
 export const viewExperience = async (id: number, accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + `view-experience/${id}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeGetRequest(endpoints.user.viewExperience(id));
   } catch (error) {
     console.error('Error fetching experience:', error);
     throw error;
@@ -436,13 +363,7 @@ export const viewExperience = async (id: number, accessToken: string) => {
 
 export const addExperience = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "add-experience", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.user.addExperience, formData);
   } catch (error) {
     console.error('Error adding experience:', error);
     throw error;
@@ -451,12 +372,7 @@ export const addExperience = async (formData: FormData, accessToken: string) => 
 
 export const pastExperienceList = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "past-experience-list", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeGetRequest(endpoints.user.pastExperienceList);
   } catch (error) {
     console.error('Error fetching past experience list:', error);
     throw error;
@@ -465,13 +381,7 @@ export const pastExperienceList = async (accessToken: string) => {
 
 export const updatePastOccupation = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "update-past-occupation", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.user.updatePastOccupation, formData);
   } catch (error) {
     console.error('Error updating past occupation:', error);
     throw error;
@@ -480,13 +390,7 @@ export const updatePastOccupation = async (formData: FormData, accessToken: stri
 
 export const storeLocation = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "store-location", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.user.storeLocation, formData);
   } catch (error) {
     console.error('Error storing location:', error);
     throw error;
@@ -495,58 +399,26 @@ export const storeLocation = async (formData: FormData, accessToken: string) => 
 
 export const storeAppUseTime = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "store-app-use-time", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.user.storeAppUseTime, formData);
   } catch (error) {
     console.error('Error storing app use time:', error);
     throw error;
   }
 };
 
-// Additional missing API functions from legacy code
+// Consolidated notification function - standardize to return data
 export const getNotification = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "user-all-notification", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.user.getAllNotifications);
   } catch (error) {
     console.error('Error fetching notifications:', error);
     throw error;
   }
 };
 
-export const addPassportApi = async (formData: FormData, accessToken: string) => {
-  try {
-    const response = await axios.post(BASE_URL + "upload-passport", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
-  } catch (error) {
-    console.error('Error uploading passport:', error);
-    throw error;
-  }
-};
-
 export const addCvApi = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "upload-cv-by-user", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.uploadCv, formData);
   } catch (error) {
     console.error('Error uploading CV:', error);
     throw error;
@@ -555,57 +427,16 @@ export const addCvApi = async (formData: FormData, accessToken: string) => {
 
 export const addCovidCertificateApi = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "upload-covid-by-user", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.uploadCovid, formData);
   } catch (error) {
     console.error('Error uploading COVID certificate:', error);
     throw error;
   }
 };
 
-export const editPassportApi = async (formData: FormData, accessToken: string) => {
-  try {
-    const response = await axios.post(BASE_URL + "passport-edit", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
-  } catch (error) {
-    console.error('Error editing passport:', error);
-    throw error;
-  }
-};
-
-export const getPassportDetails = async (accessToken: string) => {
-  try {
-    const response = await axios.get(BASE_URL + "view-passport", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
-  } catch (error) {
-    console.error('Error fetching passport details:', error);
-    throw error;
-  }
-};
-
 export const addDrivingLicense = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "upload-dl-by-user", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.uploadDrivingLicense, formData);
   } catch (error) {
     console.error('Error uploading driving license:', error);
     throw error;
@@ -614,13 +445,7 @@ export const addDrivingLicense = async (formData: FormData, accessToken: string)
 
 export const addHighestEduCertificate = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "upload-edu-certificate-by-user", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.uploadEduCertificate, formData);
   } catch (error) {
     console.error('Error uploading education certificate:', error);
     throw error;
@@ -629,13 +454,7 @@ export const addHighestEduCertificate = async (formData: FormData, accessToken: 
 
 export const addOtherDoc = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "upload-other-docs-by-user", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.uploadOtherDocs, formData);
   } catch (error) {
     console.error('Error uploading other documents:', error);
     throw error;
@@ -644,13 +463,7 @@ export const addOtherDoc = async (formData: FormData, accessToken: string) => {
 
 export const submitLoanForm = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "need-migration-loan", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.submitLoan, formData);
   } catch (error) {
     console.error('Error submitting loan form:', error);
     throw error;
@@ -659,12 +472,7 @@ export const submitLoanForm = async (formData: FormData, accessToken: string) =>
 
 export const getAllDocApi = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "get-all-docs-by-user", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.user.getAllDocs);
   } catch (error) {
     console.error('Error fetching all documents:', error);
     throw error;
@@ -673,13 +481,7 @@ export const getAllDocApi = async (accessToken: string) => {
 
 export const editDrivingLicense = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "edit-dl-by-user", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.editDrivingLicense, formData);
   } catch (error) {
     console.error('Error editing driving license:', error);
     throw error;
@@ -688,12 +490,7 @@ export const editDrivingLicense = async (formData: FormData, accessToken: string
 
 export const logOut = async (accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "logout-app", {}, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeJsonRequest(endpoints.auth.logout, {});
   } catch (error) {
     console.error('Error logging out:', error);
     throw error;
@@ -702,13 +499,7 @@ export const logOut = async (accessToken: string) => {
 
 export const submitReference = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "add-registration-source", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.addRegistrationSource, formData);
   } catch (error) {
     console.error('Error submitting reference:', error);
     throw error;
@@ -717,13 +508,7 @@ export const submitReference = async (formData: FormData, accessToken: string) =
 
 export const checkServiceCode = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "check-service-status", {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.user.checkServiceStatus);
   } catch (error) {
     console.error('Error checking service code:', error);
     throw error;
@@ -732,8 +517,7 @@ export const checkServiceCode = async (accessToken: string) => {
 
 export const getOtpOnEmail = async (formData: FormData) => {
   try {
-    const response = await axios.post(BASE_URL + "get-email-otp", formData);
-    return response;
+    return await makeFormDataRequest(endpoints.auth.getEmailOtp, formData);
   } catch (error) {
     console.error('Error getting OTP on email:', error);
     throw error;
@@ -742,13 +526,7 @@ export const getOtpOnEmail = async (formData: FormData) => {
 
 export const storeUserLocation = async (formData: FormData, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + "store-user-location", formData, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.user.storeUserLocation, formData);
   } catch (error) {
     console.error('Error storing user location:', error);
     throw error;
@@ -757,13 +535,7 @@ export const storeUserLocation = async (formData: FormData, accessToken: string)
 
 export const getUserDetails = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + "user-dashboard-applied-datas", {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.user.getUserDashboard);
   } catch (error) {
     console.error('Error fetching user details:', error);
     throw error;

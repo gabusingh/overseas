@@ -134,7 +134,7 @@ export const hrEndpoints = {
   // HR data
   getHrData: 'get-hr-data',
   getHrDashboard: 'get-hr-dashboard',
-  getHrDashboardAnalytics: 'get-hr-dashboard-analytics',
+  getHrDashboardAnalytics: 'get-hra-dashboard-analytics',
   getHraDashboardData: 'get-hr-dashboard',
   getJobsPostedByHra: (hrId: string) => `get-jobs-posted-by-hra/${hrId}`,
   getEnhancedHrDetails: 'get-enhanced-hr-details',

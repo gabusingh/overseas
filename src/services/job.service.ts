@@ -14,9 +14,12 @@
  * After:  const { data } = useJobs(filters);
  */
 
-import axios from 'axios';
-
-const BASE_URL = 'https://backend.overseas.ai/api/';
+import { 
+  makeGetRequest, 
+  makeFormDataRequest, 
+  makeJsonRequest,
+  endpoints 
+} from '../lib/api/helpers';
 
 interface Job {
   id: number;
@@ -92,14 +95,13 @@ interface JobDetailResponse {
 
 export const getJobList = async (payload: FormData): Promise<JobListResponse> => {
   try {
-    // Let axios set the proper multipart boundary automatically
-    const response = await axios.post(BASE_URL + "filter-all-jobs", payload);
-    return response.data;
+    const response = await makeFormDataRequest<JobListResponse>(endpoints.jobs.filterAllJobs, payload);
+    return response;
   } catch (error: any) {
     console.error("Error posting data:", error);
     
     // Handle 500 errors gracefully
-    if (error?.response?.status === 500) {
+    if (error?.status === 500) {
       console.error('Backend server error (500). Using empty response as fallback.');
       // Return empty but valid response structure
       return {
@@ -258,12 +260,13 @@ export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJo
 
 export const getJobListForSearch = async (payload: object = {}): Promise<JobListResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "search-all-jobs", payload, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
       }
     });
-    return response.data;
+    return await makeFormDataRequest<JobListResponse>(endpoints.jobs.searchAllJobs, formData);
   } catch (error) {
     console.error("Error posting data:", error);
     throw error;
@@ -273,25 +276,13 @@ export const getJobListForSearch = async (payload: object = {}): Promise<JobList
 // Function to search jobs by search key (from legacy)
 export const searchJobsByKey = async (searchKey: string | FormData): Promise<JobListResponse> => {
   try {
-    let payload: any;
-    let headers: any = {};
-    
     if (typeof searchKey === 'string') {
-      payload = {
+      return await makeJsonRequest<JobListResponse>(endpoints.jobs.searchAllJobs, {
         searchKey: searchKey.replace(/-/g, ' ')
-      };
-      headers = {
-        'Content-Type': 'application/json',
-      };
+      });
     } else {
-      payload = searchKey;
-      headers = {
-        'Content-Type': 'multipart/form-data',
-      };
+      return await makeFormDataRequest<JobListResponse>(endpoints.jobs.searchAllJobs, searchKey);
     }
-    
-    const response = await axios.post(BASE_URL + "search-all-jobs", payload, { headers });
-    return response.data;
   } catch (error) {
     console.error("Error searching jobs:", error);
     throw error;
@@ -301,11 +292,10 @@ export const searchJobsByKey = async (searchKey: string | FormData): Promise<Job
 // Function to get jobs by search result (from legacy)
 export const getSearchResult = async (occuId: number, countryId: number) => {
   try {
-    const response = await axios.post(BASE_URL + `jobs-by-department-by-country`, {
+    return await makeJsonRequest(endpoints.jobs.jobsByDepartmentByCountry, {
       occuId, 
       countryId
     });
-    return response.data;
   } catch (error) {
     console.error('Error fetching search result:', error);
     throw error;
@@ -314,12 +304,7 @@ export const getSearchResult = async (occuId: number, countryId: number) => {
 
 export const getThisWeekJob = async (payload: FormData): Promise<JobListResponse> => {
   try {
-    const response = await axios.post(BASE_URL + "last-week-jobs", payload, {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest<JobListResponse>(endpoints.jobs.getLastWeekJobs, payload);
   } catch (error) {
     console.error("Error posting data:", error);
     throw error;
@@ -328,8 +313,7 @@ export const getThisWeekJob = async (payload: FormData): Promise<JobListResponse
 
 export const getOccupations = async () => {
   try {
-    const response = await axios.get(BASE_URL + 'get-occupations');
-    return response.data;
+    return await makeGetRequest(endpoints.jobs.getOccupations);
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -338,8 +322,7 @@ export const getOccupations = async () => {
 
 export const getSkill = async () => {
   try {
-    const response = await axios.post(BASE_URL + 'get-skills');
-    return response.data;
+    return await makeJsonRequest(endpoints.jobs.getSkills, {});
   } catch (error) {
     console.error('Error posting data:', error);
     throw error;
@@ -348,8 +331,7 @@ export const getSkill = async () => {
 
 export const getJobByDepartment = async (id: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'occupation-wise-jobs/' + id);
-    return response;
+    return await makeGetRequest(endpoints.jobs.getJobsByDepartment(id));
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -358,8 +340,7 @@ export const getJobByDepartment = async (id: number) => {
 
 export const getJobByCountry = async (id: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'country-wise-jobs/' + id);
-    return response;
+    return await makeGetRequest(endpoints.jobs.getJobsByCountry(id));
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -368,8 +349,7 @@ export const getJobByCountry = async (id: number) => {
 
 export const getJobById = async (id: string | number): Promise<any> => {
   try {
-    const response = await axios.get(BASE_URL + 'getJobs/' + id);
-    return response;
+    return await makeGetRequest(endpoints.jobs.getJobById(id));
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -386,44 +366,33 @@ export const applyJobApi = async (payload: any, accessToken: string) => {
       formData = payload;
     } else {
       formData = new FormData();
-      formData.append('id', payload.id);
+      formData.append('id', String(payload.id));
       formData.append('apply-job', payload['apply-job'] || '');
     }
     
-    const response = await axios.post(BASE_URL + `apply-job-r`, formData, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeFormDataRequest(endpoints.jobs.applyJob, formData);
   } catch (error) {
     console.error('Error applying for job:', error);
     throw error;
   }
 };
 
+// Consolidated applied jobs function - standardize to return data
 export const appliedJobList = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + `user-applied-job-list`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.jobs.appliedJobList);
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
   }
 };
 
+// Alias for compatibility - same endpoint, consistent data handling
+export const getAppliedJobs = appliedJobList;
+
 export const appliedJobById = async (id: number, accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + `user-applied-job-list/` + id, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.jobs.appliedJobById(id));
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -432,12 +401,7 @@ export const appliedJobById = async (id: number, accessToken: string) => {
 
 export const getInterviewById = async (id: number, accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + `interview-status-for-emp/` + id, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeGetRequest(endpoints.jobs.interviewStatus(id));
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -446,12 +410,7 @@ export const getInterviewById = async (id: number, accessToken: string) => {
 
 export const favouriteJobList = async (accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + `user-favourite-job-list`, {}, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeJsonRequest(endpoints.jobs.favoriteJobList, {});
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
@@ -460,36 +419,29 @@ export const favouriteJobList = async (accessToken: string) => {
 
 export const saveJobById = async (jobId: number, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + `save-job-by-user`, { jobId }, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeJsonRequest(endpoints.jobs.saveJob, { jobId });
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
   }
 };
 
+// Consolidated saved jobs function - standardize to return data
 export const userSavedJobsList = async (accessToken: string) => {
   try {
-    const response = await axios.get(BASE_URL + `user-saved-job-list`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response.data;
+    return await makeGetRequest(endpoints.jobs.savedJobList);
   } catch (error) {
     console.error('Error fetching saved jobs:', error);
     throw error;
   }
 };
 
+// Alias for compatibility - same endpoint, consistent data handling
+export const getSavedJobs = userSavedJobsList;
+
 export const getLatestJobs = async () => {
   try {
-    const response = await axios.get(BASE_URL + 'get-latest-jobs');
-    return response.data;
+    return await makeGetRequest(endpoints.jobs.getLatestJobs);
   } catch (error) {
     console.error('Error fetching latest jobs:', error);
     throw error;
@@ -498,10 +450,9 @@ export const getLatestJobs = async () => {
 
 export const getRelatedJobs = async (jobId: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'get-related-jobs', {
+    return await makeGetRequest(endpoints.jobs.getRelatedJobs, {
       params: { jobId }
     });
-    return response.data;
   } catch (error) {
     console.error('Error fetching related jobs:', error);
     throw error;
@@ -510,12 +461,7 @@ export const getRelatedJobs = async (jobId: number) => {
 
 export const jobQuery = async (formData: FormData) => {
   try {
-    const response = await axios.post(BASE_URL + 'job-query', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-    return response.data;
+    return await makeFormDataRequest(endpoints.jobs.jobQuery, formData);
   } catch (error) {
     console.error('Error submitting job query:', error);
     throw error;
@@ -524,54 +470,19 @@ export const jobQuery = async (formData: FormData) => {
 
 export const getJobsByCountryByDepartment = async (countryId: number, departmentId: number) => {
   try {
-    const response = await axios.post(BASE_URL + 'get-jobs-by-country-by-department', {
+    return await makeJsonRequest(endpoints.jobs.getJobsByCountryByDepartment, {
       countryId,
       departmentId
     });
-    return response.data;
   } catch (error) {
     console.error('Error fetching jobs by country and department:', error);
     throw error;
   }
 };
 
-// Additional missing APIs from legacy code
-export const getAppliedJobs = async (accessToken: string) => {
-  try {
-    const response = await axios.get(BASE_URL + 'user-applied-job-list', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
-  } catch (error) {
-    console.error('Error fetching applied jobs:', error);
-    throw error;
-  }
-};
-
-export const getSavedJobs = async (accessToken: string) => {
-  try {
-    const response = await axios.get(BASE_URL + 'user-saved-job-list', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
-  } catch (error) {
-    console.error('Error fetching saved jobs:', error);
-    throw error;
-  }
-};
-
 export const removeSavedJob = async (jobId: number, accessToken: string) => {
   try {
-    const response = await axios.post(BASE_URL + 'remove-saved-job', { jobId }, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    return response;
+    return await makeJsonRequest(endpoints.jobs.removeSavedJob, { jobId });
   } catch (error) {
     console.error('Error removing saved job:', error);
     throw error;
@@ -580,10 +491,9 @@ export const removeSavedJob = async (jobId: number, accessToken: string) => {
 
 export const getCompanies = async (page: number = 1) => {
   try {
-    const response = await axios.get(BASE_URL + 'get-companies', {
+    return await makeGetRequest(endpoints.hr.getCompanies, {
       params: { page }
     });
-    return response;
   } catch (error) {
     console.error('Error fetching companies:', error);
     throw error;
@@ -592,8 +502,7 @@ export const getCompanies = async (page: number = 1) => {
 
 export const getCompanyById = async (id: number) => {
   try {
-    const response = await axios.get(BASE_URL + 'company/' + id);
-    return response;
+    return await makeGetRequest(endpoints.hr.getCompanyById(id));
   } catch (error) {
     console.error('Error fetching company details:', error);
     throw error;
@@ -602,8 +511,7 @@ export const getCompanyById = async (id: number) => {
 
 export const searchJobs = async (searchParams: any) => {
   try {
-    const response = await axios.post(BASE_URL + 'search-jobs', searchParams);
-    return response;
+    return await makeJsonRequest(endpoints.jobs.searchAllJobs, searchParams);
   } catch (error) {
     console.error('Error searching jobs:', error);
     throw error;
@@ -612,8 +520,7 @@ export const searchJobs = async (searchParams: any) => {
 
 export const getJobStatistics = async () => {
   try {
-    const response = await axios.get(BASE_URL + 'job-statistics');
-    return response;
+    return await makeGetRequest(endpoints.jobs.jobStatistics);
   } catch (error) {
     console.error('Error fetching job statistics:', error);
     throw error;

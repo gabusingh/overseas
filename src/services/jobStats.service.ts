@@ -10,10 +10,7 @@
  * After:  const { data } = useJobStats();
  */
 
-import axios from 'axios';
 import { getJobByDepartment, getJobByCountry } from './job.service';
-
-const BASE_URL = 'https://backend.overseas.ai/api/';
 
 interface JobStatsResponse {
   categoryId: number;

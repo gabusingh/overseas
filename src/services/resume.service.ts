@@ -11,7 +11,10 @@
  * After:  const { mutate } = useOtpRequest();
  */
 
-import { apiRequest } from '@/utils/axiosConfig';
+import { 
+  makeFormDataRequest, 
+  endpoints 
+} from '../lib/api/helpers';
 
 // OTP and Authentication APIs - Use existing working endpoints
 export const getResumeOtp = async (loginForm: { name: string; contact: string }) => {
@@ -23,7 +26,7 @@ export const getResumeOtp = async (loginForm: { name: string; contact: string })
     
     console.log('Sending OTP request with payload:', { empName: loginForm.name, empPhone: loginForm.contact });
     
-    const response = await apiRequest.post('get-otp', formData);
+    const response = await makeFormDataRequest(endpoints.auth.getOtp, formData);
     return response;
   } catch (error: any) {
     console.error('Error sending OTP:', error);
@@ -43,7 +46,7 @@ export const verifyOtpForResumeUser = async (loginForm: { name: string; contact:
     
     console.log('Verifying OTP with payload:', { empName: loginForm.name, empPhone: loginForm.contact, otp: loginForm.otp });
     
-    const response = await apiRequest.post('register-person-step1', formData);
+    const response = await makeFormDataRequest(endpoints.auth.registerPersonStep1, formData);
     return response;
   } catch (error: any) {
     console.error('Error verifying OTP:', error);
@@ -61,15 +64,15 @@ export const updateResumeApi = async (formData: FormData, accessToken?: string) 
     
     console.log('Updating resume with access token');
     // Use user-complete-profile-edit endpoint for updating user profile
-    const response = await apiRequest.post('user-complete-profile-edit', formData, token);
-    return response?.data;
+    const response = await makeFormDataRequest(endpoints.user.editProfile, formData);
+    return response;
   } catch (error) {
     console.error('Error updating resume:', error);
     // If the edit endpoint fails, try the profile completion endpoint
     try {
       const token = accessToken || (typeof window !== 'undefined' ? sessionStorage.getItem('resumeAccessToken') : null);
-      const fallbackResponse = await apiRequest.post('user-profile-complete-step2', formData, token);
-      return fallbackResponse?.data;
+      const fallbackResponse = await makeFormDataRequest(endpoints.user.completeProfileStep2, formData);
+      return fallbackResponse;
     } catch (fallbackError) {
       console.error('Fallback profile update also failed:', fallbackError);
       throw error; // Throw the original error
@@ -86,8 +89,8 @@ export const updateResumeExperience = async (formData: FormData, accessToken?: s
     
     console.log('Updating experience with access token');
     // Use add-experience endpoint for adding work experience
-    const response = await apiRequest.post('add-experience', formData, token);
-    return response?.data;
+    const response = await makeFormDataRequest(endpoints.user.addExperience, formData);
+    return response;
   } catch (error) {
     console.error('Error updating experience:', error);
     throw error;
@@ -103,8 +106,8 @@ export const updateResumeLicence = async (formData: FormData, accessToken?: stri
     
     console.log('Updating license with access token');
     // Use upload-dl-by-user endpoint for driving license upload
-    const response = await apiRequest.post('upload-dl-by-user', formData, token);
-    return response?.data;
+    const response = await makeFormDataRequest(endpoints.user.uploadDrivingLicense, formData);
+    return response;
   } catch (error) {
     console.error('Error updating licence:', error);
     throw error;
@@ -119,15 +122,14 @@ export const updatePassport = async (formData: FormData, accessToken?: string) =
     }
     
     console.log('Updating passport with access token');
-    // Use upload-passport or passport-upload endpoint for passport details
-    let response;
+    // Use passport-upload endpoint (standardized) for passport details
     try {
-      response = await apiRequest.post('upload-passport', formData, token);
+      return await makeFormDataRequest(endpoints.user.passportUpload, formData);
     } catch (uploadError) {
-      console.log('upload-passport failed, trying passport-upload:', uploadError);
-      response = await apiRequest.post('passport-upload', formData, token);
+      console.log('passport-upload failed, trying upload-passport:', uploadError);
+      // Fallback to upload-passport if needed
+      return await makeFormDataRequest(endpoints.user.uploadPassport, formData);
     }
-    return response?.data;
   } catch (error) {
     console.error('Error updating passport:', error);
     throw error;
