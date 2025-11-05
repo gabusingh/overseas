@@ -18,16 +18,14 @@ import {
   SelectContent, 
   SelectGroup, 
   SelectItem, 
-  SelectLabel, 
   SelectTrigger, 
   SelectValue 
-} from "@/components/ui/select";// Types
+} from "@/components/ui/select";
+
+// Types
 type Country = {
   name: string;
   id: number;
-  code?: string;
-  countryCode?: string;
-  country_code?: string;
 };
 
 type Occupation = {
@@ -39,28 +37,6 @@ type Skill = {
   id: number;
   name: string;
 };
-
-type CountryResponse = Country[];
-type OccupationResponse = Occupation[];
-type SkillResponse = Skill[];
-
-function isCountryArray(value: unknown): value is Country[] {
-  return Array.isArray(value) && value.every(item => 
-    typeof item === 'object' && 
-    item !== null && 
-    typeof (item as any).name === 'string' &&
-    typeof (item as any).id === 'number'
-  );
-}
-
-function isOccupationArray(value: unknown): value is Occupation[] {
-  return Array.isArray(value) && value.every(item => 
-    typeof item === 'object' && 
-    item !== null && 
-    typeof (item as any).name === 'string' &&
-    typeof (item as any).id === 'number'
-  );
-}
 
 // Create a mapped type for form field values
 type FormDataValues = {
@@ -80,20 +56,7 @@ interface FieldConfig {
   containerClassName?: string;
 }
 
-// Type guard to check if a string is a valid field name
-function isValidFieldName(name: string): name is keyof FormDataType {
-  return name in ({} as FormDataType);
-}
-
 type FormFieldValue = string | string[] | File | null;
-
-interface FieldProps {
-  field: FieldConfig;
-  value: FormFieldValue;
-  onChange: (value: FormFieldValue) => void;
-  error?: string;
-  placeholder?: string;
-}
 
 // Helper function to safely access form data
 function getFormValue(formData: FormDataValues, name: keyof FormDataType): FormFieldValue {
@@ -150,8 +113,6 @@ type FormDataType = {
   languageRequired: string[];
   jobArea: string;
 };
-
-type ErrorType = Partial<Record<keyof FormDataType, string>>;
 
 const CreateJobs = () => {
   const router = useRouter();
