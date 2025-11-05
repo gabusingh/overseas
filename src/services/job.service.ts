@@ -99,27 +99,14 @@ export const getJobList = async (payload: FormData): Promise<JobListResponse> =>
   }
 };
 
-// Helper function to get HR user ID from localStorage with enhanced debugging
+// Helper function to get HR user ID from localStorage
 const getHrUserIdFromStorage = (): string | null => {
   try {
     const loggedUser = localStorage.getItem("loggedUser");
     const userSimple = localStorage.getItem("user");
     
-    console.log('🔍 DEBUG - localStorage data:');
-    console.log('- loggedUser exists:', !!loggedUser);
-    console.log('- userSimple exists:', !!userSimple);
-    
     if (loggedUser) {
       const userData = JSON.parse(loggedUser);
-      console.log('📋 DEBUG - loggedUser data structure:', {
-        hasUser: !!userData?.user,
-        hasCmpData: !!userData?.cmpData,
-        hasId: !!userData?.id,
-        hasHrId: !!userData?.hrId,
-        hasEmpId: !!userData?.empId,
-        userType: userData?.user?.type || userData?.type,
-        userData: userData
-      });
       
       // Try different possible ID fields for HR users
       const hrId = userData?.user?.id || 
@@ -130,8 +117,6 @@ const getHrUserIdFromStorage = (): string | null => {
                    userData?.user?.empId ||
                    userData?.cmpData?.empId;
       
-      console.log('🎯 DEBUG - Extracted HR ID:', hrId);
-      
       if (hrId) {
         return hrId.toString();
       }
@@ -139,17 +124,13 @@ const getHrUserIdFromStorage = (): string | null => {
     
     if (userSimple) {
       const userSimpleData = JSON.parse(userSimple);
-      console.log('📋 DEBUG - userSimple data:', userSimpleData);
       const hrId = userSimpleData?.id;
-      
-      console.log('🎯 DEBUG - UserSimple HR ID:', hrId);
       
       if (hrId) {
         return hrId.toString();
       }
     }
     
-    console.warn('⚠️ DEBUG - No HR ID found in localStorage');
     return null;
   } catch (error) {
     console.error('❌ Error extracting HR user ID:', error);
@@ -197,13 +178,11 @@ interface EnhancedJobListResponse extends JobListResponse {
 export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJobListResponse> => {
   try {
     const userType = getUserTypeFromStorage();
-    console.log('User type detected for job listing:', userType);
     
     // Always show all jobs regardless of user type
     // Previously this function filtered jobs for HR users to show only their posted jobs
     // Now HR users will see all available jobs just like candidates
     
-    console.log('Fetching all jobs for all users');
     const regularResponse = await getJobList(payload);
     
     // Optionally enhance with HR details if user is HR (for UI purposes only)
@@ -212,9 +191,8 @@ export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJo
       const token = localStorage.getItem("access_token");
       try {
         hrDetails = await getEnhancedHrDetails(token);
-        console.log('HR details fetched for UI enhancement:', hrDetails?.cmpData?.cmpName || 'Unknown Company');
       } catch (detailsError) {
-        console.warn('Could not fetch HR details:', detailsError);
+        // Silently handle error
       }
     }
     
@@ -472,7 +450,6 @@ export const userSavedJobsList = async (accessToken: string) => {
 
 // Deprecated: Use getLatestJobsSafe instead for better error handling
 export const getLatestJobs = async () => {
-  console.warn('getLatestJobs is deprecated. Use getLatestJobsSafe for better authentication error handling.');
   return getLatestJobsSafe();
 };
 
@@ -485,19 +462,16 @@ export const getLatestJobsSafe = async () => {
   } catch (error: any) {
     // Handle authentication errors gracefully
     if (error?.response?.status === 401 || error?.response?.status === 403) {
-      console.info('Latest jobs API requires authentication - skipping for unauthenticated users');
       return null; // Return null instead of throwing for auth errors
     }
     
     // Handle server errors gracefully
     if (error?.response?.status >= 500) {
-      console.warn('Server error while fetching latest jobs - continuing without latest jobs data');
       return null;
     }
     
-    // Only throw for unexpected errors
-    console.error('Unexpected error fetching latest jobs:', error);
-    return null; // Be safe and return null for any other errors too
+    // Return null for any other errors
+    return null;
   }
 };
 export const getRelatedJobs = async (jobId: number) => {

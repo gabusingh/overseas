@@ -108,7 +108,6 @@ export default function JobsLastWeekPage() {
       formData.append('page', page.toString());
       
       const response = await getThisWeekJob(formData);
-      console.log('Last Week Jobs Response:', response);
       
       if (response?.jobs) {
         const newJobs = response.jobs as LastWeekJob[];

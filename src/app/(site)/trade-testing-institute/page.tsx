@@ -41,7 +41,6 @@ export default function TradeTestingInstitutePage() {
         }
         
         const data = await res.json();
-        console.log('Trade Tests API Response:', data);
         
         // The API returns {msg, data: [array of tests]}
         const list = data?.data || [];

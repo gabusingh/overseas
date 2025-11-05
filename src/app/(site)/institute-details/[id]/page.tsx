@@ -83,8 +83,6 @@ export default function InstituteDetailsPage() {
   const fetchInstituteDetails = async (): Promise<void> => {
     setLoading(true);
     try {
-      console.log('🔄 Fetching institute details for ID:', instituteId);
-      
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       
       const res = await fetch('https://backend.overseas.ai/api/list-training-institute', {
@@ -101,18 +99,15 @@ export default function InstituteDetailsPage() {
       }
       
       const data = await res.json();
-      console.log('📊 Training Institutes API Response:', data);
       
       const institutes: Array<InstituteDetail & { id: number }> = data?.data || [];
       const foundInstitute = institutes.find((inst) => String(inst.id) === instituteId);
       
       if (!foundInstitute) {
-        console.warn('⚠️ Institute not found in response');
         toast.error('Institute not found');
         return;
       }
       
-      console.log('✅ Institute details loaded:', foundInstitute);
       setInstitute(foundInstitute);
     } catch (error: unknown) {
       console.error('❌ Error fetching institute details:', error);

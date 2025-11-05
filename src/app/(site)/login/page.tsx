@@ -139,13 +139,6 @@ export default function LoginPage() {
           name: (response.data.user as any).name || (response.data.user as any).empName || ''
         };
         
-        // Debug logging to track user type
-        console.log('=== LOGIN DEBUG ===');
-        console.log('Response data:', response.data);
-        console.log('User data:', userData);
-        console.log('User type:', userData.type);
-        console.log('==================');
-        
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("access_token", response.data.access_token);
         // Legacy compatibility
@@ -162,12 +155,9 @@ export default function LoginPage() {
         if (redirectUrl && redirectUrl.startsWith('/')) {
           // Use the redirect URL if provided and valid
           redirectPath = decodeURIComponent(redirectUrl);
-          console.log('Using redirect URL:', redirectPath);
         } else {
           // Fall back to user type-based redirection
           const userType = response?.data?.user?.type;
-          
-          console.log('Determining redirect for user type:', userType);
           
           switch (userType) {
             case "person":
@@ -175,19 +165,15 @@ export default function LoginPage() {
               break;
             case "company":
               redirectPath = "/hra-dashboard";
-              console.log('Redirecting to HR dashboard');
               break;
             case "institute":
               redirectPath = "/institute-dashboard";
               break;
             default:
-              console.warn('Unknown user type:', userType, 'redirecting to home');
               redirectPath = "/";
               break;
           }
         }
-        
-        console.log('Final redirect path:', redirectPath);
         
         setTimeout(() => {
           router.push(redirectPath);

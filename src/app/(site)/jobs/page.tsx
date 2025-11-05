@@ -267,9 +267,7 @@ export default function JobsPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        console.log('🔄 Fetching occupations...');
         const response = await getOccupations();
-        console.log('📊 Occupations response:', response);
         
         const occupationData = response?.data || response?.occupation || [];
         if (Array.isArray(occupationData) && occupationData.length > 0) {
@@ -283,7 +281,6 @@ export default function JobsPage() {
             count: 0
           }));
           setCategories(categories);
-          console.log('✅ Categories loaded:', categories.length);
         } else {
           throw new Error('No valid categories found');
         }
@@ -297,9 +294,7 @@ export default function JobsPage() {
 
     const fetchCountries = async () => {
       try {
-        console.log('🔄 Fetching countries...');
         const response = await getCountries();
-        console.log('📊 Countries response:', response);
         
         const countryData = response?.countries || response?.data || [];
         if (Array.isArray(countryData) && countryData.length > 0) {
@@ -309,7 +304,6 @@ export default function JobsPage() {
             count: 0
           }));
           setCountries(countries);
-          console.log('✅ Countries loaded:', countries.length);
         } else {
           throw new Error('No valid countries found');
         }

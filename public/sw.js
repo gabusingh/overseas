@@ -28,7 +28,6 @@ self.addEventListener('install', function(event) {
         return Promise.allSettled(
           urlsToCache.map(url => 
             cache.add(url).catch(err => {
-              console.warn('Failed to cache:', url, err);
               return null;
             })
           )

@@ -87,7 +87,6 @@ export default function RecommendedCandidatesPage() {
       
       // First try to get jobs from context (already loaded)
       if (jobsData && jobsData.length > 0) {
-        console.log('📊 Using jobs from HRA context:', jobsData.length);
         
         // Transform actual job data to JobFilter format
         availableJobsList = jobsData.map((job: any) => ({
@@ -102,7 +101,6 @@ export default function RecommendedCandidatesPage() {
         }));
       } else {
         // Fallback to mock data if no real data available
-        console.log('⚠️ No jobs data from context, using fallback');
         availableJobsList = [
           {
             id: "1",
@@ -137,15 +135,12 @@ export default function RecommendedCandidatesPage() {
       if (jobId) {
         const currentJob = availableJobsList.find(job => job.id === jobId);
         if (currentJob) {
-          console.log('✅ Found and selected job:', currentJob.title);
           setSelectedJob(currentJob);
         } else {
-          console.log('⚠️ Job ID not found in list, selecting first job');
           setSelectedJob(availableJobsList[0] || null);
         }
       } else {
         // No jobId provided, select first available job
-        console.log('ℹ️ No job ID provided, selecting first available job');
         setSelectedJob(availableJobsList[0] || null);
       }
     } catch (error) {
@@ -167,29 +162,16 @@ export default function RecommendedCandidatesPage() {
       let candidatesData: RecommendedCandidate[] = [];
       
       try {
-        console.log('🔍 Attempting to fetch recommendations for job ID:', jobId);
-        console.log('🔑 Using token:', token ? 'Present' : 'Missing');
-        
         const response = await getRecommendedCandidates(
           jobId ? parseInt(jobId) : undefined,
           token
         );
-        
-        console.log('📥 Full API response:', {
-          status: response?.status,
-          statusText: response?.statusText,
-          hasData: !!response?.data,
-          dataKeys: response?.data ? Object.keys(response.data) : [],
-          fullResponse: response
-        });
         
         // Handle various API response structures
         let apiCandidates = [];
         
         // Check for the actual API structure with bestMatch, goodMatch, partialMatch
         if (response?.data?.bestMatch || response?.data?.goodMatch || response?.data?.partialMatch) {
-          console.log('📋 Found match categories in API response');
-          
           // Combine all match categories
           const bestMatches = response.data.bestMatch?.data || [];
           const goodMatches = response.data.goodMatch?.data || [];
@@ -202,13 +184,6 @@ export default function RecommendedCandidatesPage() {
           
           // Combine all candidates, best matches first
           apiCandidates = [...bestWithType, ...goodWithType, ...partialWithType];
-          
-          console.log('📊 Match breakdown:', {
-            bestMatches: bestMatches.length,
-            goodMatches: goodMatches.length,
-            partialMatches: partialMatches.length,
-            total: apiCandidates.length
-          });
         } else if (response?.data?.data) {
           apiCandidates = response.data.data;
         } else if (response?.data?.candidates) {
@@ -223,11 +198,6 @@ export default function RecommendedCandidatesPage() {
           // If data is an object with candidates inside
           apiCandidates = Object.values(response.data).filter(Array.isArray).flat();
         }
-        
-        console.log('📊 Extracted candidates array:', {
-          count: apiCandidates.length,
-          firstCandidate: apiCandidates[0]
-        });
         
         if (Array.isArray(apiCandidates) && apiCandidates.length > 0) {
           candidatesData = apiCandidates.map((candidate: any) => ({
@@ -264,19 +234,13 @@ export default function RecommendedCandidatesPage() {
             responseStatus: 'not_contacted',
             contactedDate: candidate.contactedDate
           }));
-          
-          console.log(`✅ Loaded ${candidatesData.length} recommended candidates from API`);
-        } else {
-          console.log('⚠️ No candidates from API, using fallback data');
         }
       } catch (apiError) {
-        console.error('❌ API Error fetching recommended candidates:', apiError);
-        console.log('📌 Using fallback mock data');
+        // API Error - using fallback mock data
       }
       
       // If no candidates from API, use mock data as fallback
       if (candidatesData.length === 0) {
-        console.log('📌 Generating mock candidates for demonstration');
         const mockCandidates: RecommendedCandidate[] = [
         {
           id: "1",

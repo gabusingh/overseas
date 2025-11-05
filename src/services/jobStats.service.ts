@@ -38,7 +38,7 @@ export const getJobStatsByCategory = async (categoryId: number): Promise<JobStat
       growth: jobCount > 100 ? 'High' : jobCount > 50 ? 'Moderate' : 'Low'
     };
   } catch (error) {
-    console.warn(`Failed to fetch job stats for category ${categoryId}:`, error);
+    // Failed to fetch job stats for category - using fallback data
     
     // Fallback to estimated data
     return {

@@ -49,7 +49,6 @@ export default function EditProfilePage() {
       return;
     }
     
-    console.log('EditProfile: Loading profile data...');
     loadProfileData(token);
   }, [router]);
 
@@ -171,7 +170,6 @@ export default function EditProfilePage() {
           setProfileData(initialProfileData);
         }
       } catch (empDataError) {
-        console.warn("Could not load complete profile data, using localStorage data:", empDataError);
         setProfileData(initialProfileData);
       }
       
@@ -285,7 +283,6 @@ export default function EditProfilePage() {
         formData.append("profile_image", profileImage);
       }
 
-      console.log('Saving profile data:', Object.fromEntries(formData));
       const response = await editProfile(formData, token);
       
       if (response) {
@@ -312,8 +309,6 @@ export default function EditProfilePage() {
         // Update localStorage with complete updated data
         localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
         localStorage.setItem("user", JSON.stringify(updatedUser));
-        
-        console.log('Profile data saved to localStorage:', updatedUser);
         
         // Add a small delay to ensure localStorage is updated before navigation
         setTimeout(() => {

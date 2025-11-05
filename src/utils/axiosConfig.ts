@@ -21,10 +21,6 @@ apiClient.interceptors.request.use(
     const separator = config.url?.includes('?') ? '&' : '?';
     config.url = `${config.url}${separator}_t=${timestamp}`;
 
-    // Log outgoing requests in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`);
-    }
 
     return config;
   },
@@ -36,22 +32,9 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Log successful responses in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`✅ ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
-    }
     return response;
   },
   (error: AxiosError) => {
-    // Log errors in development with reduced spam for known issues
-    if (process.env.NODE_ENV === 'development') {
-      // Reduce spam for known 404 endpoints that we handle gracefully
-      if (error.response?.status === 404 && error.config?.url?.includes('get-emp-data-for-edit')) {
-        console.info(`ℹ️ ${error.response?.status} ${error.config?.method?.toUpperCase()} ${error.config?.url} (expected for new users - using fallback data)`);
-      } else {
-        console.error(`❌ ${error.response?.status || 'Network'} ${error.config?.method?.toUpperCase()} ${error.config?.url}`, error);
-      }
-    }
 
     // Handle authentication errors globally
     if (error.response?.status === 401) {

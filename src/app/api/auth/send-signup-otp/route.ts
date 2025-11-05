@@ -4,7 +4,6 @@ import { signUp } from '@/services/user.service';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Send OTP Request body:', body);
     const { empPhone, empName, countryCode } = body;
 
     // Validate required fields
@@ -32,15 +31,9 @@ export async function POST(request: NextRequest) {
     }
     // Tag as HRA flow for backend analytics/routing if supported
     formData.append('type', 'hra');
-
-    console.log('Calling signUp with:', { empPhone, empName });
     
     // Call the external signup service
     const response = await signUp(formData);
-    
-    console.log('SignUp full response:', response);
-    console.log('SignUp response data:', response?.data);
-    console.log('SignUp response status:', response?.status);
 
     // Check various possible response formats
     if (response?.data?.msg === 'OTP sent successfully' || 
@@ -84,13 +77,11 @@ export async function POST(request: NextRequest) {
       );
     } else if (response?.status === 200 || response?.status === 201) {
       // If we got a successful status but no specific message, assume OTP was sent
-      console.log('Assuming success due to status code:', response.status);
       return NextResponse.json({
         success: true,
         message: 'OTP sent successfully'
       });
     } else {
-      console.log('Unexpected response format, returning error');
       return NextResponse.json(
         { success: false, message: 'Unexpected response from OTP service' },
         { status: 500 }

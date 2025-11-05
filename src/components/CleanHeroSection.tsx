@@ -40,7 +40,6 @@ function CleanHeroSection({ data: propData, countryData }: CleanHeroSectionProps
       }));
       setDepartmentList(occupations || []);
     } catch (error) {
-      console.log(error);
       // Set empty array - no fallback data
       setDepartmentList([]);
     }

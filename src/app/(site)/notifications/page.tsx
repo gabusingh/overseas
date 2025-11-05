@@ -68,8 +68,6 @@ export default function NotificationsPage() {
           setNotifications([]);
         }
       } catch (apiError) {
-        console.log("API error, using fallback notifications:", apiError);
-        
         // Fallback to mock data if API fails
         const mockNotifications: Notification[] = [
           {

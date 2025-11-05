@@ -36,7 +36,6 @@ function TradeTestCard({ v, getTestTradeListFunc }: TradeTestCardProps) {
           id: v?.id,
           access_token: globalState?.user?.user?.access_token,
         });
-        console.log(response);
         if (response?.message === "Application submitted successfully!") {
           toast.success("Application submitted successfully!");
           setTimeout(() => {

@@ -58,7 +58,6 @@ export const safeApiCall = async <T>(
   try {
     // Skip API call if authentication is required but user is not authenticated
     if (requiresAuth && !isUserAuthenticated()) {
-      console.info(`Skipping ${description} - authentication required but user not authenticated`);
       return fallbackValue;
     }
 
@@ -66,13 +65,11 @@ export const safeApiCall = async <T>(
   } catch (error: any) {
     // Handle authentication errors gracefully
     if (error?.response?.status === 401 || error?.response?.status === 403) {
-      console.info(`${description} requires authentication - skipping for unauthenticated user`);
       return fallbackValue;
     }
 
     // Handle server errors gracefully
     if (error?.response?.status >= 500) {
-      console.warn(`Server error during ${description} - using fallback`);
       return fallbackValue;
     }
 

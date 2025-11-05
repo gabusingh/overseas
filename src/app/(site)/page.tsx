@@ -118,7 +118,7 @@ export default function Home() {
         }
       }
     } catch (error) {
-      console.warn('Cache read error:', error);
+      // Cache read error - silently fail
     }
     return null;
   }, []);
@@ -131,7 +131,7 @@ export default function Home() {
         timestamp: Date.now()
       }));
     } catch (error) {
-      console.warn('Cache write error:', error);
+      // Cache write error - silently fail
     }
   }, []);
 
@@ -203,9 +203,7 @@ export default function Home() {
       }, 500);
       
     } catch (error) {
-      console.error('Error loading secondary data:', error);
-      // Don't show error toast for non-critical data
-      console.warn('Non-critical data fetch failed, continuing without it:', error);
+      // Non-critical data fetch failed, continuing without it
     }
   }, []);
 

@@ -74,13 +74,10 @@ export default function ViewCandidateApplicationsPage() {
 
       try {
         // Fetch applications for specific job using real API
-        console.log('Fetching applications for job ID:', jobId);
         const response = await getJobApplications(parseInt(jobId), token);
         clearTimeout(timeoutId);
-        console.log('Applications API Response:', response);
         
         const candidatesData = response?.data || response || [];
-        console.log('Candidates Data:', candidatesData);
         
         // Transform API response to match Application interface
         const transformedApplications: Application[] = (Array.isArray(candidatesData) ? candidatesData : []).map((candidate: any) => ({

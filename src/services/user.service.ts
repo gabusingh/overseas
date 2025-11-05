@@ -191,7 +191,6 @@ export const submitContactQuery = async (formData: FormData) => {
 
 export const editProfile = async (formData: FormData, accessToken: string) => {
   try {
-    console.log('Attempting to update profile with enhanced API client...');
     const response = await apiRequest.post(
       "user-complete-profile-edit", 
       formData, 
@@ -199,7 +198,6 @@ export const editProfile = async (formData: FormData, accessToken: string) => {
       'multipart/form-data',
       2 // Allow 2 retries for network issues
     );
-    console.log('Profile update successful:', response.status);
     return response;
   } catch (error: any) {
     console.error('Error updating profile:', {
@@ -289,7 +287,7 @@ export const getEmpDataForEdit = async (accessToken: string) => {
     const data = await response.json();
     return data;
   } catch (error: any) {
-    console.warn('Employee data not found for editing (this is normal for new users):', error.message);
+    // Employee data not found for editing (this is normal for new users)
     // Return empty data structure to allow form functionality on any error
     return {
       empName: '',
