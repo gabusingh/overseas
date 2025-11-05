@@ -554,8 +554,15 @@ export const registerHra = async (registrationData: HraRegistrationData) => {
     });
     
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error registering HRA:', error);
+    
+    // Return error response data instead of throwing
+    if (error?.response?.data) {
+      return error.response.data;
+    }
+    
+    // If no response data, throw the error
     throw error;
   }
 };

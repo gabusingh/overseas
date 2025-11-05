@@ -261,8 +261,47 @@ export default function EmployerSignupPage() {
       
       console.log('Registration response:', response);
       
+      // Check for errors first (even if there's a success message)
+      if (response?.errors || response?.error || (response?.data?.errors)) {
+        // Handle validation errors if provided
+        const errorsData = response?.errors || response?.data?.errors;
+        
+        if (errorsData) {
+          if (Array.isArray(errorsData)) {
+            // Handle array format: ["Password is required.", "Country Code is required."]
+            const firstError = errorsData[0];
+            toast.error(firstError || "Validation error");
+          } else if (typeof errorsData === "object") {
+            // Handle object format: {cmpEmail: ["Email already registered"]}
+            const mapped: ErrorState = {};
+            Object.keys(errorsData).forEach((k) => {
+              const key = k as keyof ErrorState;
+              const first = Array.isArray(errorsData[k]) ? errorsData[k][0] : String(errorsData[k]);
+              mapped[key] = first;
+            });
+            setErrors((prev) => ({ ...prev, ...mapped }));
+          }
+        }
+        
+        const errorMessage = response?.error || response?.message || "Registration failed";
+        const duplicateType = response?.duplicateType;
+        
+        // Handle duplicate errors with specific toast messages
+        if (duplicateType === 'email') {
+          toast.error(errorMessage);
+          setErrors((prev) => ({ ...prev, cmpEmail: "This email is already registered" }));
+        } else if (duplicateType === 'mobile') {
+          toast.error(errorMessage);
+          setTimeout(() => router.push("/login"), 3000);
+        } else if (!errorsData) {
+          // Only show error toast if we haven't already shown one for errors array
+          toast.error(errorMessage);
+        }
+        return;
+      }
+      
       // Check for successful registration - API returns message and optionally access_token
-      if (response?.message && !response?.error) {
+      if (response?.message && !response?.error && !response?.errors) {
         // Show success message to user
         toast.success("Registration successful! Redirecting to login page...");
         
@@ -276,42 +315,19 @@ export default function EmployerSignupPage() {
         // Always redirect to login page after successful registration with delay to show message
         setTimeout(() => router.push("/login?registered=1"), 2000);
       } else {
-        // Handle validation errors if provided
-        if (response?.errors && typeof response.errors === "object") {
-          const mapped: ErrorState = {};
-          Object.keys(response.errors).forEach((k) => {
-            const key = k as keyof ErrorState;
-            const first = Array.isArray(response.errors[k]) ? response.errors[k][0] : String(response.errors[k]);
-            mapped[key] = first;
-          });
-          setErrors((prev) => ({ ...prev, ...mapped }));
-        }
-        
-        const errorMessage = response?.error || response?.message || "Registration failed";
-        // Check if it's an "already registered" error
-        const isAlreadyRegistered = /already\s*registered/i.test(errorMessage.toLowerCase());
-        
-        if (isAlreadyRegistered) {
-          toast.error("This mobile number is already registered. Please use the login page instead.", {
-            duration: 3000,
-            description: "Redirecting to login page..."
-          });
-          // Wait a bit longer to ensure toast is visible before redirecting
-          setTimeout(() => {
-            router.push("/login");
-          }, 3000);
-        } else {
-          toast.error(errorMessage);
-        }
+        // Fallback for any other response
+        toast.error(response?.message || "Registration failed");
       }
     } catch (error: unknown) {
       console.error('Registration error:', error);
       
       // Handle specific error cases
       const axiosStatus = (error as any)?.response?.status;
-      if (axiosStatus === 422) {
+      if (axiosStatus === 422 || axiosStatus === 400) {
         const data = (error as any)?.response?.data;
         console.log('Validation error data:', data);
+        
+        // Handle field-level errors
         if (data?.errors && typeof data.errors === "object") {
           const mapped: ErrorState = {};
           Object.keys(data.errors).forEach((k) => {
@@ -321,21 +337,32 @@ export default function EmployerSignupPage() {
           });
           setErrors((prev) => ({ ...prev, ...mapped }));
         }
-        toast.error(data?.error || "Validation error");
+        
+        // Handle duplicate errors with specific toast messages
+        const duplicateType = data?.duplicateType;
+        const errorMessage = data?.error || "Validation error";
+        
+        if (duplicateType === 'email') {
+          toast.error(errorMessage);
+          setErrors((prev) => ({ ...prev, cmpEmail: "This email is already registered" }));
+        } else if (duplicateType === 'mobile') {
+          toast.error(errorMessage);
+          setTimeout(() => router.push("/login"), 3000);
+        } else {
+          toast.error(errorMessage);
+        }
       } else {
         const message = (error instanceof Error && error.message) ? error.message : "Registration failed. Please try again.";
-        // Check if it's an "already registered" error
-        const isAlreadyRegistered = /already\s*registered/i.test(message.toLowerCase());
+        const errorData = (error as any)?.response?.data;
+        const duplicateType = errorData?.duplicateType;
         
-        if (isAlreadyRegistered) {
-          toast.error("This mobile number is already registered. Please use the login page instead.", {
-            duration: 3000,
-            description: "Redirecting to login page..."
-          });
-          // Wait a bit longer to ensure toast is visible before redirecting
-          setTimeout(() => {
-            router.push("/login");
-          }, 3000);
+        // Handle duplicate errors in catch block
+        if (duplicateType === 'email') {
+          toast.error(errorData?.error || message);
+          setErrors((prev) => ({ ...prev, cmpEmail: "This email is already registered" }));
+        } else if (duplicateType === 'mobile') {
+          toast.error(errorData?.error || message);
+          setTimeout(() => router.push("/login"), 3000);
         } else {
           toast.error(message);
         }
