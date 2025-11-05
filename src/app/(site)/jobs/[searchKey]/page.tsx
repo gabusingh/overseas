@@ -124,7 +124,7 @@ export default function SearchResultsPage() {
       try {
         response = await searchJobsByKey(formData);
       } catch (searchError) {
-        console.warn('Search API failed, falling back to user-aware job list:', searchError);
+        // Search API failed, falling back to user-aware job list
         response = await getUserAwareJobList(formData);
       }
       

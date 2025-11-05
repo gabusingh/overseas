@@ -184,14 +184,6 @@ export const getJobsPostedByHra = async (hraId: string, token: string) => {
       headers: { Authorization: `Bearer ${token}` },
     });
     
-    // Log the raw response for debugging
-    console.log('🔍 Raw jobs API response:', {
-      status: response.status,
-      data: response.data,
-      dataType: typeof response.data,
-      isArray: Array.isArray(response.data)
-    });
-    
     // Return the response data directly - let the caller handle the structure
     return response.data;
   } catch (error: any) {
@@ -203,7 +195,6 @@ export const getJobsPostedByHra = async (hraId: string, token: string) => {
     
     // If it's a 404 or no data found, return empty structure instead of throwing
     if (error.response?.status === 404 || error.message?.includes('not found')) {
-      console.log('📭 No jobs found for this HRA - returning empty result');
       return {}; // This matches the current API behavior
     }
     
@@ -288,22 +279,11 @@ export const getHraDashboardAnalytics = async (token: string) => {
 
 export const createJob = async (formData: FormData, accessToken: string) => {
   try {
-    console.log('🚀 createJob service called');
-    console.log('🔗 API URL:', BASE_URL + 'create-job');
-    console.log('🔑 Access token length:', accessToken ? accessToken.length : 0);
-    console.log('📦 FormData entries:', Array.from(formData.entries()));
-    
     const response = await axios.post(BASE_URL + 'create-job', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         Authorization: `Bearer ${accessToken}`
       }
-    });
-    
-    console.log('📥 createJob response:', {
-      status: response.status,
-      data: response.data,
-      headers: response.headers
     });
     
     return response;
@@ -541,16 +521,10 @@ export const registerHra = async (registrationData: HraRegistrationData) => {
     });
 
     // Use the local Next.js API route instead of calling external API directly
-    console.log('Sending HRA registration data to local API route');
     const response = await axios.post('/api/register-hra', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-    });
-    
-    console.log('HRA registration response:', {
-      status: response.status,
-      data: response.data
     });
     
     return response.data;
