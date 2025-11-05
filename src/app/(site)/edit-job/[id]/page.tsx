@@ -125,11 +125,6 @@ export default function EditJobPage() {
       const token = localStorage.getItem("access_token");
       const loggedUser = localStorage.getItem("loggedUser");
       
-      console.log('🔍 DEBUG - Edit Job Authentication:');
-      console.log('- Token exists:', !!token);
-      console.log('- LoggedUser exists:', !!loggedUser);
-      console.log('- Job ID:', jobId);
-      
       if (!token) {
         console.error('❌ No access token found, redirecting to login');
         toast.error('Please log in to edit jobs');
@@ -139,13 +134,6 @@ export default function EditJobPage() {
       
       if (loggedUser) {
         const userData = JSON.parse(loggedUser);
-        console.log('📋 DEBUG - User data for edit job:', {
-          userType: userData?.user?.type || userData?.type,
-          hasUser: !!userData?.user,
-          hasCmpData: !!userData?.cmpData,
-          userId: userData?.user?.id || userData?.id,
-          hrId: userData?.user?.id || userData?.cmpData?.id || userData?.id || userData?.hrId || userData?.empId
-        });
         
         // Verify this is a company user
         const userType = userData?.user?.type || userData?.type;
@@ -158,7 +146,6 @@ export default function EditJobPage() {
       }
 
       // Fetch actual job data from API with timeout
-      console.log('🚀 Fetching job data for ID:', jobId);
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout - API took too long to respond')), 30000)
       );
@@ -168,32 +155,19 @@ export default function EditJobPage() {
         timeoutPromise
       ]);
       
-      console.log('📊 API Response received:', {
-        hasResponse: !!response,
-        hasData: !!response?.data,
-        responseStructure: Object.keys(response || {}),
-        dataStructure: response?.data ? Object.keys(response.data) : 'No data field'
-      });
-      
       // Handle different response structures - be more strict about data validation
       let jobApiData;
       if (response?.data?.jobs) {
         jobApiData = response.data.jobs;
-        console.log('✓ Using response.data.jobs');
       } else if (response?.data && typeof response.data === 'object') {
         jobApiData = response.data;
-        console.log('✓ Using response.data');
       } else if (response?.jobs) {
         jobApiData = response.jobs;
-        console.log('✓ Using response.jobs');
       } else if (response && typeof response === 'object') {
         jobApiData = response;
-        console.log('✓ Using response directly');
       } else {
         throw new Error('Invalid API response structure - no job data found');
       }
-      
-      console.log('📋 Raw job API data:', jobApiData);
       
       // Strict validation - no fallback data allowed
       if (!jobApiData || typeof jobApiData !== 'object') {
@@ -207,17 +181,6 @@ export default function EditJobPage() {
       // Transform API response to match JobData interface - validate required fields
       const transformedJobId = jobApiData.id || jobApiData.jobID;
       const jobTitle = jobApiData.jobTitle || jobApiData.job_title || jobApiData.title;
-      
-      console.log('🔍 Critical job fields:', {
-        id: transformedJobId,
-        title: jobTitle,
-        department: jobApiData.jobOccupation || jobApiData.department,
-        location: jobApiData.jobLocationCountry?.name || jobApiData.location || jobApiData.jobLocation,
-        description: jobApiData.jobDescription || jobApiData.description,
-        wages: jobApiData.jobWages,
-        currency: jobApiData.jobWagesCurrencyType,
-        deadline: jobApiData.jobDeadline
-      });
       
       if (!jobTitle) {
         throw new Error('Job title is missing from API response - cannot edit job without title');
@@ -258,19 +221,8 @@ export default function EditJobPage() {
         probationPeriod: jobApiData.probationPeriod || "3 months",
         noticePeriod: jobApiData.noticePeriod || ""
       };
-      
-      console.log('✅ Successfully transformed job data:', {
-        id: transformedJobData.id,
-        title: transformedJobData.title,
-        department: transformedJobData.department,
-        location: transformedJobData.location,
-        hasDescription: !!transformedJobData.description,
-        skillsCount: transformedJobData.skillsRequired.length,
-        benefitsCount: transformedJobData.benefits.length
-      });
 
       setJobData(transformedJobData);
-      console.log('✅ Job data loaded successfully');
       
     } catch (error: any) {
       console.error("❌ Error fetching job data:", error);
@@ -297,7 +249,6 @@ export default function EditJobPage() {
       }
       
       // DO NOT create fallback data - redirect user instead
-      console.log('❌ Cannot load job data - redirecting to jobs list');
       setTimeout(() => {
         router.push('/hra-jobs');
       }, 3000);

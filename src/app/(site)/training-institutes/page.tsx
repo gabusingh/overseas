@@ -39,7 +39,6 @@ export default function TrainingInstitutesPage() {
         }
         
         const data = await res.json();
-        console.log('Training Institutes API Response:', data);
         
         // The API returns {msg, data: [array of institutes]}
         const list = data?.data || [];

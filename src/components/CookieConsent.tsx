@@ -18,7 +18,6 @@ export function CookieConsent() {
     localStorage.setItem("cookieConsent", "true");
     localStorage.setItem("userSession", "123456789");
     setShowConsent(false);
-    console.log("Cookies accepted");
   };
 
   if (!showConsent) return null;

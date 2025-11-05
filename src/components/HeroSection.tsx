@@ -49,9 +49,7 @@ const HeroSection = React.memo(({ data: propData, countryData }: HeroSectionProp
   // Memoize the API call function to prevent recreation on every render
   const getOccupationsListFunc = useCallback(async () => {
     try {
-      console.log('🔄 HeroSection: Fetching occupations...');
       const response = await getOccupations();
-      console.log('📊 HeroSection: Occupations response:', response);
       
       const rawData = response?.data || response?.occupation || [];
       const occupations = rawData.map((item: { id: number; title?: string; name?: string; occupation?: string }) => ({
@@ -63,7 +61,6 @@ const HeroSection = React.memo(({ data: propData, countryData }: HeroSectionProp
         img: `/images/institute.png`,
       }));
       setDepartmentList(occupations || []);
-      console.log('✅ HeroSection: Occupations loaded:', occupations?.length || 0);
     } catch (error) {
       console.error('❌ HeroSection: Error fetching occupations:', error);
       // Set empty array - no fallback data
