@@ -375,7 +375,7 @@ export default function EmployerSignupPage() {
   return (
     <>
       <Head>
-        <title>Employer Registration | Overseas.ai</title>
+        <title>Employer Registration - New | Overseas.ai</title>
         <meta name="description" content="Register your company to post overseas job opportunities and connect with skilled candidates worldwide." />
         <meta name="keywords" content="company registration, employer signup, post overseas jobs, hire international workers" />
       </Head>
