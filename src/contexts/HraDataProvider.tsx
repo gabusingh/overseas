@@ -247,11 +247,19 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
               }
             }
             
-            // Log what we found if still no data
+            // Log what we found if still no data (this is normal if no jobs exist)
             if (processedJobsData.length === 0) {
-              console.error('❌ Could not find jobs array in response. Available keys:', Object.keys(allJobsResponse));
+              console.log('ℹ️ No jobs array found in getAllCreatedJobs response. Available keys:', Object.keys(allJobsResponse));
               if (allJobsResponse.data) {
-                console.error('Data field keys:', Object.keys(allJobsResponse.data));
+                if (typeof allJobsResponse.data === 'object' && !Array.isArray(allJobsResponse.data)) {
+                  console.log('Data field keys:', Object.keys(allJobsResponse.data));
+                  // Check if data contains a message indicating no jobs (this is a valid response)
+                  if (allJobsResponse.data.message || allJobsResponse.message) {
+                    console.log('ℹ️ Response indicates no jobs found - this is normal for new HR users');
+                  }
+                } else {
+                  console.log('Data field type:', typeof allJobsResponse.data, Array.isArray(allJobsResponse.data) ? '(array)' : '');
+                }
               }
             }
           }

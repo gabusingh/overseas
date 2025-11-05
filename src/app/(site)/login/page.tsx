@@ -65,7 +65,12 @@ export default function LoginPage() {
         toast.success("OTP sent successfully");
       } else if (response?.data?.error === "Mobile number is not registered !") {
         setShowNotRegisteredError(true);
-        toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+        toast.error("Mobile number is not registered! Redirecting to registration page...", {
+          duration: 3000,
+        });
+        setTimeout(() => {
+          router.push("/candidate-register");
+        }, 3000);
       } else {
         toast.error("Failed to send OTP");
       }
@@ -78,7 +83,12 @@ export default function LoginPage() {
           errorMessage.toLowerCase().includes('not found') ||
           errorMessage.toLowerCase().includes('does not exist')) {
         setShowNotRegisteredError(true);
-        toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+        toast.error("Mobile number is not registered! Redirecting to registration page...", {
+          duration: 3000,
+        });
+        setTimeout(() => {
+          router.push("/candidate-register");
+        }, 3000);
       } else {
         toast.error(errorMessage);
       }
@@ -190,7 +200,12 @@ export default function LoginPage() {
             errorMsg.toLowerCase().includes('not found') ||
             errorMsg.toLowerCase().includes('does not exist')) {
           setShowNotRegisteredError(true);
-          toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+          toast.error("Mobile number is not registered! Redirecting to registration page...", {
+            duration: 3000,
+          });
+          setTimeout(() => {
+            router.push("/candidate-register");
+          }, 3000);
         } else {
           toast.error(errorMsg);
         }
@@ -204,7 +219,12 @@ export default function LoginPage() {
           errorMessage.toLowerCase().includes('not found') ||
           errorMessage.toLowerCase().includes('does not exist')) {
         setShowNotRegisteredError(true);
-        toast.error("❌ Mobile number is not registered! Please register first or check your number.");
+        toast.error("Mobile number is not registered! Redirecting to registration page...", {
+          duration: 3000,
+        });
+        setTimeout(() => {
+          router.push("/candidate-register");
+        }, 3000);
       } else {
         toast.error(errorMessage);
       }

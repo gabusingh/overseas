@@ -25,6 +25,9 @@ import {
 type Country = {
   name: string;
   id: number;
+  code?: string;
+  countryCode?: string;
+  country_code?: string;
 };
 
 type Occupation = {
@@ -601,11 +604,11 @@ const CreateJobs = () => {
       jobExpDuration: "Years of experience",
       DLReq: "Driving license",
       jobWorkingDay: "Working days per month",
-      jobOvertime: "Overtime policy",
-      jobFood: "Food provision",
-      jobAccommodation: "Accommodation",
-      jobMedicalFacility: "Medical facility",
-      jobTransportation: "Transportation",
+      jobOvertime: "Select Overtime policy",
+      jobFood: "Select Food provision",
+      jobAccommodation: "Select Accommodation",
+      jobMedicalFacility: "Select Medical facility",
+      jobTransportation: "Select Transportation",
       languageRequired: "Add a language",
     };
     return map[name] || fallback;
@@ -685,7 +688,8 @@ const CreateJobs = () => {
               setCountryList(
                 validCountries.map((country: any) => ({
                   label: country.name,
-                  value: country.name,
+                  // Always use country ID as value to match database expectation
+                  value: country.id?.toString(),
                 }))
               );
               console.log('✅ Countries loaded from API:', validCountries.length);
@@ -727,7 +731,8 @@ const CreateJobs = () => {
           setCountryList(
             fallbackCountries.map(country => ({
               label: country.name,
-              value: country.name,
+              // Always use country ID as value to match database expectation
+              value: country.id?.toString(),
             }))
           );
           console.log('✅ Fallback countries loaded:', fallbackCountries.length);
