@@ -50,6 +50,7 @@ interface Country {
   countryFlag?: string;
 }
 
+
 interface Company {
   id: number;
   cmpName: string;
@@ -101,6 +102,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [modalNews, setModalNews] = useState<NewsItem | null>(null);
 
+
   // Cache key for localStorage
   const CACHE_KEY = 'overseas_home_data';
   const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
@@ -116,7 +118,8 @@ export default function Home() {
         }
       }
     } catch (error) {
-      }
+      console.warn('Cache read error:', error);
+    }
     return null;
   }, []);
 
@@ -128,7 +131,8 @@ export default function Home() {
         timestamp: Date.now()
       }));
     } catch (error) {
-      }
+      console.warn('Cache write error:', error);
+    }
   }, []);
 
   // Fetch critical data first (Hero section needs)
@@ -199,6 +203,7 @@ export default function Home() {
       }, 500);
       
     } catch (error) {
+      console.error('Error loading secondary data:', error);
       // Don't show error toast for non-critical data
       console.warn('Non-critical data fetch failed, continuing without it:', error);
     }
@@ -209,6 +214,7 @@ export default function Home() {
     await fetchCriticalData();
     fetchSecondaryData();
   }, [fetchCriticalData, fetchSecondaryData]);
+
 
   useEffect(() => {
     fetchData();

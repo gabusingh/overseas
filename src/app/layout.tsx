@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GlobalStateProvider } from '../contexts/GlobalProvider';
 import { CookieConsent } from '../components/CookieConsent';
+import { Toaster } from '@/components/ui/sonner';
 import { StructuredData } from '../components/SEOComponents';
 import { generateOrganizationLD, generateWebsiteLD } from '../utils/seo.utils';
 
@@ -134,7 +135,8 @@ export default function RootLayout({
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                   for(let registration of registrations) {
                     registration.unregister();
-                    }
+                    console.log('SW unregistered for debugging');
+                  }
                 });
               }
             `,
@@ -148,9 +150,11 @@ export default function RootLayout({
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js')
                     .then(function(registration) {
-                      })
+                      console.log('SW registered: ', registration);
+                    })
                     .catch(function(registrationError) {
-                      });
+                      console.log('SW registration failed: ', registrationError);
+                    });
                 });
               }
             `,
@@ -170,6 +174,7 @@ export default function RootLayout({
         <GlobalStateProvider>
           {children}
           <CookieConsent />
+          <Toaster />
         </GlobalStateProvider>
       </body>
     </html>

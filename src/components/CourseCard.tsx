@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock, FileText, Calendar, ArrowRight } from "lucide-react";
+import Image from "next/image";
 
 interface CourseCardProps {
   v: {
@@ -15,11 +15,9 @@ interface CourseCardProps {
     course_duration: string;
     assessment_type: string;
     course_type: string;
-    course_image?: string;
+    course_image: string;
     submission_date: string;
     appliedStatus?: boolean;
-    course_fee?: string;
-    total_seats?: string;
   };
   getCourseListFunc?: () => void;
 }
@@ -61,83 +59,83 @@ export default function CourseCard({ v, getCourseListFunc }: CourseCardProps) {
     }
   };
 
+  // Handle placeholder image
+  const courseImage = v?.course_image === "https://overseas.ai/placeholder/course.jpg" 
+    ? "/images/institute.png" 
+    : v?.course_image;
+
   return (
-    <Card className="group hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 border-0 shadow-md bg-gradient-to-br from-white to-blue-50/30 overflow-hidden">
-      <CardContent className="p-0">
-        {/* Header with Course Type and Deadline */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-2">
-              <Badge className="bg-white/20 text-white border-0 text-xs px-2 py-1">
-                {v?.course_type}
-              </Badge>
-              <div className="w-10 h-10 bg-white/15 rounded-full flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
+    <div className="col-span-12 md:col-span-6">
+      <Card className="shadow hover:shadow-lg transition-shadow duration-300 mx-3 my-4">
+        <CardContent className="p-4">
+          {/* Submission Deadline Badge */}
+          <div className="flex justify-start mb-3">
+            <Badge className="bg-green-500 hover:bg-green-600">
+              Applied Before: {v?.submission_date}
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-12 gap-4 items-center">
+            {/* Course Image */}
+            <div className="col-span-12 md:col-span-4">
+              <div className="relative w-full h-24 rounded-lg overflow-hidden">
+                <Image
+                  src={courseImage}
+                  alt="Course"
+                  fill
+                  className="object-cover"
+                />
               </div>
             </div>
-            <h3 className="font-semibold text-lg leading-tight line-clamp-2 mb-2">{v?.course_name}</h3>
-            <div className="flex items-center text-blue-100 text-xs">
-              <Calendar className="w-3 h-3 mr-1" />
-              <span>Apply by: {v?.submission_date}</span>
+
+            {/* Course Details */}
+            <div className="col-span-12 md:col-span-8 space-y-2">
+              <p className="text-sm">
+                <span className="font-medium">Course Name:</span> {v?.course_name}
+              </p>
+              <p className="text-sm">
+                <span className="font-medium">Duration:</span> {v?.course_duration}
+              </p>
+              <p className="text-sm">
+                <span className="font-medium">Exam Mode:</span> {v?.assessment_type}
+              </p>
+              <p className="text-sm">
+                <span className="font-medium">Course Type:</span> {v?.course_type}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Course Details */}
-        <div className="p-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center space-x-2 text-gray-600">
-              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Clock className="w-3 h-3 text-blue-600" />
-              </div>
-              <span className="text-sm">{v?.course_duration}</span>
-            </div>
-            
-            <div className="flex items-center space-x-2 text-gray-600">
-              <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <FileText className="w-3 h-3 text-orange-600" />
-              </div>
-              <span className="text-sm">{v?.assessment_type}</span>
-            </div>
-          </div>
-          
-          {v?.course_fee && (
-            <div className="bg-blue-50 border border-green-200 rounded-lg p-2 text-center">
-              <span className="text-green-700 font-semibold text-lg">₹{v.course_fee}</span>
-              {v?.total_seats && (
-                <span className="text-gray-500 text-xs ml-2">({v.total_seats} seats)</span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex border-t border-gray-100">
-          <Link 
-            href={`/course-details/${v?.id}`}
-            className="flex-1 p-3 text-center text-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium flex items-center justify-center space-x-1 group"
-          >
-            <span>View Details</span>
-            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-          
-          <div className="w-px bg-gray-200"></div>
-          
-          {v?.appliedStatus ? (
-            <div className="flex-1 p-3 text-center bg-yellow-50 text-yellow-700 font-medium text-sm">
-              ✓ Applied
-            </div>
-          ) : (
-            <button 
-              onClick={handleCourseApply}
-              className="flex-1 p-3 text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium text-sm hover:from-blue-700 hover:to-blue-800 transition-all"
+          {/* Actions */}
+          <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
+            <Link 
+              href={`/course-details/${v?.id}`}
+              className="text-[#17487f] hover:underline font-medium text-sm"
             >
-              Apply Now
-            </button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+              Read More
+            </Link>
+            
+            {v?.appliedStatus ? (
+              <Button 
+                size="sm" 
+                variant="secondary"
+                className="w-24 bg-yellow-500 hover:bg-yellow-600 text-white"
+                disabled
+              >
+                Applied
+              </Button>
+            ) : (
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="w-24 border-[#17487f] text-[#17487f] hover:bg-[#17487f] hover:text-white"
+                onClick={handleCourseApply}
+              >
+                Apply
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

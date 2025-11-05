@@ -18,10 +18,11 @@ import {
   SelectContent, 
   SelectGroup, 
   SelectItem, 
-  SelectLabel, 
   SelectTrigger, 
   SelectValue 
-} from "@/components/ui/select";// Types
+} from "@/components/ui/select";
+
+// Types
 type Country = {
   name: string;
   id: number;
@@ -36,28 +37,6 @@ type Skill = {
   id: number;
   name: string;
 };
-
-type CountryResponse = Country[];
-type OccupationResponse = Occupation[];
-type SkillResponse = Skill[];
-
-function isCountryArray(value: unknown): value is Country[] {
-  return Array.isArray(value) && value.every(item => 
-    typeof item === 'object' && 
-    item !== null && 
-    typeof (item as any).name === 'string' &&
-    typeof (item as any).id === 'number'
-  );
-}
-
-function isOccupationArray(value: unknown): value is Occupation[] {
-  return Array.isArray(value) && value.every(item => 
-    typeof item === 'object' && 
-    item !== null && 
-    typeof (item as any).name === 'string' &&
-    typeof (item as any).id === 'number'
-  );
-}
 
 // Create a mapped type for form field values
 type FormDataValues = {
@@ -77,27 +56,14 @@ interface FieldConfig {
   containerClassName?: string;
 }
 
-// Type guard to check if a string is a valid field name
-function isValidFieldName(name: string): name is keyof FormDataType {
-  return name in ({} as FormDataType);
-}
-
 type FormFieldValue = string | string[] | File | null;
-
-interface FieldProps {
-  field: FieldConfig;
-  value: FormFieldValue;
-  onChange: (value: FormFieldValue) => void;
-  error?: string;
-  placeholder?: string;
-}
 
 // Helper function to safely access form data
 function getFormValue(formData: FormDataValues, name: keyof FormDataType): FormFieldValue {
   return formData[name] ?? "";
 }
 
-// Helper function to safely update form data
+  // Helper function to safely update form data
 function updateFormData(
   prevData: FormDataValues,
   name: keyof FormDataType,
@@ -105,6 +71,7 @@ function updateFormData(
 ): FormDataValues {
   return { ...prevData, [name]: value };
 }
+
 
 type FormDataType = {
   jobTitle: string;
@@ -147,8 +114,6 @@ type FormDataType = {
   jobArea: string;
 };
 
-type ErrorType = Partial<Record<keyof FormDataType, string>>;
-
 const CreateJobs = () => {
   const router = useRouter();
   const [skillList, setSkillList] = useState<SelectOption[]>([]);
@@ -159,6 +124,62 @@ const CreateJobs = () => {
   const [hrDetailsLoading, setHrDetailsLoading] = useState(false);
   const [formData, setFormData] = useState<FormDataValues>({} as FormDataValues);
   const [errors, setErrors] = useState<Partial<Record<keyof FormDataType, string>>>({});
+
+  // Function to populate form with demo data
+  const populateDemoData = () => {
+    console.log('🎭 Populating form with demo job data...');
+    setFormData(demoJobData);
+    setErrors({}); // Clear any existing errors
+    
+    // Load skills for the selected occupation (Construction)
+    if (demoJobData.jobOccupation) {
+      getSkillList(demoJobData.jobOccupation);
+    }
+    
+    toast.success('🎭 Demo job data loaded! You can now test the form or modify the details.');
+  };
+
+  // Demo job data for testing
+  const demoJobData: FormDataValues = {
+    jobTitle: "Senior Electrician",
+    jobOccupation: "1", // Construction
+    jobSkill: ["101", "102"], // Masonry, Carpentry
+    cmpNameACT: "Gulf Construction Co. Ltd",
+    jobLocationCountry: "United Arab Emirates",
+    jobDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+    jobVacancyNo: "25",
+    jobWages: "3500",
+    jobMode: "Offline",
+    jobInterviewPlace: "Kolkata Office - 123 Main Street",
+    jobInterviewDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+    jobWagesCurrencyType: "AED",
+    salary_negotiable: "Yes",
+    passport_type: "ECR/ECNR",
+    service_charge: "15000",
+    contract_period: "24",
+    expCerificateReq: "Yes",
+    DLReq: "No",
+    jobWorkVideoReq: "No",
+    jobExpReq: "Yes",
+    jobExpTypeReq: "international",
+    jobExpDuration: "3",
+    jobWorkingDay: "26",
+    jobWorkingHour: "8 hours/day",
+    jobOvertime: "As Per Company Requirement",
+    jobFood: "Free Food",
+    jobAccommodation: "Yes",
+    jobMedicalFacility: "Yes",
+    jobTransportation: "Yes",
+    jobAgeLimit: "45",
+    jobDescription: "We are looking for an experienced Senior Electrician to join our team in Dubai. The ideal candidate should have at least 3 years of international experience in electrical installations, maintenance, and troubleshooting. Must be able to work independently and as part of a team. Knowledge of local electrical codes and safety regulations is essential.",
+    jobPhoto: null,
+    hrName: "John Smith",
+    hrEmail: "john.smith@gulfconstruction.com",
+    hrNumber: "+971501234567",
+    companyJobID: "GC-2024-001",
+    languageRequired: ["English", "Hindi"],
+    jobArea: "Dubai, UAE"
+  };
 
   // Memoize formFields to ensure stable references
   const formFields = React.useMemo((): FieldConfig[] => [
@@ -544,11 +565,11 @@ const CreateJobs = () => {
       jobExpDuration: "Years of experience",
       DLReq: "Driving license",
       jobWorkingDay: "Working days per month",
-      jobOvertime: "Overtime policy",
-      jobFood: "Food provision",
-      jobAccommodation: "Accommodation",
-      jobMedicalFacility: "Medical facility",
-      jobTransportation: "Transportation",
+      jobOvertime: "Select Overtime policy",
+      jobFood: "Select Food provision",
+      jobAccommodation: "Select Accommodation",
+      jobMedicalFacility: "Select Medical facility",
+      jobTransportation: "Select Transportation",
       languageRequired: "Add a language",
     };
     return map[name] || fallback;
@@ -599,16 +620,23 @@ const CreateJobs = () => {
     const fetchInitialData = async () => {
       try {
         // First try to load data from the backend
+        console.log('🔄 Fetching data from API...');
+        
         // Attempt to fetch from cached API
         try {
+          console.log('🚀 Using cached API calls for better performance...');
           const [countriesRes, occupationsRes] = await Promise.all([
             getCountries().catch(err => {
+              console.error('Error fetching countries:', err);
               throw err; // Rethrow to trigger fallback
             }),
             getOccupations().catch(err => {
+              console.error('Error fetching occupations:', err);
               throw err; // Rethrow to trigger fallback
             })
           ]);
+          
+          console.log('📊 Raw API responses:', { countriesRes, occupationsRes });
           
           // 1. Handle countries data (expecting { countries: [...] } or { data: [...] } structure)
           const countriesData = countriesRes?.countries || countriesRes?.data || [];
@@ -621,10 +649,12 @@ const CreateJobs = () => {
               setCountryList(
                 validCountries.map((country: any) => ({
                   label: country.name,
-                  value: country.name,
+                  // Always use country ID as value to match database expectation
+                  value: country.id?.toString(),
                 }))
               );
-              } else {
+              console.log('✅ Countries loaded from API:', validCountries.length);
+            } else {
               throw new Error('No valid countries found in API response');
             }
           } else {
@@ -646,7 +676,8 @@ const CreateJobs = () => {
                   value: occupation.id.toString(),
                 }))
               );
-              } else {
+              console.log('✅ Occupations loaded from API:', validOccupations.length);
+            } else {
               throw new Error('No valid occupations found in API response');
             }
           } else {
@@ -654,19 +685,27 @@ const CreateJobs = () => {
           }
           
         } catch (apiError) {
+          console.error('⚠️ API data loading failed:', apiError);
+          console.log('⚙️ Using fallback data instead');
+          
           // Use fallback data
           setCountryList(
             fallbackCountries.map(country => ({
               label: country.name,
-              value: country.name,
+              // Always use country ID as value to match database expectation
+              value: country.id?.toString(),
             }))
           );
+          console.log('✅ Fallback countries loaded:', fallbackCountries.length);
+          
           setOccupations(
             fallbackOccupations.map(occupation => ({
               label: occupation.name,
               value: occupation.id.toString(),
             }))
           );
+          console.log('✅ Fallback occupations loaded:', fallbackOccupations.length);
+          
           // Notify user that we're using fallback data
           toast.info('Using offline data. Some features may be limited.');
         }
@@ -683,7 +722,10 @@ const CreateJobs = () => {
           { label: "OMR", value: "OMR" },
         ]);
         
-        } catch (error) {
+        console.log('✅ Currency list set with 8 currencies');
+        
+      } catch (error) {
+        console.error("❌ Error fetching initial data:", error);
         // Even if there's an error, set empty arrays to prevent crashes
         setCountryList([]);
         setOccupations([]);
@@ -709,65 +751,125 @@ const CreateJobs = () => {
     const fetchHrDetails = async () => {
       try {
         setHrDetailsLoading(true);
+        console.log('🔄 STARTING HR Details fetch for auto-fill...');
+        
         // Get access token with detailed logging - use correct key 'access_token'
         let accessToken = localStorage.getItem('access_token');
+        console.log('🔑 Access token check:', accessToken ? 'Found' : 'Not found', accessToken ? `(Length: ${accessToken.length})` : '');
+        
         if (!accessToken) {
           // Try legacy keys as fallback
           const legacyToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
           if (legacyToken) {
+            console.warn('Found token with legacy key, migrating to access_token');
             localStorage.setItem('access_token', legacyToken);
             accessToken = legacyToken;
           } else {
+            console.warn('⚠️ No access token found, skipping HR details fetch');
             toast.info('Please log in to auto-fill HR details.');
             return;
           }
         }
         
+        console.log('🚀 Calling getEnhancedHrDetails API...');
+        
         // Call HR details API
         const hrDetailsResponse = await getEnhancedHrDetails(accessToken);
+        console.log('📊 FULL HR Details Response:', JSON.stringify(hrDetailsResponse, null, 2));
+        console.log('🔍 Response type:', typeof hrDetailsResponse);
+        console.log('🔍 Response keys:', hrDetailsResponse ? Object.keys(hrDetailsResponse) : 'null');
+        
         // Check if response has valid data
         if (hrDetailsResponse && typeof hrDetailsResponse === 'object') {
+          console.log('🔍 Processing HR details response...');
+          
           // Extract HR details with ALL possible field combinations
           const hrName = hrDetailsResponse.name || hrDetailsResponse.hrName || hrDetailsResponse.empName || hrDetailsResponse.full_name || '';
           const hrEmail = hrDetailsResponse.email || hrDetailsResponse.hrEmail || hrDetailsResponse.empEmail || hrDetailsResponse.email_address || '';
           const hrNumber = hrDetailsResponse.phone || hrDetailsResponse.hrContact || hrDetailsResponse.empMobile || hrDetailsResponse.phone_number || hrDetailsResponse.mobile || '';
           const companyName = hrDetailsResponse.company_name || hrDetailsResponse.cmpName || hrDetailsResponse.company || '';
           
+          console.log('🎯 ALL FIELD EXTRACTION ATTEMPTS:');
+          console.log('  - hrName attempts:', {
+            name: hrDetailsResponse.name,
+            hrName: hrDetailsResponse.hrName,
+            empName: hrDetailsResponse.empName,
+            full_name: hrDetailsResponse.full_name,
+            final: hrName
+          });
+          console.log('  - hrEmail attempts:', {
+            email: hrDetailsResponse.email,
+            hrEmail: hrDetailsResponse.hrEmail,
+            empEmail: hrDetailsResponse.empEmail,
+            email_address: hrDetailsResponse.email_address,
+            final: hrEmail
+          });
+          console.log('  - hrNumber attempts:', {
+            phone: hrDetailsResponse.phone,
+            hrContact: hrDetailsResponse.hrContact,
+            empMobile: hrDetailsResponse.empMobile,
+            phone_number: hrDetailsResponse.phone_number,
+            mobile: hrDetailsResponse.mobile,
+            final: hrNumber
+          });
+          console.log('  - companyName attempts:', {
+            company_name: hrDetailsResponse.company_name,
+            cmpName: hrDetailsResponse.cmpName,
+            company: hrDetailsResponse.company,
+            final: companyName
+          });
+          
           // Update form data with HR details
           if (hrName || hrEmail || hrNumber) {
             const updateData: any = {};
             if (hrName) {
               updateData.hrName = hrName;
-              }
+              console.log('✅ Setting hrName:', hrName);
+            }
             if (hrEmail) {
               updateData.hrEmail = hrEmail;
-              }
+              console.log('✅ Setting hrEmail:', hrEmail);
+            }
             if (hrNumber) {
               updateData.hrNumber = hrNumber;
-              }
+              console.log('✅ Setting hrNumber:', hrNumber);
+            }
             if (companyName) {
               updateData.cmpNameACT = companyName;
-              }
+              console.log('✅ Setting company name:', companyName);
+            }
+            
+            console.log('🚀 UPDATING FORM DATA with:', updateData);
             
             setFormData(prev => {
               const newData = {
                 ...prev,
                 ...updateData
               };
+              console.log('🔄 Form data before update:', prev);
+              console.log('🔄 Form data after update:', newData);
               return newData;
             });
             
+            console.log('✅ HR details auto-filled successfully!');
             toast.success('HR details loaded automatically!');
           } else {
+            console.warn('⚠️ No valid HR details found in response');
+            console.warn('⚠️ Available fields:', Object.keys(hrDetailsResponse));
+            console.warn('⚠️ Full response for debugging:', hrDetailsResponse);
             toast.info('HR details could not be auto-filled. Please enter manually.');
           }
         } else {
+          console.warn('⚠️ Invalid HR details response format:', hrDetailsResponse);
           toast.info('HR details could not be auto-filled. Please enter manually.');
         }
         
       } catch (error) {
+        console.error('❌ FULL ERROR in fetchHrDetails:', error);
+        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
         toast.error('Failed to load HR details automatically. Please enter manually.');
       } finally {
+        console.log('🏁 HR details fetch completed, setting loading to false');
         setHrDetailsLoading(false);
       }
     };
@@ -789,8 +891,12 @@ const CreateJobs = () => {
         return;
       }
 
+      console.log('🔍 Fetching skills for occupation ID:', occuId);
+      
       try {
         const skillsResponse = await getSkillsByOccuId(occuId);
+        console.log('🔍 Skills Response:', skillsResponse);
+        
         // Handle skills data (expecting { skills: [...] } structure)
         if (skillsResponse?.skills && Array.isArray(skillsResponse.skills)) {
           const validSkills = skillsResponse.skills.filter((skill: any) => 
@@ -817,6 +923,7 @@ const CreateJobs = () => {
             }, []);
             
             setSkillList(uniqueSkills);
+            console.log('✅ Skills loaded from API (unique):', uniqueSkills.length);
             return;
           } else {
             throw new Error('No valid skills found in API response');
@@ -826,6 +933,9 @@ const CreateJobs = () => {
         }
         
       } catch (apiError) {
+        console.warn('⚠️ API skills loading failed:', apiError);
+        console.log('⚙️ Using fallback skills for occupation:', occuId);
+        
         // Use fallback skills data with IDs
         const fallbackSkillsForOccupation = fallbackSkills[id as keyof typeof fallbackSkills] || [];
         
@@ -838,17 +948,21 @@ const CreateJobs = () => {
               skillName: skill.name
             }))
           );
-          } else {
+          console.log('✅ Fallback skills loaded:', fallbackSkillsForOccupation.length);
+        } else {
+          console.warn('⚠️ No fallback skills available for occupation:', occuId);
           setSkillList([]);
         }
       }
     } catch (error) {
+      console.error("❌ Error in getSkillList:", error);
       setSkillList([]);
     }
   };
 
   // Form validation function
   const validateForm = (): boolean => {
+    console.log('🔍 Starting form validation...');
     const newErrors: Partial<Record<keyof FormDataType, string>> = {};
     const missingFields: string[] = [];
     
@@ -856,17 +970,26 @@ const CreateJobs = () => {
     const requiredFields: (keyof FormDataType)[] = [
       'jobTitle', 'cmpNameACT', 'jobOccupation', 'jobLocationCountry', 
       'jobDeadline', 'jobVacancyNo', 'jobWages', 'jobWagesCurrencyType',
+      'jobWorkingDay', 'jobWorkingHour', 'jobOvertime', 'jobFood', 
+      'jobAccommodation', 'jobMedicalFacility', 'jobTransportation',
       'hrName', 'hrEmail', 'hrNumber'
     ];
     
+    console.log('📋 Required fields to validate:', requiredFields);
+    
     requiredFields.forEach(field => {
       const value = formData[field];
+      console.log(`🔍 Validating field ${field}:`, value);
+      
       if (!value || 
           (typeof value === 'string' && (value.trim() === '' || value.startsWith('_'))) ||
           (Array.isArray(value) && value.length === 0)) {
         const fieldLabel = fieldsByName[field]?.label || field;
         newErrors[field] = `${fieldLabel} is required`;
         missingFields.push(fieldLabel);
+        console.log(`❌ Field ${field} is missing or invalid`);
+      } else {
+        console.log(`✅ Field ${field} is valid`);
       }
     });
     
@@ -903,6 +1026,12 @@ const CreateJobs = () => {
     
     setErrors(newErrors);
     
+    console.log('📊 Validation results:', {
+      totalErrors: Object.keys(newErrors).length,
+      missingFields: missingFields.length,
+      errors: newErrors
+    });
+    
     // Show specific snackbar message for missing required fields
     if (missingFields.length > 0) {
       if (missingFields.length === 1) {
@@ -924,22 +1053,32 @@ const CreateJobs = () => {
       toast.error(firstError || 'Please check your form inputs');
     }
     
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    console.log(`🏁 Form validation ${isValid ? 'PASSED' : 'FAILED'}`);
+    
+    return isValid;
   };
-
+  
+  
   // Form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('🚀 Form submission started');
+    console.log('📋 Form data:', formData);
     
     // Clear previous errors
     setErrors({});
     
     // Validate form
+    console.log('🔍 Validating form...');
     if (!validateForm()) {
+      console.log('❌ Form validation failed');
       // Validation function already shows specific error messages
       return;
     }
     
+    console.log('✅ Form validation passed');
     setLoading(true);
 
     try {
@@ -949,6 +1088,7 @@ const CreateJobs = () => {
         // Try legacy keys as fallback
         const legacyToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
         if (legacyToken) {
+          console.warn('Found token with legacy key, migrating to access_token');
           localStorage.setItem('access_token', legacyToken);
           accessToken = legacyToken; // Use the migrated token
         } else {
@@ -1000,7 +1140,13 @@ const CreateJobs = () => {
       formDataInstance.append('submittedAt', new Date().toISOString());
       
       // Submit the form
+      console.log('📤 Submitting job data to API...');
+      console.log('🔑 Access token:', accessToken ? 'Found' : 'Not found');
+      console.log('📦 Form data instance entries:', Array.from(formDataInstance.entries()));
+      
       const response = await createJobByHr(formDataInstance, accessToken);
+      
+      console.log('📥 API Response received:', response);
       
       // Handle different response scenarios
       if (response && typeof response === 'object') {
@@ -1024,12 +1170,14 @@ const CreateJobs = () => {
       setFormData({} as FormDataValues);
       setErrors({});
       
-      // Redirect with a small delay to show the success message
+      // Redirect to HR dashboard with a small delay to show the success message
       setTimeout(() => {
-        router.push("/jobs");
+        router.push("/hra-dashboard");
       }, 2000);
       
     } catch (error: any) {
+      console.error("Error creating job:", error);
+      
       // Handle different error types with enhanced messages
       let errorMessage = '❌ Failed to create job. Please try again.';
       let errorTitle = 'Job Creation Failed';
@@ -1128,6 +1276,8 @@ const CreateJobs = () => {
     const error = errors[fieldName];
     const isRequired = ['jobTitle', 'cmpNameACT', 'jobOccupation', 'jobLocationCountry', 
                        'jobDeadline', 'jobVacancyNo', 'jobWages', 'jobWagesCurrencyType',
+                       'jobWorkingDay', 'jobWorkingHour', 'jobOvertime', 'jobFood', 
+                       'jobAccommodation', 'jobMedicalFacility', 'jobTransportation',
                        'hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
     
     // Check if this is an HR field that should show loading state
@@ -1323,10 +1473,16 @@ const CreateJobs = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Job</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-gray-600 max-w-2xl mx-auto mb-4">
             Fill out the information below to post a new job opportunity. 
             All fields marked with <span className="text-red-500">*</span> are required.
           </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center gap-2 text-blue-700">
+              <span className="text-lg">💡</span>
+              <span className="text-sm font-medium">Tip: Use the "Load Demo Job" button below to quickly populate the form with sample data for testing!</span>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -1388,6 +1544,29 @@ const CreateJobs = () => {
             );
           })}
 
+          {/* Demo Data Section */}
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+              <div className="text-sm text-purple-700">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">🎭</span>
+                  <span className="font-medium">Need help getting started?</span>
+                </div>
+                <p>Load demo job data for a <strong>Senior Electrician</strong> position in Dubai with complete details including salary, benefits, and requirements.</p>
+              </div>
+              
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={populateDemoData}
+                className="px-6 py-2 h-11 border-purple-300 text-purple-700 hover:bg-purple-100 hover:border-purple-400"
+                disabled={loading}
+              >
+                🎭 Load Demo Job
+              </Button>
+            </div>
+          </div>
+
           {/* Submit Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
@@ -1409,6 +1588,7 @@ const CreateJobs = () => {
                 <Button 
                   type="submit" 
                   disabled={loading}
+                  onClick={() => console.log('🔘 Create Job Posting button clicked')}
                   className="px-8 py-2 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-sm"
                 >
                   {loading ? (

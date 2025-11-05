@@ -273,7 +273,8 @@ export default function ResumeBuilding() {
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${userDetails?.name || 'resume'}.pdf`);
     } catch (error) {
-      }
+      console.error('Failed to generate PDF:', error);
+    }
   }, [userDetails]);
 
   const [languageKnown, setLanguageKnow] = useState<string[]>([]);
@@ -302,6 +303,7 @@ export default function ResumeBuilding() {
       toast.success('Personal details saved successfully! 🎉');
       
     } catch (error) {
+      console.error('Error saving details:', error);
       toast.error('Failed to save details. Please try again.');
     } finally {
       setIsLoading(false);
@@ -370,6 +372,7 @@ export default function ResumeBuilding() {
       setActiveModal(null);
       toast.success('Work experience added successfully! 💼');
     } catch (error) {
+      console.error('Error adding experience:', error);
       toast.error('Failed to add experience. Please try again.');
     } finally {
       setIsLoading(false);
@@ -409,6 +412,7 @@ export default function ResumeBuilding() {
       setActiveModal(null);
       toast.success('License added successfully! 🏆');
     } catch (error) {
+      console.error('Error adding license:', error);
       toast.error('Failed to add license. Please try again.');
     } finally {
       setIsLoading(false);
@@ -455,6 +459,7 @@ export default function ResumeBuilding() {
       setActiveModal(null);
       toast.success('Passport details saved successfully! 🛫');
     } catch (error) {
+      console.error('Error saving passport details:', error);
       toast.error('Failed to save passport details. Please try again.');
     } finally {
       setIsLoading(false);

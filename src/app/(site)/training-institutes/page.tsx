@@ -39,6 +39,8 @@ export default function TrainingInstitutesPage() {
         }
         
         const data = await res.json();
+        console.log('Training Institutes API Response:', data);
+        
         // The API returns {msg, data: [array of institutes]}
         const list = data?.data || [];
         
@@ -59,6 +61,7 @@ export default function TrainingInstitutesPage() {
         
         setInstitutes(mapped);
       } catch (err: any) {
+        console.error('Error fetching training institutes:', err);
         setError(err.message || 'Failed to load training institutes');
       } finally {
         setLoading(false);

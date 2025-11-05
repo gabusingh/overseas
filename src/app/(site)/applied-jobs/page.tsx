@@ -59,6 +59,7 @@ export default function AppliedJobsPage() {
       const jobs = Array.isArray(response?.data) ? response.data : [];
       setAppliedJobs(jobs);
     } catch (error) {
+      console.error("Error fetching applied jobs:", error);
       toast.error("Failed to load applied jobs");
     } finally {
       setLoading(false);

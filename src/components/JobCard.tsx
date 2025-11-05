@@ -22,6 +22,7 @@ import Image from "next/image";
 import { saveJobById, removeSavedJob, applyJobApi } from "@/services/job.service";
 import { useGlobalState } from "@/contexts/GlobalProvider";
 
+
 interface JobCardProps {
   value: {
     id: number;
@@ -95,6 +96,7 @@ export default function JobCard({
         toast.success("Job saved successfully");
       }
     } catch (error) {
+      console.error('Save job error:', error);
       toast.error("Failed to save job");
     } finally {
       setIsSaving(false);
@@ -400,7 +402,8 @@ export default function JobCard({
                 </div>
               )}
             </div>
-
+            
+            
             {/* Action Buttons */}
             <div className="flex justify-between items-center">
               <Button 

@@ -150,6 +150,7 @@ export default function CourseAppliedPage() {
 
       setAppliedCourses(mockAppliedCourses);
     } catch (error) {
+      console.error("Error fetching applied courses:", error);
       toast.error("Failed to load applied courses");
     } finally {
       setLoading(false);

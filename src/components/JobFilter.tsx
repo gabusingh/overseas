@@ -2,9 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { getOccupations, getCountriesForJobs } from "../services/info.service";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Separator } from "./ui/separator";
 import { X, Filter, Check } from "lucide-react";
 
 interface JobFilterProps {
@@ -42,13 +39,8 @@ interface Country {
   name: string;
 }
 
-interface OccupationApiResponse {
-  data: Array<{ id: number; title: string; name: string }>;
-}
-
-interface CountryApiResponse {
-  data: Array<{ id: number; name: string }>;
-}
+type OccupationItem = { id: number; title?: string; name?: string; occupation?: string };
+type CountryItem = { id: number; name: string };
 
 function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
   const [departmentList, setDepartmentList] = useState<Department[]>([]);
@@ -58,9 +50,11 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
 
   const getOccupationsListFunc = async () => {
     try {
+      console.log('🔄 Fetching occupations...');
       const response = await getOccupations();
+      console.log('📊 Occupations API Response:', response);
       
-      let occupationData: any[] = [];
+      let occupationData: OccupationItem[] = [];
       if (response?.occupation && Array.isArray(response.occupation)) {
         occupationData = response.occupation;
       } else if (response?.data && Array.isArray(response.data)) {
@@ -69,14 +63,16 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         occupationData = response;
       }
       
-      const occupations = occupationData.map((item: any) => ({
-        label: item.occupation || item.title || item.name,
+      const occupations = occupationData.map((item: OccupationItem) => ({
+        label: item.occupation || item.title || item.name || "",
         value: item.id,
         img: "/images/institute.png",
       }));
       
+      console.log('✅ Processed occupations:', occupations.length);
       setDepartmentList(occupations || []);
     } catch (error) {
+      console.error('❌ Error fetching occupations:', error);
       // Fallback occupations
       const fallbackOccupations = [
         { label: "Construction", value: 1, img: "/images/institute.png" },
@@ -91,9 +87,11 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
 
   const getCountriesForJobsFunc = async () => {
     try {
+      console.log('🔄 Fetching countries...');
       const response = await getCountriesForJobs();
+      console.log('📊 Countries API Response:', response);
       
-      let countryData: any[] = [];
+      let countryData: CountryItem[] = [];
       if (response?.countries && Array.isArray(response.countries)) {
         countryData = response.countries;
       } else if (response?.data && Array.isArray(response.data)) {
@@ -102,8 +100,10 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         countryData = response;
       }
       
+      console.log('✅ Processed countries:', countryData.length);
       setCountryList(countryData || []);
     } catch (error) {
+      console.error('❌ Error fetching countries:', error);
       // Fallback countries
       const fallbackCountries = [
         { id: 1, name: "United Arab Emirates" },
@@ -122,6 +122,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
   }, []);
 
   const handleCheckboxChange = (type: string, value: number | string) => {
+    console.log('Checkbox clicked:', type, value); // Debug log
     
     setPayload((prevState: JobFilterPayload) => {
       const updated = { ...prevState };
@@ -157,6 +158,7 @@ function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
         updated.sortBy = updated.sortBy === value ? "" : (value as string);
       }
       
+      console.log('Updated payload:', updated); // Debug log
       return updated;
     });
   };

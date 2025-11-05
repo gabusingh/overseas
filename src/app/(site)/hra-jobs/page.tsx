@@ -66,9 +66,16 @@ export default function HraViewJobsPage() {
 
   const transformAndSetJobs = () => {
     if (!jobsData || jobsData.length === 0) {
+      console.log('No jobs data available from API');
       setJobs([]);
       return;
     }
+
+    console.log('📋 DEBUG - Raw jobs data from context:', {
+      jobsCount: jobsData.length,
+      firstJob: jobsData[0],
+      jobFields: jobsData[0] ? Object.keys(jobsData[0]) : 'No jobs'
+    });
 
     // Transform jobs data from context to match Job interface - stricter validation
     const validJobs = jobsData.filter((job: any) => {
@@ -77,11 +84,14 @@ export default function HraViewJobsPage() {
       const hasTitle = job.jobTitle || job.title;
       
       if (!hasId || !hasTitle) {
+        console.warn('⚠️ Skipping invalid job:', { id: hasId, title: hasTitle, job });
         return false;
       }
       
       return true;
     });
+
+    console.log(`✅ Found ${validJobs.length} valid jobs out of ${jobsData.length} total`);
 
     const transformedJobs: Job[] = validJobs.map((job: any, index: number) => {
       const transformedJob = {
@@ -104,9 +114,25 @@ export default function HraViewJobsPage() {
         isFeatured: Boolean(job.isFeatured || job.featured)
       };
       
+      console.log(`📋 Job ${index + 1} transformation:`, {
+        original: {
+          id: job.id || job.jobID,
+          title: job.jobTitle || job.title,
+          company: job.company || job.cmpName,
+          applications: job.totalAppliedCandidates
+        },
+        transformed: {
+          id: transformedJob.id,
+          title: transformedJob.title,
+          company: transformedJob.company,
+          applicationsCount: transformedJob.applicationsCount
+        }
+      });
+      
       return transformedJob;
     });
 
+    console.log(`✅ Successfully transformed ${transformedJobs.length} jobs`);
     setJobs(transformedJobs);
   };
 
@@ -181,6 +207,7 @@ export default function HraViewJobsPage() {
       ));
       toast.success(`Job status updated to ${newStatus}`);
     } catch (error) {
+      console.error("Error updating job status:", error);
       toast.error("Failed to update job status");
     }
   };
@@ -194,6 +221,7 @@ export default function HraViewJobsPage() {
       setJobs(prev => prev.filter(job => job.id !== jobId));
       toast.success("Job deleted successfully");
     } catch (error) {
+      console.error("Error deleting job:", error);
       toast.error("Failed to delete job");
     }
   };
@@ -229,6 +257,7 @@ export default function HraViewJobsPage() {
       setJobs(prev => [duplicatedJob, ...prev]);
       toast.success("Job duplicated successfully");
     } catch (error) {
+      console.error("Error duplicating job:", error);
       toast.error("Failed to duplicate job");
     }
   };
@@ -275,7 +304,18 @@ export default function HraViewJobsPage() {
     
     try {
       // Try to fetch applications for this specific job
+      console.log(`🔍 Fetching applications for job ID: ${jobId}`);
+      console.log(`📊 Original application count from job data: ${originalCount}`);
+      
       const response = await getJobApplications(parseInt(jobId), token);
+      
+      console.log(`📥 Job ${jobId} API Response:`, {
+        status: response?.status,
+        hasData: !!response?.data,
+        dataType: Array.isArray(response?.data) ? 'array' : typeof response?.data,
+        dataLength: Array.isArray(response?.data) ? response.data.length : 'N/A',
+        rawResponse: response?.data
+      });
       
       const candidatesData = response?.data || response || [];
       
@@ -291,10 +331,16 @@ export default function HraViewJobsPage() {
         applications = candidatesData.data;
       }
       
+      console.log(`✅ Job ${jobId}: Found ${applications.length} job-specific applications`);
+      
       // If API returns 0 but we had a count before, try the fallback
       if (applications.length === 0 && originalCount > 0) {
+        console.log(`⚠️ API returned 0 applications but job shows ${originalCount}. Trying alternative methods...`);
+        
         // Try the dashboard's latest candidates as a source
         if (dashboardData?.latestAppliedCandidates && dashboardData.latestAppliedCandidates.length > 0) {
+          console.log(`🔍 Using dashboard's latest candidates as fallback (${dashboardData.latestAppliedCandidates.length} total)`);
+          
           // Use the latest candidates but limit to original count for this job
           const candidatesToShow = dashboardData.latestAppliedCandidates.slice(0, Math.min(originalCount, 6));
           
@@ -304,6 +350,8 @@ export default function HraViewJobsPage() {
           setJobApplications(prev => ({ ...prev, [jobId]: candidatesToShow }));
           
           // Keep the original count since we know there are applications
+          console.log(`📌 Preserving original count of ${originalCount} applications`);
+          
           // Don't update the count - keep it as is
           setLoadingApplications(prev => ({ ...prev, [jobId]: false }));
           return;
@@ -319,13 +367,23 @@ export default function HraViewJobsPage() {
             : job
         ));
       } else {
-        }
+        console.log(`📌 Keeping original count of ${originalCount} since API returned empty`);
+      }
       
       setJobApplications(prev => ({ ...prev, [jobId]: applications }));
     } catch (error) {
+      console.error(`❌ Error fetching applications for job ${jobId}:`, error);
+      
       // Try fallback to general candidates list
       try {
+        console.log(`🔄 Trying fallback: fetching all candidates`);
         const fallbackResponse = await getAppliedCandidatesList(token);
+        
+        console.log(`📥 Fallback API Response:`, {
+          hasData: !!fallbackResponse?.data,
+          dataType: Array.isArray(fallbackResponse?.data) ? 'array' : typeof fallbackResponse?.data,
+          dataLength: Array.isArray(fallbackResponse?.data) ? fallbackResponse.data.length : 'N/A'
+        });
         
         let candidatesToShow = [];
         const allCandidates = Array.isArray(fallbackResponse?.data) ? fallbackResponse.data : 
@@ -339,9 +397,11 @@ export default function HraViewJobsPage() {
           });
           
           if (filteredCandidates.length > 0) {
+            console.log(`✅ Found ${filteredCandidates.length} job-specific candidates in fallback`);
             candidatesToShow = filteredCandidates;
           } else if (originalCount > 0) {
             // If we can't filter but know there are applications, show recent candidates
+            console.log(`📌 Using ${Math.min(originalCount, allCandidates.length)} recent candidates as proxy`);
             candidatesToShow = allCandidates.slice(0, Math.min(originalCount, 6));
             // Mark as approximate since these are not job-specific
             (candidatesToShow as any).isApproximate = true;
@@ -350,6 +410,7 @@ export default function HraViewJobsPage() {
         
         // If still no candidates but original count > 0, use dashboard data
         if (candidatesToShow.length === 0 && originalCount > 0 && dashboardData?.latestAppliedCandidates) {
+          console.log(`📌 Final fallback: using dashboard candidates`);
           candidatesToShow = dashboardData.latestAppliedCandidates.slice(0, Math.min(originalCount, 6));
           // Mark as approximate
           (candidatesToShow as any).isApproximate = true;
@@ -359,6 +420,7 @@ export default function HraViewJobsPage() {
         
         // Preserve original count if we had one and found some candidates to show
         if (originalCount > 0 && candidatesToShow.length > 0) {
+          console.log(`📌 Preserving original count of ${originalCount}`);
           // Don't update the count
         } else if (candidatesToShow.length > 0) {
           // Update to actual found count
@@ -369,13 +431,16 @@ export default function HraViewJobsPage() {
           ));
         }
       } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+        
         // Even if API fails, if we have dashboard candidates and original count > 0, show them
         if (originalCount > 0 && dashboardData?.latestAppliedCandidates && dashboardData.latestAppliedCandidates.length > 0) {
           const candidatesToShow = dashboardData.latestAppliedCandidates.slice(0, Math.min(originalCount, 6));
           // Mark as approximate
           (candidatesToShow as any).isApproximate = true;
           setJobApplications(prev => ({ ...prev, [jobId]: candidatesToShow }));
-          } else {
+          console.log(`📌 Using dashboard data as final fallback, preserving count of ${originalCount}`);
+        } else {
           setJobApplications(prev => ({ ...prev, [jobId]: [] }));
         }
       }

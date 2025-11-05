@@ -85,6 +85,7 @@ export default function InstituteDashboardPage() {
       
       setInstituteData(mockData);
     } catch (error) {
+      console.error("Error fetching institute dashboard data:", error);
       toast.error("Failed to load dashboard");
     } finally {
       setLoading(false);

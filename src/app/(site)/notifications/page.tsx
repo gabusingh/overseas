@@ -68,6 +68,8 @@ export default function NotificationsPage() {
           setNotifications([]);
         }
       } catch (apiError) {
+        console.log("API error, using fallback notifications:", apiError);
+        
         // Fallback to mock data if API fails
         const mockNotifications: Notification[] = [
           {
@@ -114,6 +116,7 @@ export default function NotificationsPage() {
         setNotifications(mockNotifications);
       }
     } catch (error) {
+      console.error("Error fetching notifications:", error);
       toast.error("Failed to load notifications");
       setNotifications([]);
     } finally {
@@ -150,6 +153,7 @@ export default function NotificationsPage() {
       // For now, just show success since we don't have specific mark as read API
       toast.success("Notification marked as read");
     } catch (error) {
+      console.error("Error marking notification as read:", error);
       toast.error("Failed to mark notification as read");
     }
   };
@@ -167,6 +171,7 @@ export default function NotificationsPage() {
       // For now, just show success since we don't have specific mark all as read API
       toast.success("All notifications marked as read");
     } catch (error) {
+      console.error("Error marking all notifications as read:", error);
       toast.error("Failed to mark all notifications as read");
     }
   };
@@ -184,6 +189,7 @@ export default function NotificationsPage() {
       // For now, just show success since we don't have specific delete notification API
       toast.success("Notification deleted");
     } catch (error) {
+      console.error("Error deleting notification:", error);
       toast.error("Failed to delete notification");
     }
   };

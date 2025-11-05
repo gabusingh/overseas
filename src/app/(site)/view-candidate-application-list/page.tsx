@@ -74,9 +74,14 @@ export default function ViewCandidateApplicationsPage() {
 
       try {
         // Fetch applications for specific job using real API
+        console.log('Fetching applications for job ID:', jobId);
         const response = await getJobApplications(parseInt(jobId), token);
         clearTimeout(timeoutId);
+        console.log('Applications API Response:', response);
+        
         const candidatesData = response?.data || response || [];
+        console.log('Candidates Data:', candidatesData);
+        
         // Transform API response to match Application interface
         const transformedApplications: Application[] = (Array.isArray(candidatesData) ? candidatesData : []).map((candidate: any) => ({
           id: candidate.id?.toString() || Math.random().toString(),
@@ -107,6 +112,9 @@ export default function ViewCandidateApplicationsPage() {
         throw timeoutError;
       }
     } catch (error: any) {
+      console.error("Error fetching applications:", error);
+      console.error("Error details:", error.response?.data || error.message);
+      
       const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
       toast.error(`Failed to load applications: ${errorMessage}`);
       
@@ -189,6 +197,7 @@ export default function ViewCandidateApplicationsPage() {
       ));
       toast.success(`Application status updated to ${newStatus}`);
     } catch (error) {
+      console.error("Error updating application status:", error);
       toast.error("Failed to update application status");
     }
   };
@@ -208,6 +217,7 @@ export default function ViewCandidateApplicationsPage() {
       toast.success(`${selectedApplications.length} applications updated to ${newStatus}`);
       setSelectedApplications([]);
     } catch (error) {
+      console.error("Error updating applications:", error);
       toast.error("Failed to update applications");
     } finally {
       setBulkActionLoading(false);
