@@ -267,7 +267,7 @@ export default function CourseAppliedPage() {
                 <div className="text-sm text-gray-600">Approved</div>
               </CardContent>
             </Card>
-            <Card className="border border-green-200 bg-green-50">
+            <Card className="border border-green-200 bg-blue-50">
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-green-600">{statusCounts.enrolled}</div>
                 <div className="text-sm text-gray-600">Enrolled</div>

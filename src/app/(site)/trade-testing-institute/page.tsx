@@ -265,14 +265,14 @@ export default function TradeTestingInstitutePage() {
             </div>
           </div>
           
-          <div className="text-center mt-8">
+          {/* <div className="text-center mt-8">
             <button className="downloadButton mr-4">
               Schedule Trade Test
             </button>
             <button className="border textBlue border-blue-600 px-6 py-2 rounded-full hover:lightBlueBg transition-colors">
               View Test Centers
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

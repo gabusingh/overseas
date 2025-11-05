@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import Head from 'next/head';
 import ProfileCompletionModal from '../../../../components/ProfileCompletionModal';
+import { StructuredData, SEOBreadcrumb } from '../../../../components/SEOComponents';
+import { generateJobPostingLD, generateBreadcrumbLD, cleanTextForSEO } from '../../../../utils/seo.utils';
 import { 
   MapPin, 
   Calendar, 
@@ -420,7 +422,7 @@ export default function JobDescriptionPage() {
                 <CardContent className="p-6">
                   {/* Job Details Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-green-100">
                       <div className="flex items-center gap-2 mb-2">
                         <DollarSign className="w-5 h-5 text-green-600" />
                         <span className="text-sm font-medium text-gray-600">Salary</span>
@@ -488,7 +490,7 @@ export default function JobDescriptionPage() {
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {jobData.jobAccommodation === 'Yes' && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <Badge variant="secondary" className="bg-blue-100 text-green-800">
                             <Building className="w-3 h-3 mr-1" />
                             Accommodation Provided
                           </Badge>
@@ -695,6 +697,48 @@ export default function JobDescriptionPage() {
           </div>
         </div>
       </div>
+      
+      {/* SEO Components */}
+      {jobData && (
+        <>
+          {/* Dynamic Head Tags */}
+          <Head>
+            <title>{jobData.jobTitle} at {jobData.companyName || jobData.cmpName} - {jobData.jobLocationCountry?.name || 'International'} | Overseas.ai</title>
+            <meta name="description" content={cleanTextForSEO(jobData.jobDescription || `Apply for ${jobData.jobTitle} position at ${jobData.companyName || jobData.cmpName}. Salary: ${jobData.jobWages ? `${jobData.jobWages} ${jobData.jobWagesCurrencyType}` : 'Competitive'}. Location: ${jobData.jobLocationCountry?.name || 'International'}.`, 160)} />
+            <meta name="keywords" content={`${jobData.jobTitle}, ${jobData.companyName || jobData.cmpName}, ${jobData.jobLocationCountry?.name || ''}, ${jobData.occupation?.name || ''}, international job, overseas career`} />
+            <link rel="canonical" href={`https://www.overseas.ai/job-description/${params.id}`} />
+            <meta property="og:title" content={`${jobData.jobTitle} at ${jobData.companyName || jobData.cmpName}`} />
+            <meta property="og:description" content={cleanTextForSEO(jobData.jobDescription || `Apply for ${jobData.jobTitle} position`, 160)} />
+            <meta property="og:url" content={`https://www.overseas.ai/job-description/${params.id}`} />
+            <meta property="og:type" content="article" />
+            {jobData.jobPhoto && <meta property="og:image" content={jobData.jobPhoto} />}
+          </Head>
+          
+          {/* Structured Data */}
+          <StructuredData data={[
+            generateBreadcrumbLD([
+              { name: 'Home', url: '/' },
+              { name: 'Jobs', url: '/jobs' },
+              { name: jobData.jobTitle, url: `/job-description/${params.id}` }
+            ]),
+            generateJobPostingLD({
+              title: jobData.jobTitle,
+              description: jobData.jobDescription || `Apply for ${jobData.jobTitle} position at ${jobData.companyName || jobData.cmpName}`,
+              company: jobData.companyName || jobData.cmpName || 'Company',
+              location: jobData.jobLocationCountry?.name,
+              salary: jobData.jobWages ? {
+                min: jobData.jobWages,
+                max: jobData.jobWages,
+                currency: jobData.jobWagesCurrencyType || 'USD'
+              } : undefined,
+              jobType: jobData.jobExpTypeReq || 'FULL_TIME',
+              datePosted: jobData.jobPublishedDate,
+              validThrough: jobData.jobDeadline,
+              applicationUrl: `https://www.overseas.ai/job-description/${params.id}`
+            })
+          ]} />
+        </>
+      )}
       
       {/* Profile Completion Modal */}
       {showProfileModal && jobData && (

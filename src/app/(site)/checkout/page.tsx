@@ -320,7 +320,7 @@ export default function CheckoutPage() {
             </div>
 
             {/* Security Badge */}
-            <div className="flex items-center bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-center bg-blue-50 border border-green-200 rounded-lg p-3">
               <Shield className="w-5 h-5 text-green-600 mr-2" />
               <span className="text-green-800 text-sm font-medium">
                 Secure checkout protected by 256-bit SSL encryption

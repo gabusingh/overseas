@@ -297,7 +297,7 @@ export default function InstituteDetailsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center space-x-2 mb-1">
-                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                     <Calendar className="w-4 h-4 text-white" />
                   </div>
                   <span className="font-semibold text-gray-900 text-sm">Established</span>
@@ -370,7 +370,7 @@ export default function InstituteDetailsPage() {
                 </div>
                 <div className="pt-4 border-t border-gray-200">
                   <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-white" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10" 
                     onClick={() => setSelectedTab('courses')}
                   >
                     <BookOpen className="w-4 h-4 mr-2" />
@@ -385,7 +385,7 @@ export default function InstituteDetailsPage() {
           <Card className="shadow-sm border-0 bg-white">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg font-semibold">
-                <MapPin className="w-5 h-5 mr-3 textBlue" />
+                <MapPin className="w-5 h-5 mr-3 bg-blue-600 text-white" />
                 Contact & Location
               </CardTitle>
             </CardHeader>
@@ -651,13 +651,13 @@ export default function InstituteDetailsPage() {
                                 )}
                               </div>
                             </div>
-                            <Link
-                              href={`/course-details/${toSlug(course.course_name)}/${course.id}`}
-                              className="inline-flex items-center whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-md"
-                            >
-                              Apply Now
-                            </Link>
                           </div>
+                          <Link
+                            href={`/course-details/${toSlug(course.course_name)}/${course.id}`}
+                            className="inline-flex items-center whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-md mt-3"
+                          >
+                            Apply Now
+                          </Link>
                         </CardContent>
                       </Card>
                     ))}

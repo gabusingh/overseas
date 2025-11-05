@@ -112,7 +112,7 @@ const TopCountriesHiring: React.FC<TopCountriesHiringProps> = ({ className = "",
   // Get trend indicator based on job count
   const getTrendIndicator = (jobCount: string | number) => {
     const count = parseInt(String(jobCount)) || 0;
-    if (count >= 10) return { icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100', label: 'High Demand' };
+    if (count >= 10) return { icon: TrendingUp, color: 'text-green-600', bg: 'bg-blue-100', label: 'High Demand' };
     if (count >= 5) return { icon: Building, color: 'text-yellow-600', bg: 'bg-yellow-100', label: 'Growing' };
     return { icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', label: 'Available' };
   };
@@ -207,7 +207,7 @@ const TopCountriesHiring: React.FC<TopCountriesHiringProps> = ({ className = "",
               <div className="text-sm text-gray-600">Total Jobs Available</div>
             </div>
             <div className="flex flex-col items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
                 <MapPin className="w-6 h-6 text-green-600" />
               </div>
               <div className="text-2xl font-bold text-gray-900">{activeCountries}</div>

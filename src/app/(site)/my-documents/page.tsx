@@ -230,7 +230,7 @@ export default function MyDocumentsPage() {
   const getStatusBadge = (status: Document["status"]) => {
     const statusConfig = {
       pending: { bg: "bg-yellow-100 text-yellow-800", icon: "fa fa-clock" },
-      approved: { bg: "bg-green-100 text-green-800", icon: "fa fa-check" },
+      approved: { bg: "bg-blue-100 text-green-800", icon: "fa fa-check" },
       rejected: { bg: "bg-red-100 text-red-800", icon: "fa fa-times" }
     };
 
@@ -300,7 +300,7 @@ export default function MyDocumentsPage() {
           
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <i className="fa fa-check text-green-600"></i>
               </div>
               <div className="ml-3">

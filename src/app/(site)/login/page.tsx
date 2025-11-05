@@ -434,7 +434,7 @@ export default function LoginPage() {
 
                 {/* Resend OTP */}
                 {isOtpSent && (
-                  <div className="flex justify-between items-center bg-green-50 p-3 rounded-lg">
+                  <div className="flex justify-between items-center bg-blue-50 p-3 rounded-lg">
                     <span className="text-sm text-green-700">
                       OTP sent successfully!
                     </span>
@@ -444,7 +444,7 @@ export default function LoginPage() {
                       size="sm"
                       onClick={handleSendOtp}
                       disabled={isLoading}
-                      className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                      className="text-green-600 hover:text-green-700 hover:bg-blue-100"
                     >
                       Resend OTP
                     </Button>
@@ -454,7 +454,7 @@ export default function LoginPage() {
                 {/* Submit Button */}
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="w-full bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-[#135a8a] hover:to-[#104a73] text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -494,11 +494,7 @@ export default function LoginPage() {
                   </Link>
                   <Link
                     href="/employer-signup"
-                    className={`flex items-center justify-center px-4 py-2 border rounded-lg font-medium transition-colors ${
-                      showNotRegisteredError 
-                        ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-400' 
-                        : 'border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300'
-                    }`}
+                    className="flex items-center justify-center px-4 py-2 border border-green-200 rounded-lg text-green-600 hover:bg-blue-50 hover:border-green-300 font-medium transition-colors"
                   >
                     🏢 Register as Employer
                   </Link>

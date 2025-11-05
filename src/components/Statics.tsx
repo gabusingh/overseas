@@ -27,7 +27,7 @@ export default function Statics({ stats }: StaticsProps) {
       icon: <Users className="w-8 h-8 text-green-500" />,
       value: stats.jobSeekers.toLocaleString(),
       label: "Active Job Seekers",
-      color: "bg-green-50 border-green-200"
+      color: "bg-blue-50 border-green-200"
     },
     {
       icon: <Building className="w-8 h-8 text-purple-500" />,

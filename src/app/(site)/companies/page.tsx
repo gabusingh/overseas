@@ -404,7 +404,7 @@ export default function Companies() {
                   </label>
                 </div>
 
-                <Button className="w-full bg-green-600 hover:bg-green-700">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
                   Sign Up
                 </Button>
 

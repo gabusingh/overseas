@@ -1,30 +1,124 @@
-User-agent: *
-Disallow: /admin/
-Disallow: /login/
-Disallow: /register/
-Disallow: /cart/
-Disallow: /checkout/
-Disallow: /user-profile/
-Disallow: /internal-api/
-Disallow: /search/
-Disallow: /privacy-policy/
-Disallow: /terms-of-service/
-Disallow: /404/
-Disallow: /500/
-Disallow: /temporary/
+# Robots.txt for Overseas.ai - International Job Portal
+# Updated for comprehensive SEO optimization
 
-# Allow specific bots if needed
+User-agent: *
+Allow: /
+
+# Disallow sensitive and internal pages
+Disallow: /admin/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /candidate-register
+Disallow: /employer-signup
+Disallow: /institute-signup
+Disallow: /partner-signup
+Disallow: /otp-verification
+Disallow: /checkout
+Disallow: /payment-success
+Disallow: /payment-failed
+Disallow: /my-profile
+Disallow: /edit-profile
+Disallow: /my-documents
+Disallow: /applied-jobs
+Disallow: /saved-jobs
+Disallow: /job-applied
+Disallow: /course-applied
+Disallow: /notifications
+Disallow: /hra-dashboard
+Disallow: /institute-dashboard
+Disallow: /recommended-candidates
+Disallow: /view-candidate-application-list
+Disallow: /create-jobs
+Disallow: /edit-job/
+Disallow: /debug-hr
+Disallow: /add-experience
+Disallow: /_next/
+Disallow: /images/
+Disallow: /temp/
+Disallow: /cache/
+
+# Allow important pages for SEO
+Allow: /jobs
+Allow: /job-description/
+Allow: /companies
+Allow: /company-details/
+Allow: /training-institutes
+Allow: /institute-details/
+Allow: /about-us
+Allow: /contact-us
+Allow: /pricing
+Allow: /bulk-hire
+Allow: /resume-building
+Allow: /skill-training-institute
+Allow: /trade-test-center
+Allow: /trade-testing-institute
+Allow: /privacy-policy
+Allow: /terms-condition
+
+# Search engines - full access to allowed content
 User-agent: Googlebot
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /my-profile
+Disallow: /checkout
+Disallow: /_next/
 
 User-agent: Bingbot
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /my-profile
+Disallow: /checkout
+Disallow: /_next/
 
+# SEO and analytics bots
 User-agent: AhrefsSiteAudit
 Allow: /
+Disallow: /admin/
+Disallow: /api/
 
 User-agent: AhrefsBot
 Allow: /
+Disallow: /admin/
+Disallow: /api/
 
-# Sitemap
-Sitemap: https://overseas.ai/sitemap.xml
+User-agent: SemrushBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: MJ12bot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# Social media crawlers
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# Block problematic bots
+User-agent: SemrushBot-SA
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: MJ12bot
+Crawl-delay: 10
+
+# Crawl delay for polite crawling
+Crawl-delay: 1
+
+# Sitemaps
+Sitemap: https://www.overseas.ai/sitemap.xml
+
+# Host specification
+Host: https://www.overseas.ai

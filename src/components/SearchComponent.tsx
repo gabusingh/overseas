@@ -166,7 +166,7 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
 
         {/* Experience Dropdown */}
         <div className="flex-1 flex items-center px-4 py-2">
-          <div className="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center mr-3">
+          <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center mr-3">
             <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2z" />
             </svg>
@@ -221,7 +221,7 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
         <button
           className={`ml-2 w-10 h-10 rounded-full flex items-center justify-center transition-all transform hover:scale-105 ${
             isListening 
-              ? 'bg-green-100 text-green-600 shadow-md' 
+              ? 'bg-blue-100 text-green-600 shadow-md' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:shadow-md'
           }`}
           onClick={handleMicClick}
@@ -256,7 +256,7 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
         <button
           className={`ml-2 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
             isListening 
-              ? 'bg-green-100 text-green-600' 
+              ? 'bg-blue-100 text-green-600' 
               : 'bg-gray-100 text-gray-600'
           }`}
           onClick={handleMicClick}
@@ -271,7 +271,7 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
       {/* Experience and Location Inputs */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-white rounded-full shadow border border-gray-200 p-3 flex items-center">
-          <div className="w-6 h-6 bg-green-50 rounded-full flex items-center justify-center mr-2">
+          <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center mr-2">
             <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2z" />
             </svg>
@@ -336,7 +336,7 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
     
     return (
       <div className="text-center mt-4">
-        <div className="inline-flex items-center px-3 py-2 bg-green-100 text-green-800 rounded-full animate-pulse">
+        <div className="inline-flex items-center px-3 py-2 bg-blue-100 text-green-800 rounded-full animate-pulse">
           <svg className="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
           </svg>

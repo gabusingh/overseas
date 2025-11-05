@@ -274,7 +274,7 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
 
                   {/* Job Count Badge */}
                   <div className="text-center mb-4">
-                    <div className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                    <div className="inline-flex items-center gap-1 bg-blue-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                       <Briefcase className="w-3 h-3" />
                       {realJobCount > 0 ? `${realJobCount} jobs` : 'Available jobs'}
                     </div>
@@ -300,7 +300,7 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
                         </span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           occupation.growth === 'High' 
-                            ? 'bg-green-100 text-green-700' 
+                            ? 'bg-blue-100 text-green-700' 
                             : occupation.growth === 'Moderate'
                             ? 'bg-yellow-100 text-yellow-700'
                             : 'bg-gray-100 text-gray-700'
@@ -411,7 +411,7 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
                               </div>
                               
                               <div className="text-center mb-3">
-                                <div className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                                <div className="inline-flex items-center gap-1 bg-blue-50 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
                                   <Briefcase className="w-3 h-3" />
                                   {realJobCount > 0 ? `${realJobCount}` : 'Jobs'}
                                 </div>

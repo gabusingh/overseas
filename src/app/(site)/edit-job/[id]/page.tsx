@@ -1016,7 +1016,7 @@ export default function EditJobPage() {
                       <button
                         type="button"
                         onClick={() => router.push(`/recommended-candidates?jobId=${jobId}`)}
-                        className="w-full text-left px-4 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        className="w-full text-left px-4 py-2 text-green-600 hover:bg-blue-50 rounded-lg transition-colors"
                       >
                         <i className="fa fa-magic mr-2"></i>
                         AI Recommendations
