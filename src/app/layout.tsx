@@ -126,16 +126,15 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         
-        {/* Service Worker Registration - Temporarily disabled for debugging */}
+        {/* Service Worker Registration - Temporarily disabled */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Unregister existing service workers for debugging
+              // Unregister existing service workers
               if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                   for(let registration of registrations) {
                     registration.unregister();
-                    console.log('SW unregistered for debugging');
                   }
                 });
               }
@@ -150,10 +149,10 @@ export default function RootLayout({
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js')
                     .then(function(registration) {
-                      console.log('SW registered: ', registration);
+                      // Service worker registered
                     })
                     .catch(function(registrationError) {
-                      console.log('SW registration failed: ', registrationError);
+                      // Service worker registration failed
                     });
                 });
               }

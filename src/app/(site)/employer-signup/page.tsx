@@ -145,7 +145,6 @@ export default function EmployerSignupPage() {
     setUserAlreadyExists(false); // Reset user already exists state
     try {
       // For new HRA registrations, use the signup OTP endpoint first
-      console.log('Sending OTP for new HRA registration...');
       const res = await fetch("/api/auth/send-signup-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -259,7 +258,6 @@ export default function EmployerSignupPage() {
       // Use the HRA service to register
       const response = await registerHra(registrationData);
       
-      console.log('Registration response:', response);
       
       // Check for errors first (even if there's a success message)
       if (response?.errors || response?.error || (response?.data?.errors)) {
@@ -325,7 +323,6 @@ export default function EmployerSignupPage() {
       const axiosStatus = (error as any)?.response?.status;
       if (axiosStatus === 422 || axiosStatus === 400) {
         const data = (error as any)?.response?.data;
-        console.log('Validation error data:', data);
         
         // Handle field-level errors
         if (data?.errors && typeof data.errors === "object") {

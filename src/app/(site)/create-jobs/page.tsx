@@ -127,7 +127,6 @@ const CreateJobs = () => {
 
   // Function to populate form with demo data
   const populateDemoData = () => {
-    console.log('🎭 Populating form with demo job data...');
     setFormData(demoJobData);
     setErrors({}); // Clear any existing errors
     
@@ -620,11 +619,8 @@ const CreateJobs = () => {
     const fetchInitialData = async () => {
       try {
         // First try to load data from the backend
-        console.log('🔄 Fetching data from API...');
-        
         // Attempt to fetch from cached API
         try {
-          console.log('🚀 Using cached API calls for better performance...');
           const [countriesRes, occupationsRes] = await Promise.all([
             getCountries().catch(err => {
               console.error('Error fetching countries:', err);
@@ -635,8 +631,6 @@ const CreateJobs = () => {
               throw err; // Rethrow to trigger fallback
             })
           ]);
-          
-          console.log('📊 Raw API responses:', { countriesRes, occupationsRes });
           
           // 1. Handle countries data (expecting { countries: [...] } or { data: [...] } structure)
           const countriesData = countriesRes?.countries || countriesRes?.data || [];
@@ -653,7 +647,6 @@ const CreateJobs = () => {
                   value: country.id?.toString(),
                 }))
               );
-              console.log('✅ Countries loaded from API:', validCountries.length);
             } else {
               throw new Error('No valid countries found in API response');
             }
@@ -676,7 +669,6 @@ const CreateJobs = () => {
                   value: occupation.id.toString(),
                 }))
               );
-              console.log('✅ Occupations loaded from API:', validOccupations.length);
             } else {
               throw new Error('No valid occupations found in API response');
             }
@@ -685,9 +677,6 @@ const CreateJobs = () => {
           }
           
         } catch (apiError) {
-          console.error('⚠️ API data loading failed:', apiError);
-          console.log('⚙️ Using fallback data instead');
-          
           // Use fallback data
           setCountryList(
             fallbackCountries.map(country => ({
@@ -696,7 +685,6 @@ const CreateJobs = () => {
               value: country.id?.toString(),
             }))
           );
-          console.log('✅ Fallback countries loaded:', fallbackCountries.length);
           
           setOccupations(
             fallbackOccupations.map(occupation => ({
@@ -704,7 +692,6 @@ const CreateJobs = () => {
               value: occupation.id.toString(),
             }))
           );
-          console.log('✅ Fallback occupations loaded:', fallbackOccupations.length);
           
           // Notify user that we're using fallback data
           toast.info('Using offline data. Some features may be limited.');
@@ -721,8 +708,6 @@ const CreateJobs = () => {
           { label: "BHD", value: "BHD" },
           { label: "OMR", value: "OMR" },
         ]);
-        
-        console.log('✅ Currency list set with 8 currencies');
         
       } catch (error) {
         console.error("❌ Error fetching initial data:", error);
@@ -751,125 +736,65 @@ const CreateJobs = () => {
     const fetchHrDetails = async () => {
       try {
         setHrDetailsLoading(true);
-        console.log('🔄 STARTING HR Details fetch for auto-fill...');
         
-        // Get access token with detailed logging - use correct key 'access_token'
+        // Get access token - use correct key 'access_token'
         let accessToken = localStorage.getItem('access_token');
-        console.log('🔑 Access token check:', accessToken ? 'Found' : 'Not found', accessToken ? `(Length: ${accessToken.length})` : '');
         
         if (!accessToken) {
           // Try legacy keys as fallback
           const legacyToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
           if (legacyToken) {
-            console.warn('Found token with legacy key, migrating to access_token');
             localStorage.setItem('access_token', legacyToken);
             accessToken = legacyToken;
           } else {
-            console.warn('⚠️ No access token found, skipping HR details fetch');
             toast.info('Please log in to auto-fill HR details.');
             return;
           }
         }
         
-        console.log('🚀 Calling getEnhancedHrDetails API...');
-        
         // Call HR details API
         const hrDetailsResponse = await getEnhancedHrDetails(accessToken);
-        console.log('📊 FULL HR Details Response:', JSON.stringify(hrDetailsResponse, null, 2));
-        console.log('🔍 Response type:', typeof hrDetailsResponse);
-        console.log('🔍 Response keys:', hrDetailsResponse ? Object.keys(hrDetailsResponse) : 'null');
         
         // Check if response has valid data
         if (hrDetailsResponse && typeof hrDetailsResponse === 'object') {
-          console.log('🔍 Processing HR details response...');
-          
           // Extract HR details with ALL possible field combinations
           const hrName = hrDetailsResponse.name || hrDetailsResponse.hrName || hrDetailsResponse.empName || hrDetailsResponse.full_name || '';
           const hrEmail = hrDetailsResponse.email || hrDetailsResponse.hrEmail || hrDetailsResponse.empEmail || hrDetailsResponse.email_address || '';
           const hrNumber = hrDetailsResponse.phone || hrDetailsResponse.hrContact || hrDetailsResponse.empMobile || hrDetailsResponse.phone_number || hrDetailsResponse.mobile || '';
           const companyName = hrDetailsResponse.company_name || hrDetailsResponse.cmpName || hrDetailsResponse.company || '';
           
-          console.log('🎯 ALL FIELD EXTRACTION ATTEMPTS:');
-          console.log('  - hrName attempts:', {
-            name: hrDetailsResponse.name,
-            hrName: hrDetailsResponse.hrName,
-            empName: hrDetailsResponse.empName,
-            full_name: hrDetailsResponse.full_name,
-            final: hrName
-          });
-          console.log('  - hrEmail attempts:', {
-            email: hrDetailsResponse.email,
-            hrEmail: hrDetailsResponse.hrEmail,
-            empEmail: hrDetailsResponse.empEmail,
-            email_address: hrDetailsResponse.email_address,
-            final: hrEmail
-          });
-          console.log('  - hrNumber attempts:', {
-            phone: hrDetailsResponse.phone,
-            hrContact: hrDetailsResponse.hrContact,
-            empMobile: hrDetailsResponse.empMobile,
-            phone_number: hrDetailsResponse.phone_number,
-            mobile: hrDetailsResponse.mobile,
-            final: hrNumber
-          });
-          console.log('  - companyName attempts:', {
-            company_name: hrDetailsResponse.company_name,
-            cmpName: hrDetailsResponse.cmpName,
-            company: hrDetailsResponse.company,
-            final: companyName
-          });
-          
           // Update form data with HR details
           if (hrName || hrEmail || hrNumber) {
             const updateData: any = {};
             if (hrName) {
               updateData.hrName = hrName;
-              console.log('✅ Setting hrName:', hrName);
             }
             if (hrEmail) {
               updateData.hrEmail = hrEmail;
-              console.log('✅ Setting hrEmail:', hrEmail);
             }
             if (hrNumber) {
               updateData.hrNumber = hrNumber;
-              console.log('✅ Setting hrNumber:', hrNumber);
             }
             if (companyName) {
               updateData.cmpNameACT = companyName;
-              console.log('✅ Setting company name:', companyName);
             }
             
-            console.log('🚀 UPDATING FORM DATA with:', updateData);
+            setFormData(prev => ({
+              ...prev,
+              ...updateData
+            }));
             
-            setFormData(prev => {
-              const newData = {
-                ...prev,
-                ...updateData
-              };
-              console.log('🔄 Form data before update:', prev);
-              console.log('🔄 Form data after update:', newData);
-              return newData;
-            });
-            
-            console.log('✅ HR details auto-filled successfully!');
             toast.success('HR details loaded automatically!');
           } else {
-            console.warn('⚠️ No valid HR details found in response');
-            console.warn('⚠️ Available fields:', Object.keys(hrDetailsResponse));
-            console.warn('⚠️ Full response for debugging:', hrDetailsResponse);
             toast.info('HR details could not be auto-filled. Please enter manually.');
           }
         } else {
-          console.warn('⚠️ Invalid HR details response format:', hrDetailsResponse);
           toast.info('HR details could not be auto-filled. Please enter manually.');
         }
         
       } catch (error) {
-        console.error('❌ FULL ERROR in fetchHrDetails:', error);
-        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
         toast.error('Failed to load HR details automatically. Please enter manually.');
       } finally {
-        console.log('🏁 HR details fetch completed, setting loading to false');
         setHrDetailsLoading(false);
       }
     };
@@ -890,12 +815,9 @@ const CreateJobs = () => {
         setSkillList([]);
         return;
       }
-
-      console.log('🔍 Fetching skills for occupation ID:', occuId);
       
       try {
         const skillsResponse = await getSkillsByOccuId(occuId);
-        console.log('🔍 Skills Response:', skillsResponse);
         
         // Handle skills data (expecting { skills: [...] } structure)
         if (skillsResponse?.skills && Array.isArray(skillsResponse.skills)) {
@@ -923,7 +845,6 @@ const CreateJobs = () => {
             }, []);
             
             setSkillList(uniqueSkills);
-            console.log('✅ Skills loaded from API (unique):', uniqueSkills.length);
             return;
           } else {
             throw new Error('No valid skills found in API response');
@@ -933,9 +854,6 @@ const CreateJobs = () => {
         }
         
       } catch (apiError) {
-        console.warn('⚠️ API skills loading failed:', apiError);
-        console.log('⚙️ Using fallback skills for occupation:', occuId);
-        
         // Use fallback skills data with IDs
         const fallbackSkillsForOccupation = fallbackSkills[id as keyof typeof fallbackSkills] || [];
         
@@ -948,21 +866,17 @@ const CreateJobs = () => {
               skillName: skill.name
             }))
           );
-          console.log('✅ Fallback skills loaded:', fallbackSkillsForOccupation.length);
         } else {
-          console.warn('⚠️ No fallback skills available for occupation:', occuId);
           setSkillList([]);
         }
       }
     } catch (error) {
-      console.error("❌ Error in getSkillList:", error);
       setSkillList([]);
     }
   };
 
   // Form validation function
   const validateForm = (): boolean => {
-    console.log('🔍 Starting form validation...');
     const newErrors: Partial<Record<keyof FormDataType, string>> = {};
     const missingFields: string[] = [];
     
@@ -975,11 +889,8 @@ const CreateJobs = () => {
       'hrName', 'hrEmail', 'hrNumber'
     ];
     
-    console.log('📋 Required fields to validate:', requiredFields);
-    
     requiredFields.forEach(field => {
       const value = formData[field];
-      console.log(`🔍 Validating field ${field}:`, value);
       
       if (!value || 
           (typeof value === 'string' && (value.trim() === '' || value.startsWith('_'))) ||
@@ -987,9 +898,6 @@ const CreateJobs = () => {
         const fieldLabel = fieldsByName[field]?.label || field;
         newErrors[field] = `${fieldLabel} is required`;
         missingFields.push(fieldLabel);
-        console.log(`❌ Field ${field} is missing or invalid`);
-      } else {
-        console.log(`✅ Field ${field} is valid`);
       }
     });
     
@@ -1026,12 +934,6 @@ const CreateJobs = () => {
     
     setErrors(newErrors);
     
-    console.log('📊 Validation results:', {
-      totalErrors: Object.keys(newErrors).length,
-      missingFields: missingFields.length,
-      errors: newErrors
-    });
-    
     // Show specific snackbar message for missing required fields
     if (missingFields.length > 0) {
       if (missingFields.length === 1) {
@@ -1054,7 +956,6 @@ const CreateJobs = () => {
     }
     
     const isValid = Object.keys(newErrors).length === 0;
-    console.log(`🏁 Form validation ${isValid ? 'PASSED' : 'FAILED'}`);
     
     return isValid;
   };
@@ -1064,21 +965,15 @@ const CreateJobs = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🚀 Form submission started');
-    console.log('📋 Form data:', formData);
-    
     // Clear previous errors
     setErrors({});
     
     // Validate form
-    console.log('🔍 Validating form...');
     if (!validateForm()) {
-      console.log('❌ Form validation failed');
       // Validation function already shows specific error messages
       return;
     }
     
-    console.log('✅ Form validation passed');
     setLoading(true);
 
     try {
@@ -1088,7 +983,6 @@ const CreateJobs = () => {
         // Try legacy keys as fallback
         const legacyToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
         if (legacyToken) {
-          console.warn('Found token with legacy key, migrating to access_token');
           localStorage.setItem('access_token', legacyToken);
           accessToken = legacyToken; // Use the migrated token
         } else {
@@ -1140,13 +1034,7 @@ const CreateJobs = () => {
       formDataInstance.append('submittedAt', new Date().toISOString());
       
       // Submit the form
-      console.log('📤 Submitting job data to API...');
-      console.log('🔑 Access token:', accessToken ? 'Found' : 'Not found');
-      console.log('📦 Form data instance entries:', Array.from(formDataInstance.entries()));
-      
       const response = await createJobByHr(formDataInstance, accessToken);
-      
-      console.log('📥 API Response received:', response);
       
       // Handle different response scenarios
       if (response && typeof response === 'object') {
@@ -1414,7 +1302,7 @@ const CreateJobs = () => {
               setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.value))
             }
             placeholder={getPlaceholder(field.name)}
-            className={`min-h-[120px] resize-none ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
+            className={`min-h-[120px] resize-none placeholder:text-gray-300 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
           />
         )}
         
@@ -1429,7 +1317,7 @@ const CreateJobs = () => {
               }
               placeholder={showLoading ? "Loading..." : getPlaceholder(field.name)}
               disabled={showLoading}
-              className={`h-11 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${showLoading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+              className={`h-11 placeholder:text-gray-500 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${showLoading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
             />
             {showLoading && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -1588,7 +1476,7 @@ const CreateJobs = () => {
                 <Button 
                   type="submit" 
                   disabled={loading}
-                  onClick={() => console.log('🔘 Create Job Posting button clicked')}
+                  onClick={() => {}}
                   className="px-8 py-2 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-sm"
                 >
                   {loading ? (
