@@ -258,7 +258,6 @@ export default function EmployerSignupPage() {
       // Use the HRA service to register
       const response = await registerHra(registrationData);
       
-      
       // Check for errors first (even if there's a success message)
       if (response?.errors || response?.error || (response?.data?.errors)) {
         // Handle validation errors if provided
@@ -303,12 +302,18 @@ export default function EmployerSignupPage() {
       // Also handle legacy format: {access_token, user, ...}
       const accessToken = response?.data?.access_token || response?.access_token;
       const userData = response?.data?.user || response?.user;
-      const isSuccessMessage = response?.message === 'Company registered successfully';
+      const responseMessage = response?.message || '';
+      const isSuccessMessage = responseMessage === 'Company registered successfully' || 
+                               responseMessage.toLowerCase().includes('success');
       const hasAccessToken = !!accessToken;
-      const hasNoErrors = !response?.error && !response?.errors;
+      const hasNoErrors = !response?.error && !response?.errors && !response?.data?.errors;
       
       // Success if we have access_token OR success message (and no errors)
-      if ((hasAccessToken || isSuccessMessage) && hasNoErrors) {
+      // If we have a success message, treat as success even without access_token
+      // Registration can succeed without auto-login - user will need to login separately
+      const isSuccess = (hasAccessToken || isSuccessMessage) && hasNoErrors;
+      
+      if (isSuccess) {
         // Show success message to user
         toast.success("Registration successful! Redirecting to login page...");
         
@@ -345,7 +350,20 @@ export default function EmployerSignupPage() {
         }
         
         // Always redirect to login page after successful registration with delay to show message
-        setTimeout(() => router.push("/login?registered=1"), 2000);
+        setTimeout(() => {
+          try {
+            router.push("/login?registered=1");
+            // Fallback: use window.location if router.push doesn't work
+            setTimeout(() => {
+              if (window.location.pathname !== '/login') {
+                window.location.href = "/login?registered=1";
+              }
+            }, 500);
+          } catch (redirectError) {
+            console.error('Error with router.push, using window.location:', redirectError);
+            window.location.href = "/login?registered=1";
+          }
+        }, 2000);
       } else {
         // Registration failed - show error message
         const errorMessage = response?.error || response?.message || "Registration failed. Please try again.";

@@ -104,32 +104,29 @@ export async function POST(request: NextRequest) {
     }
     
     // Handle successful response
-    // According to spec: Success (201): {"message": "Company registered successfully", "data": {...}}
-    // Backend may return access_token directly or nested in data
+    // Backend returns: {status: 201, data: {data: {...company data...}, message: "Company registered successfully"}}
+    // Or: {data: {access_token, user, ...}, message: "..."}
     const accessToken = response.data?.access_token || response.data?.data?.access_token;
     const user = response.data?.user || response.data?.data?.user;
+    // Backend may nest data in response.data.data
     const backendData = response.data?.data || response.data;
+    const isSuccessStatus = response.status === 200 || response.status === 201;
+    const hasSuccessMessage = response.data?.message === 'Company registered successfully' || 
+                             response.data?.message?.toLowerCase().includes('success');
     
-    // Only return success if we have an access_token (indicates successful registration)
-    if (accessToken) {
+    // If we have a success message or success status, return success (even without access_token)
+    // Registration can succeed without auto-login - user will need to login separately
+    if (hasSuccessMessage || (isSuccessStatus && !response.data?.error && !response.data?.errors)) {
       const responseData = {
-        message: 'Company registered successfully',
+        message: response.data?.message || 'Company registered successfully',
         data: {
-          access_token: accessToken,
-          user: user || backendData?.user || backendData,
-          ...(backendData && typeof backendData === 'object' && !backendData.access_token ? backendData : {})
+          // Include access_token if it exists
+          ...(accessToken ? { access_token: accessToken } : {}),
+          // Include user data if it exists
+          ...(user ? { user } : {}),
+          // Include all other backend data (company info, etc.)
+          ...(backendData && typeof backendData === 'object' ? backendData : {})
         }
-      };
-      
-      return NextResponse.json(responseData, { status: 201 });
-    }
-    
-    // If backend says success but no access_token, check for success message
-    if (response.data?.message === 'Company registered successfully' || 
-        (response.status === 201 && !response.data?.error && !response.data?.errors)) {
-      const responseData = {
-        message: 'Company registered successfully',
-        data: backendData || response.data
       };
       
       return NextResponse.json(responseData, { status: 201 });
@@ -237,3 +234,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
