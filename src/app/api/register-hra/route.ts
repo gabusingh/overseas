@@ -40,217 +40,193 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     
     // Create new FormData for the external API call
-    // Using the existing register-person-step1 endpoint which works for candidates
+    // Forward all fields directly to the register-hra endpoint
     const externalFormData = new FormData();
     
-    // Map employer fields to the generic registration fields
+    // Extract all fields from the request
     const cmpOtp = formData.get('cmpOtp') as string;
     const cmpOfficialMob = formData.get('cmpOfficialMob') as string;
     const cmpName = formData.get('cmpName') as string;
     const cmpContPerson = formData.get('cmpContPerson') as string;
     const password = formData.get('password') as string;
+    const password_confirmation = formData.get('password_confirmation') as string;
     const cmpEmail = formData.get('cmpEmail') as string;
     const countryCode = formData.get('countryCode') as string;
+    const source = formData.get('source') as string;
+    const RaLicenseNumber = formData.get('RaLicenseNumber') as string;
+    const cmpOfficialAddress = formData.get('cmpOfficialAddress') as string;
+    const cmpDescription = formData.get('cmpDescription') as string;
+    const cmpPin = formData.get('cmpPin') as string;
+    const cmpLogo = formData.get('cmpLogo') as File | null;
     
-    // Use the same fields as candidate registration
-    externalFormData.append('otp', cmpOtp || '');
-    externalFormData.append('empPhone', cmpOfficialMob || '');
-    externalFormData.append('empName', cmpContPerson || cmpName || ''); // Use contact person or company name
-    externalFormData.append('empPassword', password || '');
-    externalFormData.append('password', password || ''); // Also send as password field for backend
-    externalFormData.append('empType', 'company'); // Mark as company/employer type
-    externalFormData.append('countryCode', countryCode || ''); // Country code is required
-    if (cmpEmail) {
-      externalFormData.append('empEmail', cmpEmail);
+    // Forward all fields to the backend register-hra endpoint
+    if (cmpOtp) externalFormData.append('cmpOtp', cmpOtp);
+    if (countryCode) externalFormData.append('countryCode', countryCode);
+    if (cmpOfficialMob) externalFormData.append('cmpOfficialMob', cmpOfficialMob);
+    if (cmpName) externalFormData.append('cmpName', cmpName);
+    if (source) externalFormData.append('source', source);
+    if (cmpEmail) externalFormData.append('cmpEmail', cmpEmail);
+    if (cmpContPerson) externalFormData.append('cmpContPerson', cmpContPerson);
+    if (RaLicenseNumber) externalFormData.append('RaLicenseNumber', RaLicenseNumber);
+    if (cmpOfficialAddress) externalFormData.append('cmpOfficialAddress', cmpOfficialAddress);
+    if (cmpDescription) externalFormData.append('cmpDescription', cmpDescription);
+    if (cmpPin) externalFormData.append('cmpPin', cmpPin);
+    if (password) externalFormData.append('password', password);
+    if (password_confirmation) externalFormData.append('password_confirmation', password_confirmation);
+    if (cmpLogo && cmpLogo instanceof File) {
+      externalFormData.append('cmpLogo', cmpLogo);
     }
 
-    // Call the existing registration endpoint
-    const response = await axios.post(`${BASE_URL}register-person-step1`, externalFormData, {
+    // Call the register-hra endpoint on the backend
+    const response = await axios.post(`${BASE_URL}register-hra`, externalFormData, {
       headers: {
         'Accept': 'application/json'
       }
     });
 
-    // Check for errors first (even if there's a success message)
+    // Check for OTP errors first (specific error format)
+    const errorMessage = response.data?.error || response.data?.msg || response.data?.message || '';
+    const lowerErrorMessage = errorMessage.toLowerCase();
+    
+    if (lowerErrorMessage.includes('mobile number not found') || 
+        lowerErrorMessage.includes('invalid otp') ||
+        (lowerErrorMessage.includes('otp') && (lowerErrorMessage.includes('invalid') || lowerErrorMessage.includes('not found')))) {
+      return NextResponse.json(
+        { error: 'Mobile Number Not Found or Invalid OTP.' },
+        { status: 422 }
+      );
+    }
+    
+    // Check for validation errors
     if (response.data?.errors || response.data?.data?.errors) {
       const errorsData = response.data?.errors || response.data?.data?.errors;
-      let duplicateError = null;
-      
-      if (Array.isArray(errorsData)) {
-        for (const errorMsg of errorsData) {
-          const duplicateInfo = detectDuplicateType(errorMsg);
-          if (duplicateInfo.type && !duplicateError) {
-            duplicateError = { type: duplicateInfo.type, message: duplicateInfo.message };
-          }
-        }
-      } else {
-        const emailError = errorsData.empEmail?.[0] || errorsData.email?.[0] || errorsData.cmpEmail?.[0];
-        const phoneError = errorsData.empPhone?.[0] || errorsData.phone?.[0] || errorsData.mobile?.[0] || errorsData.cmpOfficialMob?.[0];
-        
-        if (emailError) {
-          const duplicateInfo = detectDuplicateType(emailError);
-          if (duplicateInfo.type === 'email') {
-            duplicateError = { type: 'email', message: duplicateInfo.message };
-          }
-        } else if (phoneError) {
-          const duplicateInfo = detectDuplicateType(phoneError);
-          if (duplicateInfo.type === 'mobile') {
-            duplicateError = { type: 'mobile', message: duplicateInfo.message };
-          }
-        }
-      }
-      
-      if (duplicateError) {
-        return NextResponse.json(
-          { error: duplicateError.message, duplicateType: duplicateError.type },
-          { status: 422 }
-        );
-      }
-      
       return NextResponse.json({ errors: errorsData }, { status: 422 });
     }
     
     // Handle successful response
-    if (response.data?.access_token) {
-      const responseData: any = {
+    // According to spec: Success (201): {"message": "Company registered successfully", "data": {...}}
+    // Backend may return access_token directly or nested in data
+    const accessToken = response.data?.access_token || response.data?.data?.access_token;
+    const user = response.data?.user || response.data?.data?.user;
+    const backendData = response.data?.data || response.data;
+    
+    // Only return success if we have an access_token (indicates successful registration)
+    if (accessToken) {
+      const responseData = {
         message: 'Company registered successfully',
-        access_token: response.data.access_token,
-        user: {
-          ...(response.data.user || {}),
-          type: 'company',
-          companyName: cmpName,
-          contactPerson: cmpContPerson
+        data: {
+          access_token: accessToken,
+          user: user || backendData?.user || backendData,
+          ...(backendData && typeof backendData === 'object' && !backendData.access_token ? backendData : {})
         }
       };
       
       return NextResponse.json(responseData, { status: 201 });
-    } else if (response.data?.error) {
-      const errorMessage = response.data.error;
-      const duplicateInfo = detectDuplicateType(errorMessage);
+    }
+    
+    // If backend says success but no access_token, check for success message
+    if (response.data?.message === 'Company registered successfully' || 
+        (response.status === 201 && !response.data?.error && !response.data?.errors)) {
+      const responseData = {
+        message: 'Company registered successfully',
+        data: backendData || response.data
+      };
       
+      return NextResponse.json(responseData, { status: 201 });
+    }
+    
+    // Handle other error responses
+    if (response.data?.error) {
       return NextResponse.json(
-        { error: duplicateInfo.message, duplicateType: duplicateInfo.type },
+        { error: response.data.error },
         { status: 422 }
       );
-    } else if (response.data?.msg) {
-      const msgText = response.data.msg;
-      const duplicateInfo = detectDuplicateType(msgText);
-      
-      if (duplicateInfo.type) {
-        return NextResponse.json(
-          { error: duplicateInfo.message, duplicateType: duplicateInfo.type },
-          { status: 400 }
-        );
-      }
-      
-      if (msgText.toLowerCase().includes('invalid') || 
-          msgText.toLowerCase().includes('error') ||
-          msgText.toLowerCase().includes('failed')) {
-        return NextResponse.json({ error: msgText }, { status: 400 });
-      }
-      
+    }
+    
+    // If response doesn't match expected format, return as-is with 201 if it looks successful
+    if (response.status === 200 || response.status === 201) {
       return NextResponse.json({
-        message: msgText,
-        data: response.data
-      }, { status: 201 });
-    } else {
-      return NextResponse.json({
-        message: 'Registration completed successfully',
+        message: 'Company registered successfully',
         data: response.data
       }, { status: 201 });
     }
+    
+    // Default error response
+    return NextResponse.json({
+      error: 'Registration failed. Please try again.',
+      data: response.data
+    }, { status: 400 });
     
   } catch (error: any) {
     console.error('Register HRA API error:', error);
     
-    // Handle validation errors
-    if (error?.response?.status === 422 || error?.response?.status === 400) {
-      if (error.response.data?.errors) {
-        const errorsData = error.response.data.errors;
-        let duplicateError = null;
-        
-        // Handle array format
-        if (Array.isArray(errorsData)) {
-          for (const errorMsg of errorsData) {
-            const duplicateInfo = detectDuplicateType(errorMsg);
-            if (duplicateInfo.type && !duplicateError) {
-              duplicateError = { type: duplicateInfo.type, message: duplicateInfo.message };
-            }
-          }
-        } else {
-          // Handle object format
-          const emailError = errorsData.empEmail?.[0] || errorsData.email?.[0] || errorsData.cmpEmail?.[0];
-          const phoneError = errorsData.empPhone?.[0] || errorsData.phone?.[0] || errorsData.mobile?.[0] || errorsData.cmpOfficialMob?.[0];
-          
-          if (emailError) {
-            const duplicateInfo = detectDuplicateType(emailError);
-            if (duplicateInfo.type === 'email') {
-              duplicateError = { type: 'email', message: duplicateInfo.message };
-            }
-          } else if (phoneError) {
-            const duplicateInfo = detectDuplicateType(phoneError);
-            if (duplicateInfo.type === 'mobile') {
-              duplicateError = { type: 'mobile', message: duplicateInfo.message };
-            }
-          }
-        }
-        
-        if (duplicateError) {
-          return NextResponse.json(
-            { error: duplicateError.message, duplicateType: duplicateError.type },
-            { status: 422 }
-          );
-        }
-        
-        return NextResponse.json({ errors: errorsData }, { status: 422 });
-      } else if (error.response.data?.error) {
-        const errorMessage = error.response.data.error;
-        const duplicateInfo = detectDuplicateType(errorMessage);
-        
+    // Handle validation errors (422)
+    if (error?.response?.status === 422) {
+      // Check for OTP errors
+      const errorMessage = error.response.data?.error || error.response.data?.msg || error.response.data?.message || '';
+      const lowerErrorMessage = errorMessage.toLowerCase();
+      
+      if (lowerErrorMessage.includes('mobile number not found') || 
+          lowerErrorMessage.includes('invalid otp') ||
+          (lowerErrorMessage.includes('otp') && (lowerErrorMessage.includes('invalid') || lowerErrorMessage.includes('not found')))) {
         return NextResponse.json(
-          { 
-            error: duplicateInfo.message,
-            duplicateType: duplicateInfo.type
-          },
-          { status: 422 }
-        );
-      } else if (error.response.data?.msg) {
-        const errorMessage = error.response.data.msg;
-        const duplicateInfo = detectDuplicateType(errorMessage);
-        
-        return NextResponse.json(
-          { 
-            error: duplicateInfo.message,
-            duplicateType: duplicateInfo.type
-          },
-          { status: 422 }
-        );
-      } else if (error.response.data?.message) {
-        // Handle backend response with 'message' field (e.g., "Phone Number Already Exist")
-        const errorMessage = error.response.data.message;
-        const duplicateInfo = detectDuplicateType(errorMessage);
-        
-        return NextResponse.json(
-          { 
-            error: duplicateInfo.message,
-            duplicateType: duplicateInfo.type
-          },
+          { error: 'Mobile Number Not Found or Invalid OTP.' },
           { status: 422 }
         );
       }
+      
+      // Handle validation errors array/object
+      if (error.response.data?.errors) {
+        return NextResponse.json(
+          { errors: error.response.data.errors },
+          { status: 422 }
+        );
+      }
+      
+      // Handle single error message
+      if (error.response.data?.error) {
+        return NextResponse.json(
+          { error: error.response.data.error },
+          { status: 422 }
+        );
+      }
+      
+      // Default 422 response
+      return NextResponse.json(
+        { error: error.response.data?.msg || error.response.data?.message || 'Validation failed' },
+        { status: 422 }
+      );
     }
     
     // Handle other error responses
     if (error?.response?.data) {
-      const errorMessage = error.response.data?.error || error.response.data?.msg || error.response.data?.message || 'Registration failed';
-      const duplicateInfo = detectDuplicateType(errorMessage);
+      const status = error.response?.status || 500;
+      
+      // Check for OTP errors in any status
+      const errorMessage = error.response.data?.error || error.response.data?.msg || error.response.data?.message || '';
+      const lowerErrorMessage = errorMessage.toLowerCase();
+      
+      if (lowerErrorMessage.includes('mobile number not found') || 
+          lowerErrorMessage.includes('invalid otp') ||
+          (lowerErrorMessage.includes('otp') && (lowerErrorMessage.includes('invalid') || lowerErrorMessage.includes('not found')))) {
+        return NextResponse.json(
+          { error: 'Mobile Number Not Found or Invalid OTP.' },
+          { status: 422 }
+        );
+      }
+      
+      if (error.response.data?.errors) {
+        return NextResponse.json(
+          { errors: error.response.data.errors },
+          { status: status }
+        );
+      }
       
       return NextResponse.json(
         { 
-          error: duplicateInfo.message,
-          duplicateType: duplicateInfo.type
+          error: error.response.data?.error || error.response.data?.msg || error.response.data?.message || 'Registration failed'
         },
-        { status: error.response?.status || 500 }
+        { status: status }
       );
     }
     

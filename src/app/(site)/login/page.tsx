@@ -130,19 +130,46 @@ export default function LoginPage() {
         localStorage.removeItem("access_token");
         localStorage.removeItem("loggedUser");
         
+        // Extract user type from response, with fallback to check multiple possible locations
+        let userType = response.data.user?.type || 
+                      (response.data as any).user?.type ||
+                      (response.data as any).type ||
+                      null;
+        
+        // If user type is not in response, try to infer from other fields
+        if (!userType) {
+          // Check if there's company-related data to infer type
+          if ((response.data as any).cmpData || (response.data.user as any)?.cmpData) {
+            userType = 'company';
+          } else if ((response.data as any).instituteData || (response.data.user as any)?.instituteData) {
+            userType = 'institute';
+          } else {
+            userType = 'person'; // Default to person if no other indicators
+          }
+        }
+        
         // Store user data properly for auth compatibility
         const userData = {
-          id: response.data.user.id,
-          type: response.data.user.type,
-          email: response.data.user.email,
-          phone: response.data.user.phone,
+          id: response.data.user?.id || (response.data as any).userId,
+          type: userType,
+          email: response.data.user?.email || (response.data as any).empEmail || '',
+          phone: response.data.user?.phone || (response.data.user as any)?.empPhone || mobile,
           name: (response.data.user as any).name || (response.data.user as any).empName || ''
+        };
+        
+        // Ensure user type is stored in both formats for compatibility
+        const loggedUserData = {
+          ...response.data,
+          user: {
+            ...(response.data.user || {}),
+            type: userType
+          }
         };
         
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("access_token", response.data.access_token);
-        // Legacy compatibility
-        localStorage.setItem("loggedUser", JSON.stringify(response.data));
+        // Legacy compatibility - ensure type is set
+        localStorage.setItem("loggedUser", JSON.stringify(loggedUserData));
         
         // Refresh global state
         await setUserData();
@@ -157,8 +184,7 @@ export default function LoginPage() {
           redirectPath = decodeURIComponent(redirectUrl);
         } else {
           // Fall back to user type-based redirection
-          const userType = response?.data?.user?.type;
-          
+          // Use the extracted userType variable
           switch (userType) {
             case "person":
               redirectPath = "/my-profile";
@@ -170,7 +196,24 @@ export default function LoginPage() {
               redirectPath = "/institute-dashboard";
               break;
             default:
-              redirectPath = "/";
+              // If still no type, check localStorage as last resort
+              try {
+                const storedUser = localStorage.getItem("user");
+                if (storedUser) {
+                  const parsed = JSON.parse(storedUser);
+                  if (parsed.type === 'company') {
+                    redirectPath = "/hra-dashboard";
+                  } else if (parsed.type === 'institute') {
+                    redirectPath = "/institute-dashboard";
+                  } else {
+                    redirectPath = "/my-profile";
+                  }
+                } else {
+                  redirectPath = "/";
+                }
+              } catch {
+                redirectPath = "/";
+              }
               break;
           }
         }

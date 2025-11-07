@@ -298,23 +298,58 @@ export default function EmployerSignupPage() {
         return;
       }
       
-      // Check for successful registration - API returns message and optionally access_token
-      if (response?.message && !response?.error && !response?.errors) {
+      // Check for successful registration
+      // Handle new response format: {message: "...", data: {access_token, user, ...}}
+      // Also handle legacy format: {access_token, user, ...}
+      const accessToken = response?.data?.access_token || response?.access_token;
+      const userData = response?.data?.user || response?.user;
+      const isSuccessMessage = response?.message === 'Company registered successfully';
+      const hasAccessToken = !!accessToken;
+      const hasNoErrors = !response?.error && !response?.errors;
+      
+      // Success if we have access_token OR success message (and no errors)
+      if ((hasAccessToken || isSuccessMessage) && hasNoErrors) {
         // Show success message to user
         toast.success("Registration successful! Redirecting to login page...");
         
-        // Handle successful registration - always redirect to login page
-        if (response?.access_token) {
+        // Store user data with proper type in both formats for compatibility
+        // Only store if we have an access_token (user is actually logged in)
+        if (accessToken) {
           try {
-            localStorage.setItem("loggedUser", JSON.stringify(response));
-            localStorage.setItem("access_token", response.access_token);
-          } catch {}
+            const userType = userData?.type || 'company'; // Ensure type is 'company' for employer
+            
+            // Store in loggedUser format (legacy compatibility)
+            const loggedUserData = {
+              access_token: accessToken,
+              user: {
+                ...(userData || {}),
+                type: userType
+              }
+            };
+            localStorage.setItem("loggedUser", JSON.stringify(loggedUserData));
+            
+            // Store in user format (for auth compatibility)
+            const user = {
+              id: userData?.id || (response?.data as any)?.userId,
+              type: userType,
+              email: userData?.email || (response?.data as any)?.empEmail || '',
+              phone: userData?.phone || (response?.data as any)?.empPhone || formData.cmpOfficialMob,
+              name: userData?.name || userData?.companyName || formData.cmpContPerson || formData.cmpName
+            };
+            localStorage.setItem("user", JSON.stringify(user));
+            
+            localStorage.setItem("access_token", accessToken);
+          } catch (err) {
+            console.error('Error storing user data:', err);
+          }
         }
+        
         // Always redirect to login page after successful registration with delay to show message
         setTimeout(() => router.push("/login?registered=1"), 2000);
       } else {
-        // Fallback for any other response
-        toast.error(response?.message || "Registration failed");
+        // Registration failed - show error message
+        const errorMessage = response?.error || response?.message || "Registration failed. Please try again.";
+        toast.error(errorMessage);
       }
     } catch (error: unknown) {
       console.error('Registration error:', error);
