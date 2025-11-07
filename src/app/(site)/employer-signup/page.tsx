@@ -258,7 +258,6 @@ export default function EmployerSignupPage() {
       // Use the HRA service to register
       const response = await registerHra(registrationData);
       
-      
       // Check for errors first (even if there's a success message)
       if (response?.errors || response?.error || (response?.data?.errors)) {
         // Handle validation errors if provided
@@ -298,23 +297,77 @@ export default function EmployerSignupPage() {
         return;
       }
       
-      // Check for successful registration - API returns message and optionally access_token
-      if (response?.message && !response?.error && !response?.errors) {
+      // Check for successful registration
+      // Handle new response format: {message: "...", data: {access_token, user, ...}}
+      // Also handle legacy format: {access_token, user, ...}
+      const accessToken = response?.data?.access_token || response?.access_token;
+      const userData = response?.data?.user || response?.user;
+      const responseMessage = response?.message || '';
+      const isSuccessMessage = responseMessage === 'Company registered successfully' || 
+                               responseMessage.toLowerCase().includes('success');
+      const hasAccessToken = !!accessToken;
+      const hasNoErrors = !response?.error && !response?.errors && !response?.data?.errors;
+      
+      // Success if we have access_token OR success message (and no errors)
+      // If we have a success message, treat as success even without access_token
+      // Registration can succeed without auto-login - user will need to login separately
+      const isSuccess = (hasAccessToken || isSuccessMessage) && hasNoErrors;
+      
+      if (isSuccess) {
         // Show success message to user
         toast.success("Registration successful! Redirecting to login page...");
         
-        // Handle successful registration - always redirect to login page
-        if (response?.access_token) {
+        // Store user data with proper type in both formats for compatibility
+        // Only store if we have an access_token (user is actually logged in)
+        if (accessToken) {
           try {
-            localStorage.setItem("loggedUser", JSON.stringify(response));
-            localStorage.setItem("access_token", response.access_token);
-          } catch {}
+            const userType = userData?.type || 'company'; // Ensure type is 'company' for employer
+            
+            // Store in loggedUser format (legacy compatibility)
+            const loggedUserData = {
+              access_token: accessToken,
+              user: {
+                ...(userData || {}),
+                type: userType
+              }
+            };
+            localStorage.setItem("loggedUser", JSON.stringify(loggedUserData));
+            
+            // Store in user format (for auth compatibility)
+            const user = {
+              id: userData?.id || (response?.data as any)?.userId,
+              type: userType,
+              email: userData?.email || (response?.data as any)?.empEmail || '',
+              phone: userData?.phone || (response?.data as any)?.empPhone || formData.cmpOfficialMob,
+              name: userData?.name || userData?.companyName || formData.cmpContPerson || formData.cmpName
+            };
+            localStorage.setItem("user", JSON.stringify(user));
+            
+            localStorage.setItem("access_token", accessToken);
+          } catch (err) {
+            console.error('Error storing user data:', err);
+          }
         }
+        
         // Always redirect to login page after successful registration with delay to show message
-        setTimeout(() => router.push("/login?registered=1"), 2000);
+        setTimeout(() => {
+          try {
+            router.push("/login?registered=1");
+            // Fallback: use window.location if router.push doesn't work
+            setTimeout(() => {
+              if (window.location.pathname !== '/login') {
+                window.location.href = "/login?registered=1";
+              }
+            }, 500);
+          } catch (redirectError) {
+            console.error('Error with router.push, using window.location:', redirectError);
+            window.location.href = "/login?registered=1";
+          }
+        }, 2000);
       } else {
-        // Fallback for any other response
-        toast.error(response?.message || "Registration failed");
+        // Registration failed - show error message
+        const errorMessage = response?.error || response?.message || "Registration failed. Please try again.";
+        toast.error(errorMessage);
       }
     } catch (error: unknown) {
       console.error('Registration error:', error);
