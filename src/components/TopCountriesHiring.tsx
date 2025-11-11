@@ -53,7 +53,6 @@ const TopCountriesHiring: React.FC<TopCountriesHiringProps> = ({ className = "",
         
         setCountries(sortedCountries);
         setFilteredCountries(sortedCountries.slice(0, limit));
-        toast.success('Top countries data loaded successfully!');
       } else {
         throw new Error('Invalid data structure received from API');
       }

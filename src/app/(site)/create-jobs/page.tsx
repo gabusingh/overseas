@@ -163,7 +163,7 @@ const CreateJobs = () => {
     jobExpTypeReq: "international",
     jobExpDuration: "3",
     jobWorkingDay: "26",
-    jobWorkingHour: "8 hours/day",
+    jobWorkingHour: "8",
     jobOvertime: "As Per Company Requirement",
     jobFood: "Free Food",
     jobAccommodation: "Yes",
@@ -395,7 +395,11 @@ const CreateJobs = () => {
     { 
       name: "jobWorkingHour" as keyof FormDataType, 
       label: "Job Working Hour", 
-      type: "text",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        ...Array.from({ length: 24 }, (_, i) => ({ label: `${i + 1}`, value: `${i + 1}` }))
+      ],
       containerClassName: "min-h-[4.5rem]"
     },
     {
@@ -564,6 +568,7 @@ const CreateJobs = () => {
       jobExpDuration: "Years of experience",
       DLReq: "Driving license",
       jobWorkingDay: "Working days per month",
+      jobWorkingHour: "Working hours per day",
       jobOvertime: "Select Overtime policy",
       jobFood: "Select Food provision",
       jobAccommodation: "Select Accommodation",
@@ -1180,8 +1185,18 @@ const CreateJobs = () => {
         </Label>
         
         {field.type === "select" && (
+          (() => {
+            const rawValue = getFormValue(formData, fieldName);
+            const selectValue =
+              typeof rawValue === "string" &&
+              rawValue.trim() !== "" &&
+              !rawValue.startsWith("_")
+                ? rawValue
+                : undefined;
+
+            return (
           <Select
-            value={String(getFormValue(formData, fieldName))}
+            value={selectValue}
             onValueChange={(value: string) => {
               setFormData((prev) => ({ ...prev, [field.name]: value }));
               if (field.name === "jobOccupation") {
@@ -1205,6 +1220,8 @@ const CreateJobs = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
+            );
+          })()
         )}
         
         {field.type === "multiple" && (
