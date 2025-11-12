@@ -72,6 +72,45 @@ function updateFormData(
   return { ...prevData, [name]: value };
 }
 
+// Normalize values before submission so backend always receives every field
+function normalizeSubmissionValues(
+  data: FormDataValues,
+  fields: FieldConfig[]
+): Record<keyof FormDataType, FormFieldValue> {
+  const normalized: Partial<Record<keyof FormDataType, FormFieldValue>> = {};
+
+  fields.forEach(({ name }) => {
+    const value = data[name];
+
+    if (Array.isArray(value)) {
+      const cleaned = value.filter((v) => v && !v.startsWith('_'));
+      normalized[name] = cleaned.length > 0 ? cleaned : [];
+      return;
+    }
+
+    if (value instanceof File) {
+      normalized[name] = value.size > 0 ? value : '';
+      return;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      normalized[name] =
+        trimmed === '' || trimmed.startsWith('_') ? '' : trimmed;
+      return;
+    }
+
+    if (value != null) {
+      normalized[name] = value;
+      return;
+    }
+
+    normalized[name] = '';
+  });
+
+  return normalized as Record<keyof FormDataType, FormFieldValue>;
+}
+
 
 type FormDataType = {
   jobTitle: string;
@@ -113,6 +152,34 @@ type FormDataType = {
   languageRequired: string[];
   jobArea: string;
 };
+
+const REQUIRED_FIELDS: (keyof FormDataType)[] = [
+  'jobTitle',
+  'cmpNameACT',
+  'jobOccupation',
+  'jobLocationCountry',
+  'jobDeadline',
+  'jobVacancyNo',
+  'jobWages',
+  'jobWagesCurrencyType',
+  'jobWorkingDay',
+  'jobWorkingHour',
+  'jobOvertime',
+  'jobFood',
+  'jobAccommodation',
+  'jobMedicalFacility',
+  'jobTransportation',
+  'hrName',
+  'hrEmail',
+  'hrNumber',
+  'service_charge',
+  'contract_period',
+  'jobExpReq',
+  'jobExpTypeReq',
+  'jobExpDuration',
+  'expCerificateReq',
+  'DLReq',
+];
 
 const CreateJobs = () => {
   const router = useRouter();
@@ -886,15 +953,7 @@ const CreateJobs = () => {
     const missingFields: string[] = [];
     
     // Required field validations
-    const requiredFields: (keyof FormDataType)[] = [
-      'jobTitle', 'cmpNameACT', 'jobOccupation', 'jobLocationCountry', 
-      'jobDeadline', 'jobVacancyNo', 'jobWages', 'jobWagesCurrencyType',
-      'jobWorkingDay', 'jobWorkingHour', 'jobOvertime', 'jobFood', 
-      'jobAccommodation', 'jobMedicalFacility', 'jobTransportation',
-      'hrName', 'hrEmail', 'hrNumber'
-    ];
-    
-    requiredFields.forEach(field => {
+    REQUIRED_FIELDS.forEach(field => {
       const value = formData[field];
       
       if (!value || 
@@ -952,7 +1011,7 @@ const CreateJobs = () => {
     
     // Show snackbar for other validation errors
     const otherErrors = Object.keys(newErrors).filter(key => 
-      !requiredFields.includes(key as keyof FormDataType)
+      !REQUIRED_FIELDS.includes(key as keyof FormDataType)
     );
     
     if (otherErrors.length > 0) {
@@ -998,13 +1057,12 @@ const CreateJobs = () => {
       // Convert formData object to FormData instance
       const formDataInstance = new FormData();
       let hasValidData = false;
+      const normalizedValues = normalizeSubmissionValues(formData, formFields);
       
-      Object.entries(formData).forEach(([key, value]) => {
+      (Object.entries(normalizedValues) as Array<[keyof FormDataType, FormFieldValue]>).forEach(([fieldName, value]) => {
         if (Array.isArray(value)) {
-          // Filter out placeholder values from arrays
-          const filteredValue = value.filter(v => v && !v.startsWith('_'));
-          if (filteredValue.length > 0) {
-            formDataInstance.append(key, JSON.stringify(filteredValue));
+          formDataInstance.append(fieldName, JSON.stringify(value));
+          if (value.length > 0) {
             hasValidData = true;
           }
         } else if (value instanceof File) {
@@ -1018,16 +1076,18 @@ const CreateJobs = () => {
             if (!allowedTypes.includes(value.type)) {
               throw new Error('Only JPEG, PNG, and WebP images are allowed');
             }
-            formDataInstance.append(key, value);
+            formDataInstance.append(fieldName, value);
             hasValidData = true;
+          } else {
+            formDataInstance.append(fieldName, '');
           }
         } else if (value != null && 
-                   value.toString().trim() !== '' && 
-                   !value.toString().startsWith('_')) {
-          // Only append non-placeholder values
+                   value.toString().trim() !== '') {
           const trimmedValue = String(value).trim();
-          formDataInstance.append(key, trimmedValue);
+          formDataInstance.append(fieldName, trimmedValue);
           hasValidData = true;
+        } else {
+          formDataInstance.append(fieldName, '');
         }
       });
       
@@ -1074,6 +1134,7 @@ const CreateJobs = () => {
       // Handle different error types with enhanced messages
       let errorMessage = '❌ Failed to create job. Please try again.';
       let errorTitle = 'Job Creation Failed';
+      let backendErrorText: string | null = null;
       
       if (error?.message) {
         errorMessage = error.message;
@@ -1085,6 +1146,26 @@ const CreateJobs = () => {
         errorMessage = `Server error: ${error.response.statusText}`;
       } else if (typeof error === 'string') {
         errorMessage = error;
+      }
+
+      const backendErrors = error?.response?.data?.errors;
+      if (backendErrors && typeof backendErrors === 'object') {
+        const messages: string[] = [];
+        Object.values(backendErrors).forEach((entry: any) => {
+          if (Array.isArray(entry)) {
+            entry.forEach((msg) => {
+              if (typeof msg === 'string') {
+                messages.push(msg);
+              }
+            });
+          } else if (entry && typeof entry === 'string') {
+            messages.push(entry);
+          }
+        });
+
+        if (messages.length > 0) {
+          backendErrorText = messages.join(' | ');
+        }
       }
       
       // Handle specific error codes with tailored messages
@@ -1110,6 +1191,10 @@ const CreateJobs = () => {
       } else if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network')) {
         errorTitle = 'Connection Error';
         errorMessage = '🌐 Check your internet connection and try again.';
+      }
+
+      if (backendErrorText) {
+        errorMessage = `${errorMessage}\n${backendErrorText}`;
       }
       
       // Show error with enhanced formatting
@@ -1171,7 +1256,7 @@ const CreateJobs = () => {
                        'jobDeadline', 'jobVacancyNo', 'jobWages', 'jobWagesCurrencyType',
                        'jobWorkingDay', 'jobWorkingHour', 'jobOvertime', 'jobFood', 
                        'jobAccommodation', 'jobMedicalFacility', 'jobTransportation',
-                       'hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
+                       'contract_period', 'hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
     
     // Check if this is an HR field that should show loading state
     const isHrField = ['hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
