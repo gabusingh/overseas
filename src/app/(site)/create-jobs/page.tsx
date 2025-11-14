@@ -155,13 +155,16 @@ type FormDataType = {
 
 const REQUIRED_FIELDS: (keyof FormDataType)[] = [
   'jobTitle',
-  'cmpNameACT',
   'jobOccupation',
+  'jobSkill',
   'jobLocationCountry',
   'jobDeadline',
   'jobVacancyNo',
-  'jobWages',
   'jobWagesCurrencyType',
+  'salary_negotiable',
+  'passport_type',
+  'contract_period',
+  'jobExpReq',
   'jobWorkingDay',
   'jobWorkingHour',
   'jobOvertime',
@@ -169,16 +172,8 @@ const REQUIRED_FIELDS: (keyof FormDataType)[] = [
   'jobAccommodation',
   'jobMedicalFacility',
   'jobTransportation',
-  'hrName',
-  'hrEmail',
-  'hrNumber',
-  'service_charge',
-  'contract_period',
-  'jobExpReq',
-  'jobExpTypeReq',
-  'jobExpDuration',
-  'expCerificateReq',
-  'DLReq',
+  'jobAgeLimit',
+  'languageRequired',
 ];
 
 const CreateJobs = () => {
@@ -1252,11 +1247,8 @@ const CreateJobs = () => {
   const renderField = (field: FieldConfig) => {
     const fieldName = field.name as keyof FormDataType;
     const error = errors[fieldName];
-    const isRequired = ['jobTitle', 'cmpNameACT', 'jobOccupation', 'jobLocationCountry', 
-                       'jobDeadline', 'jobVacancyNo', 'jobWages', 'jobWagesCurrencyType',
-                       'jobWorkingDay', 'jobWorkingHour', 'jobOvertime', 'jobFood', 
-                       'jobAccommodation', 'jobMedicalFacility', 'jobTransportation',
-                       'contract_period', 'hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
+    const isRequired = REQUIRED_FIELDS.includes(fieldName);
+    
     
     // Check if this is an HR field that should show loading state
     const isHrField = ['hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
@@ -1266,7 +1258,7 @@ const CreateJobs = () => {
       <div key={fieldName} className="space-y-2">
         <Label htmlFor={fieldName} className="text-sm font-medium text-gray-700 flex items-center gap-1">
           {field.label}
-          {isRequired && <span className="text-red-500 text-xs">*</span>}
+          {isRequired && <span className="text-red-500 font-bold text-base ml-1" aria-label="required">*</span>}
         </Label>
         
         {field.type === "select" && (
