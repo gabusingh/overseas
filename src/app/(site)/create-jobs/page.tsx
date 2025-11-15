@@ -160,6 +160,7 @@ const REQUIRED_FIELDS: (keyof FormDataType)[] = [
   'jobLocationCountry',
   'jobDeadline',
   'jobVacancyNo',
+  'jobWages',
   'jobWagesCurrencyType',
   'salary_negotiable',
   'passport_type',
@@ -391,7 +392,7 @@ const CreateJobs = () => {
     },
     {
       name: "jobExpReq" as keyof FormDataType,
-      label: "Job Experience Required",
+      label: "Job Experience ",
       type: "select",
       options: [
         { label: "Select", value: "_none" },
@@ -402,7 +403,7 @@ const CreateJobs = () => {
     },
     {
       name: "jobExpTypeReq" as keyof FormDataType,
-      label: "Experience Required within India/International",
+      label: "Experience Type within India/International",
       type: "select",
       options: [
         { label: "Select", value: "_none" },
@@ -414,7 +415,7 @@ const CreateJobs = () => {
     },
     {
       name: "jobExpDuration" as keyof FormDataType,
-      label: "Year of Experience required",
+      label: "Year of Experience ",
       type: "select",
       options: [
         { label: "Select", value: "_none" },
@@ -433,7 +434,7 @@ const CreateJobs = () => {
     },
     {
       name: "DLReq" as keyof FormDataType,
-      label: "Driving License Required",
+      label: "Driving License ",
       type: "select",
       options: [
         { label: "Select", value: "_none" },
@@ -553,7 +554,7 @@ const CreateJobs = () => {
     },
     {
       name: "languageRequired" as keyof FormDataType,
-      label: "Language Required",
+      label: "Language ",
       type: "multiple",
       options: [
         { label: "Bengali", value: "Bengali" },
@@ -960,6 +961,27 @@ const CreateJobs = () => {
       }
     });
     
+    // Conditional validation: If jobExpReq is "Yes", then jobExpTypeReq and jobExpDuration are required
+    if (formData.jobExpReq === "Yes") {
+      // Validate jobExpTypeReq
+      const expTypeValue = formData.jobExpTypeReq;
+      if (!expTypeValue || 
+          (typeof expTypeValue === 'string' && (expTypeValue.trim() === '' || expTypeValue.startsWith('_')))) {
+        const fieldLabel = fieldsByName.jobExpTypeReq?.label || 'Experience Type within India/International';
+        newErrors.jobExpTypeReq = `${fieldLabel} is required`;
+        missingFields.push(fieldLabel);
+      }
+      
+      // Validate jobExpDuration
+      const expDurationValue = formData.jobExpDuration;
+      if (!expDurationValue || 
+          (typeof expDurationValue === 'string' && (expDurationValue.trim() === '' || expDurationValue.startsWith('_')))) {
+        const fieldLabel = fieldsByName.jobExpDuration?.label || 'Year of Experience';
+        newErrors.jobExpDuration = `${fieldLabel} is required`;
+        missingFields.push(fieldLabel);
+      }
+    }
+    
     // Email validation
     if (formData.hrEmail && !formData.hrEmail.toString().startsWith('_')) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1247,7 +1269,10 @@ const CreateJobs = () => {
   const renderField = (field: FieldConfig) => {
     const fieldName = field.name as keyof FormDataType;
     const error = errors[fieldName];
-    const isRequired = REQUIRED_FIELDS.includes(fieldName);
+    // Conditional required: jobExpTypeReq and jobExpDuration are required only when jobExpReq === "Yes"
+    const isRequired = REQUIRED_FIELDS.includes(fieldName) || 
+                      (fieldName === 'jobExpTypeReq' && formData.jobExpReq === 'Yes') || 
+                      (fieldName === 'jobExpDuration' && formData.jobExpReq === 'Yes');
     
     
     // Check if this is an HR field that should show loading state
@@ -1278,6 +1303,15 @@ const CreateJobs = () => {
               setFormData((prev) => ({ ...prev, [field.name]: value }));
               if (field.name === "jobOccupation") {
                 getSkillList(value);
+              }
+              // Clear errors for conditional fields when jobExpReq changes to "No"
+              if (field.name === "jobExpReq" && value === "No") {
+                setErrors((prev) => {
+                  const newErrors = { ...prev };
+                  delete newErrors.jobExpTypeReq;
+                  delete newErrors.jobExpDuration;
+                  return newErrors;
+                });
               }
             }}
           >
