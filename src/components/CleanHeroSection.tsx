@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useMemo } from "react";
 import { Search, MapPin, Briefcase } from "lucide-react";
 import { Button } from "./ui/button";
 import SearchComponent from "./SearchComponent";
 import PopularSearches from "./PopularSearches";
-import { getOccupations } from "../services/info.service";
+import { useOccupations } from "../hooks/useInfoQueries";
 
 interface Department {
   label: string;
@@ -23,40 +23,27 @@ interface CleanHeroSectionProps {
 }
 
 function CleanHeroSection({ data: propData, countryData }: CleanHeroSectionProps) {
-  const [departmentList, setDepartmentList] = useState<Department[]>([]);
-  const [countryList, setCountryList] = useState<Country[]>([]);
+  // Use cached hook instead of direct API calls
+  const { data: occupationsData = [] } = useOccupations();
   
-  const getOccupationsListFunc = useCallback(async () => {
-    try {
-      const response = await getOccupations();
-      const rawData = response?.data || response?.occupation || [];
-      const occupations = rawData.map((item: { id: number; title?: string; name?: string; occupation?: string }) => ({
-        id: item.id,
-        title: item.title || item.name || item.occupation,
-        name: item.title || item.name || item.occupation,
-        label: item.title || item.name || item.occupation || 'Unknown',
-        value: item.id,
-        img: `/images/institute.png`,
-      }));
-      setDepartmentList(occupations || []);
-    } catch (error) {
-      // Set empty array - no fallback data
-      setDepartmentList([]);
+  // Process department list from props or cached data
+  const departmentList = useMemo(() => {
+    if (propData) {
+      return propData;
     }
-  }, []);
+    return occupationsData.map((item: { id: number; title?: string; name?: string; occupation?: string }) => ({
+      id: item.id,
+      title: item.title || item.name || item.occupation,
+      name: item.title || item.name || item.occupation,
+      label: item.title || item.name || item.occupation || 'Unknown',
+      value: item.id,
+      img: `/images/institute.png`,
+    }));
+  }, [propData, occupationsData]);
 
-  useEffect(() => {
-    if (!propData) {
-      getOccupationsListFunc();
-    } else {
-      setDepartmentList(propData);
-    }
-  }, [propData, getOccupationsListFunc]);
-
-  useEffect(() => {
-    if (countryData) {
-      setCountryList(countryData);
-    }
+  // Process country list from props
+  const countryList = useMemo(() => {
+    return countryData || [];
   }, [countryData]);
 
   return (

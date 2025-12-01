@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Briefcase, ChevronRight, MapPin, Building2, Users, TrendingUp, Clock, ArrowRight } from "lucide-react";
-import { getOccupations, getJobByDepartment } from "../services/job.service";
-import { getCountriesForJobs } from "../services/info.service";
+import { getJobByDepartment } from "../services/job.service";
+import { useOccupations, useCountriesForJobs } from "../hooks/useInfoQueries";
 import { getDetailedCategoryStats, getTrendingCategories, getTotalJobStats } from "../services/jobStats.service";
 
 interface Department {
@@ -39,13 +39,16 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
 }) => {
   const [categories, setCategories] = useState<Department[]>([]);
   const [popularCategories, setPopularCategories] = useState<Department[]>([]);
-  const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [jobCounts, setJobCounts] = useState<Record<number, number>>({});
   const [totalStats, setTotalStats] = useState({ totalJobs: 0, totalCategories: 0, totalCountries: 0, totalCompanies: 500 });
   
   const router = useRouter();
+  
+  // Use cached hooks instead of direct API calls
+  const { data: occupationsData = [], isLoading: occupationsLoading } = useOccupations();
+  const { data: countriesData = [], isLoading: countriesLoading } = useCountriesForJobs();
 
   // Predefined category icons mapping
   const categoryIcons: Record<string, string> = {
@@ -84,32 +87,29 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
     try {
       setLoading(true);
       
-      // Fetch categories, countries, and stats in parallel
-      const [occupationsResponse, countriesResponse, totalStatsResponse] = await Promise.all([
-        getOccupations(),
-        getCountriesForJobs(),
-        getTotalJobStats()
-      ]);
+      // Only fetch stats - occupations and countries come from cached hooks
+      const totalStatsResponse = await getTotalJobStats();
 
       // Set total stats
       setTotalStats(totalStatsResponse);
 
-      // Process occupations data
-      if (occupationsResponse?.data) {
+      // Process occupations data from cached hook
+      if (occupationsData && occupationsData.length > 0) {
         // Get detailed stats for categories
-        const detailedStats = await getDetailedCategoryStats(occupationsResponse.data);
+        const detailedStats = await getDetailedCategoryStats(occupationsData);
         
-        const processedCategories = occupationsResponse.data.map((item: any) => {
+        const processedCategories = occupationsData.map((item: any) => {
           const stats = detailedStats.find(s => s.id === item.id);
+          const title = item.title || item.name || item.occupation;
           return {
             id: item.id,
-            title: item.title || item.name || item.occupation,
-            name: item.title || item.name || item.occupation,
-            label: item.title || item.name || item.occupation,
+            title: title,
+            name: title,
+            label: title,
             value: item.id,
-            img: `/images/categories/${item.title?.toLowerCase().replace(/\s+/g, '-')}.png`,
+            img: `/images/categories/${title?.toLowerCase().replace(/\s+/g, '-')}.png`,
             jobCount: stats?.jobCount || Math.floor(Math.random() * 300) + 50,
-            avgSalary: stats?.avgSalary || salarySuggestions[item.title] || "$2,000 - $4,000",
+            avgSalary: stats?.avgSalary || salarySuggestions[title] || "$2,000 - $4,000",
             topCompanies: stats?.topCompanies || ["Global Corp", "International Ltd"],
             popularLocations: stats?.popularLocations || ["Dubai", "Singapore"],
             growth: stats?.growth || (Math.random() > 0.5 ? "High" : "Moderate")
@@ -119,7 +119,7 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
         setCategories(processedCategories);
         
         // Get trending categories using the new API
-        const trending = await getTrendingCategories(occupationsResponse.data, 6);
+        const trending = await getTrendingCategories(occupationsData, 6);
         const popularCategoriesData = trending.map(stat => {
           const category = processedCategories.find((c: Department) => c.id === stat.id);
           return category ? {
@@ -138,11 +138,6 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
           countsMap[stat.id] = stat.jobCount;
         });
         setJobCounts(countsMap);
-      }
-
-      // Process countries data
-      if (countriesResponse?.data) {
-        setCountries(countriesResponse.data);
       }
 
     } catch (error) {
@@ -183,8 +178,11 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
   };
 
   useEffect(() => {
-    fetchCategoriesData();
-  }, []);
+    // Only fetch when occupations data is available from cache
+    if (!occupationsLoading && occupationsData.length > 0) {
+      fetchCategoriesData();
+    }
+  }, [occupationsData, occupationsLoading]);
 
   const handleCategoryClick = (category: Department) => {
     router.push(`/jobs?category=${category.id}&categoryName=${encodeURIComponent(category.title)}`);
@@ -201,7 +199,10 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
     return matchingKey ? categoryIcons[matchingKey] : "💼";
   };
 
-  if (loading) {
+  // Get countries count from cached data
+  const countries = countriesData;
+
+  if (loading || occupationsLoading) {
     return (
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

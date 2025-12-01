@@ -108,6 +108,7 @@ export default function Footer({ skipDataFetch = false }: FooterProps) {
               height={100}
               className="w-auto mb-1"
               alt="Overseas.ai Logo"
+              style={{ width: 'auto' }}
               unoptimized
             />
             <p className="text-gray-500 text-xs leading-relaxed pr-2">

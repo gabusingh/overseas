@@ -4,11 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createJobByHr, getEnhancedHrDetails } from "@/services/hra.service";
-import { 
-  getCountries, 
-  getOccupations, 
-  getSkillsByOccuId 
-} from "@/services/info.service";
+import { getSkillsByOccuId } from "@/services/info.service";
+import { useOccupations, useCountries } from "@/hooks/useInfoQueries";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -60,7 +57,13 @@ type FormFieldValue = string | string[] | File | null;
 
 // Helper function to safely access form data
 function getFormValue(formData: FormDataValues, name: keyof FormDataType): FormFieldValue {
-  return formData[name] ?? "";
+  const value = formData[name];
+  // Return empty array for array fields if not set
+  const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+  if (arrayFields.includes(name)) {
+    return Array.isArray(value) ? value : [];
+  }
+  return value ?? "";
 }
 
   // Helper function to safely update form data
@@ -117,6 +120,20 @@ function normalizeSubmissionValues(
     }
 
     if (typeof value === 'string') {
+      // Check if this is an array field that got a string value
+      const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+      if (arrayFields.includes(name)) {
+        // Convert string to array (split by comma if it contains commas, otherwise single item)
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed.startsWith('_')) {
+          normalized[name] = [];
+        } else {
+          normalized[name] = trimmed.includes(',') 
+            ? trimmed.split(',').map(s => s.trim()).filter(s => s !== '')
+            : [trimmed];
+        }
+        return;
+      }
       const trimmed = value.trim();
       normalized[name] =
         trimmed === '' || trimmed.startsWith('_') ? '' : trimmed;
@@ -125,6 +142,13 @@ function normalizeSubmissionValues(
 
     if (value != null) {
       normalized[name] = value;
+      return;
+    }
+
+    // For array fields, default to empty array instead of empty string
+    const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+    if (arrayFields.includes(name)) {
+      normalized[name] = [];
       return;
     }
 
@@ -205,6 +229,11 @@ const REQUIRED_FIELDS: (keyof FormDataType)[] = [
 
 const CreateJobs = () => {
   const router = useRouter();
+  
+  // Use cached hooks for countries and occupations
+  const { data: countriesApiData = [] } = useCountries();
+  const { data: occupationsApiData = [] } = useOccupations();
+  
   const [skillList, setSkillList] = useState<SelectOption[]>([]);
   const [countryList, setCountryList] = useState<SelectOption[]>([]);
   const [currencyList, setCurrencyList] = useState<SelectOption[]>([]);
@@ -213,6 +242,40 @@ const CreateJobs = () => {
   const [hrDetailsLoading, setHrDetailsLoading] = useState(false);
   const [formData, setFormData] = useState<FormDataValues>({} as FormDataValues);
   const [errors, setErrors] = useState<Partial<Record<keyof FormDataType, string>>>({});
+  
+  // Sync cached data to state when available
+  useEffect(() => {
+    if (countriesApiData.length > 0) {
+      const validCountries = countriesApiData.filter((country: any) => 
+        country && typeof country === 'object' && country.name && country.id
+      );
+      if (validCountries.length > 0) {
+        setCountryList(
+          validCountries.map((country: any) => ({
+            label: country.name,
+            value: country.id?.toString(),
+          }))
+        );
+      }
+    }
+  }, [countriesApiData]);
+  
+  useEffect(() => {
+    if (occupationsApiData.length > 0) {
+      const validOccupations = occupationsApiData.filter((occupation: any) => 
+        occupation && typeof occupation === 'object' && 
+        (occupation.occupation || occupation.name || occupation.title) && occupation.id
+      );
+      if (validOccupations.length > 0) {
+        setOccupations(
+          validOccupations.map((occupation: any) => ({
+            label: occupation.occupation || occupation.name || occupation.title,
+            value: occupation.id.toString(),
+          }))
+        );
+      }
+    }
+  }, [occupationsApiData]);
 
   // Function to populate form with demo data
   const populateDemoData = () => {
@@ -255,7 +318,7 @@ const CreateJobs = () => {
     jobWorkingDay: "26",
     jobWorkingHour: "8",
     jobOvertime: "As Per Company Requirement",
-    jobFood: "Free Food",
+    jobFood: "Yes",
     jobAccommodation: "Yes",
     jobMedicalFacility: "Yes",
     jobTransportation: "Yes",
@@ -512,13 +575,12 @@ const CreateJobs = () => {
     },
     {
       name: "jobFood" as keyof FormDataType,
-      label: "Food",
+      label: "Food Allowance",
       type: "select",
       options: [
         { label: "Select", value: "_none" },
-        { label: "Free Food", value: "Yes" },
-        { label: "Food Allowance", value: "Food Allowance" },
-        { label: "No Food", value: "No" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
       ],
       containerClassName: "min-h-[4.5rem]"
     },
@@ -666,7 +728,7 @@ const CreateJobs = () => {
       jobWorkingDay: "Working days per month",
       jobWorkingHour: "Working hours per day",
       jobOvertime: "Select Overtime policy",
-      jobFood: "Select Food provision",
+      jobFood: "Select Food Allowance",
       jobAccommodation: "Select Accommodation",
       jobMedicalFacility: "Select Medical facility",
       jobTransportation: "Select Transportation",
@@ -716,120 +778,38 @@ const CreateJobs = () => {
   };
 
   // Effect hooks for data fetching
+  // Initialize static currency list (countries and occupations come from cached hooks above)
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        // First try to load data from the backend
-        // Attempt to fetch from cached API
-        try {
-          const [countriesRes, occupationsRes] = await Promise.all([
-            getCountries().catch(err => {
-              console.error('Error fetching countries:', err);
-              throw err; // Rethrow to trigger fallback
-            }),
-            getOccupations().catch(err => {
-              console.error('Error fetching occupations:', err);
-              throw err; // Rethrow to trigger fallback
-            })
-          ]);
-          
-          // 1. Handle countries data (expecting { countries: [...] } or { data: [...] } structure)
-          const countriesData = countriesRes?.countries || countriesRes?.data || [];
-          if (Array.isArray(countriesData) && countriesData.length > 0) {
-            const validCountries = countriesData.filter((country: any) => 
-              country && typeof country === 'object' && country.name && country.id
-            );
-            
-            if (validCountries.length > 0) {
-              setCountryList(
-                validCountries.map((country: any) => ({
-                  label: country.name,
-                  // Always use country ID as value to match database expectation
-                  value: country.id?.toString(),
-                }))
-              );
-            } else {
-              throw new Error('No valid countries found in API response');
-            }
-          } else {
-            throw new Error('Countries API response format invalid');
-          }
-
-          // 2. Handle occupations data (expecting { occupation: [...] } or { data: [...] } structure)
-          const occupationsData = occupationsRes?.occupation || occupationsRes?.data || [];
-          if (Array.isArray(occupationsData) && occupationsData.length > 0) {
-            const validOccupations = occupationsData.filter((occupation: any) => 
-              occupation && typeof occupation === 'object' && 
-              (occupation.occupation || occupation.name || occupation.title) && occupation.id
-            );
-            
-            if (validOccupations.length > 0) {
-              setOccupations(
-                validOccupations.map((occupation: any) => ({
-                  label: occupation.occupation || occupation.name || occupation.title,
-                  value: occupation.id.toString(),
-                }))
-              );
-            } else {
-              throw new Error('No valid occupations found in API response');
-            }
-          } else {
-            throw new Error('Occupations API response format invalid');
-          }
-          
-        } catch (apiError) {
-          // Use fallback data
-          setCountryList(
-            fallbackCountries.map(country => ({
-              label: country.name,
-              // Always use country ID as value to match database expectation
-              value: country.id?.toString(),
-            }))
-          );
-          
-          setOccupations(
-            fallbackOccupations.map(occupation => ({
-              label: occupation.name,
-              value: occupation.id.toString(),
-            }))
-          );
-          
-          // Notify user that we're using fallback data
-          toast.info('Using offline data. Some features may be limited.');
-        }
-
-        // Set currency list (this is static data)
-        setCurrencyList([
-          { label: "USD", value: "USD" },
-          { label: "INR", value: "INR" },
-          { label: "AED", value: "AED" },
-          { label: "SAR", value: "SAR" },
-          { label: "KWD", value: "KWD" },
-          { label: "QAR", value: "QAR" },
-          { label: "BHD", value: "BHD" },
-          { label: "OMR", value: "OMR" },
-        ]);
-        
-      } catch (error) {
-        console.error("❌ Error fetching initial data:", error);
-        // Even if there's an error, set empty arrays to prevent crashes
-        setCountryList([]);
-        setOccupations([]);
-        setCurrencyList([
-          { label: "USD", value: "USD" },
-          { label: "INR", value: "INR" },
-          { label: "AED", value: "AED" },
-          { label: "SAR", value: "SAR" },
-          { label: "KWD", value: "KWD" },
-          { label: "QAR", value: "QAR" },
-          { label: "BHD", value: "BHD" },
-          { label: "OMR", value: "OMR" },
-        ]);
-        toast.error("Some form data couldn't be loaded. You can still create jobs, but some dropdown options may be limited.");
-      }
-    };
-
-    fetchInitialData();
+    // Set currency list (this is static data)
+    setCurrencyList([
+      { label: "USD", value: "USD" },
+      { label: "INR", value: "INR" },
+      { label: "AED", value: "AED" },
+      { label: "SAR", value: "SAR" },
+      { label: "KWD", value: "KWD" },
+      { label: "QAR", value: "QAR" },
+      { label: "BHD", value: "BHD" },
+      { label: "OMR", value: "OMR" },
+    ]);
+    
+    // If cached data isn't available yet, use fallback data
+    if (countryList.length === 0 && countriesApiData.length === 0) {
+      setCountryList(
+        fallbackCountries.map(country => ({
+          label: country.name,
+          value: country.id?.toString(),
+        }))
+      );
+    }
+    
+    if (occupations.length === 0 && occupationsApiData.length === 0) {
+      setOccupations(
+        fallbackOccupations.map(occupation => ({
+          label: occupation.name,
+          value: occupation.id.toString(),
+        }))
+      );
+    }
   }, []);
 
   // Effect to fetch and prefill HR details
@@ -1148,17 +1128,25 @@ const CreateJobs = () => {
             return;
           }
           
-          // Laravel backend expects arrays as comma-separated strings
-          // Convert array items to a single comma-separated string
+          // Laravel backend expects arrays as JSON strings to store in database
+          // Convert array to JSON string format like "[101,102]" or "[\"English\",\"Hindi\"]"
           if (value.length > 0) {
-            const validItems: string[] = [];
+            // Filter and clean array items
+            const validItems: (string | number)[] = [];
             value.forEach((item) => {
-              // Ensure item is a string, not an array or object
-              let stringItem: string;
+              // Ensure item is a string or number, not an array or object
               if (typeof item === 'string') {
-                stringItem = item.trim();
-              } else if (typeof item === 'number' || typeof item === 'boolean') {
-                stringItem = String(item);
+                const trimmed = item.trim();
+                if (trimmed && trimmed !== '' && !trimmed.startsWith('_')) {
+                  // Try to convert to number if it's a numeric string (for jobSkill IDs)
+                  if (fieldName === 'jobSkill' && !isNaN(Number(trimmed))) {
+                    validItems.push(Number(trimmed));
+                  } else {
+                    validItems.push(trimmed);
+                  }
+                }
+              } else if (typeof item === 'number') {
+                validItems.push(item);
               } else if (item == null) {
                 return; // Skip null/undefined items
               } else if (Array.isArray(item)) {
@@ -1168,24 +1156,32 @@ const CreateJobs = () => {
               } else if (typeof item === 'object') {
                 // Object - convert to JSON string (shouldn't happen for these fields)
                 console.error(`Object found in ${fieldName}, converting to JSON string`);
-                stringItem = JSON.stringify(item);
+                validItems.push(JSON.stringify(item));
               } else {
                 // For any other type, convert to string
-                stringItem = String(item);
-              }
-              
-              // Add non-empty items to the list
-              if (stringItem && stringItem !== '') {
-                validItems.push(stringItem);
+                const stringItem = String(item);
+                if (stringItem && stringItem !== '' && !stringItem.startsWith('_')) {
+                  if (fieldName === 'jobSkill' && !isNaN(Number(stringItem))) {
+                    validItems.push(Number(stringItem));
+                  } else {
+                    validItems.push(stringItem);
+                  }
+                }
               }
             });
             
-            // Join all valid items with comma and append as single field
-            formDataInstance.append(fieldName, validItems.join(','));
-            hasValidData = true;
+            // Convert array to JSON string and append as single field
+            if (validItems.length > 0) {
+              const jsonString = JSON.stringify(validItems);
+              formDataInstance.append(fieldName, jsonString);
+              hasValidData = true;
+            } else {
+              // Send empty array as JSON
+              formDataInstance.append(fieldName, JSON.stringify([]));
+            }
           } else {
-            // Send empty array as empty string for required fields
-            formDataInstance.append(fieldName, '');
+            // Send empty array as JSON string
+            formDataInstance.append(fieldName, JSON.stringify([]));
           }
         } else if (value instanceof File) {
           if (value.size > 0) {

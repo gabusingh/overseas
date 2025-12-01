@@ -244,6 +244,7 @@ function ResizableHeader() {
                 height={32}
                 alt="Overseas.ai"
                 className="h-8 w-auto"
+                priority
                 style={{ width: 'auto', height: '32px' }}
                 unoptimized
               />

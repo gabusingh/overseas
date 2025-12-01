@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getJobsPostedByHra, getEnhancedHrDetails, HrDetails } from './hra.service';
 
 const BASE_URL = 'https://backend.overseas.ai/api/';
 
@@ -161,9 +162,6 @@ const getUserTypeFromStorage = (): string | null => {
   }
 };
 
-// Import the HR service functions
-import { getJobsPostedByHra, getEnhancedHrDetails, HrDetails } from './hra.service';
-
 // Enhanced interface for user-aware job list response
 interface EnhancedJobListResponse extends JobListResponse {
   hrDetails?: HrDetails | null;
@@ -189,10 +187,12 @@ export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJo
     let hrDetails: HrDetails | null = null;
     if (userType === 'company') {
       const token = localStorage.getItem("access_token");
-      try {
-        hrDetails = await getEnhancedHrDetails(token);
-      } catch (detailsError) {
-        // Silently handle error
+      if (token) {
+        try {
+          hrDetails = await getEnhancedHrDetails(token);
+        } catch (detailsError) {
+          // Silently handle error
+        }
       }
     }
     

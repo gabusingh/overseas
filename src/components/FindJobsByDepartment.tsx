@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Briefcase, ChevronRight, MapPin, Building2, TrendingUp, Clock, ArrowRight, ChevronLeft } from "lucide-react";
-import { getOccupations, getJobByDepartment } from "../services/job.service";
+import { getJobByDepartment } from "../services/job.service";
+import { useOccupations } from "../hooks/useInfoQueries";
 
 interface Occupation {
   id: number;
@@ -31,64 +32,34 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
   showViewAll = true
 }) => {
   const [occupations, setOccupations] = useState<Occupation[]>([]);
-  const [loading, setLoading] = useState(true);
   const [jobCounts, setJobCounts] = useState<Record<number, number>>({});
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const router = useRouter();
+  
+  // Use cached hook instead of direct API calls
+  const { data: occupationsData = [], isLoading: loading } = useOccupations();
 
-  // Note: All data will come from API - no hardcoded values
-
-  const fetchOccupationsData = async () => {
-    try {
-      setLoading(true);
-      const response = await getOccupations();
+  // Process occupations from cached data
+  const processOccupationsData = () => {
+    if (occupationsData && occupationsData.length > 0) {
+      const processedOccupations = occupationsData.map((item: any) => {
+        return {
+          ...item,
+          // Only use data from API - no hardcoded values
+          avgSalary: item.avgSalary || null,
+          popularLocations: item.popularLocations || [],
+          growth: item.growth || null
+        };
+      });
+      setOccupations(processedOccupations);
       
-
-      
-      // Handle different response structures - try all possible paths
-      let occupationData = [];
-      
-      // Try different response structures
-      if (response?.occupation && Array.isArray(response.occupation)) {
-        occupationData = response.occupation;
-      } else if (response?.data?.occupation && Array.isArray(response.data.occupation)) {
-        occupationData = response.data.occupation;
-      } else if (response?.data && Array.isArray(response.data)) {
-        occupationData = response.data;
-      } else if (Array.isArray(response)) {
-        occupationData = response;
-      }
-      
-    
-      
-      if (occupationData && occupationData.length > 0) {
-        const processedOccupations = occupationData.map((item: any, index: number) => {
-          return {
-            ...item,
-            // Only use data from API - no hardcoded values
-            avgSalary: item.avgSalary || null, // Use API salary data if available
-            popularLocations: item.popularLocations || [], // Use API location data if available
-            growth: item.growth || null // Use API growth data if available
-          };
-        });
-
-
-        setOccupations(processedOccupations);
-        
-        // Fetch real job counts for top departments
-        fetchJobCountsForDepartments(processedOccupations.slice(0, 6));
-      } else {
-        console.error('No occupation data found in response. Full response:', response);
-        setOccupations([]); // Set empty array - no mock data
-      }
-    } catch (error) {
-      console.error("Error fetching occupations:", error);
-      setOccupations([]); // Set empty array on error
-    } finally {
-      setLoading(false);
+      // Fetch real job counts for top departments
+      fetchJobCountsForDepartments(processedOccupations.slice(0, 6));
+    } else {
+      setOccupations([]);
     }
   };
 
@@ -145,8 +116,10 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
   };
 
   useEffect(() => {
-    fetchOccupationsData();
-  }, []);
+    if (!loading && occupationsData.length > 0) {
+      processOccupationsData();
+    }
+  }, [occupationsData, loading]);
 
   if (loading) {
     return (

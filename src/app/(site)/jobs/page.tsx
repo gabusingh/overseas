@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import type { ReactNode } from "react";
 import { Card, CardContent, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -7,7 +7,7 @@ import { Badge } from "../../../components/ui/badge";
 import Link from "next/link";
 import { Filter, Search, MapPin, Building, Clock, DollarSign, Heart } from "lucide-react";
 import { getUserAwareJobList, saveJobById, applyJobApi } from "../../../services/job.service";
-import { getOccupations, getCountries } from "../../../services/info.service";
+import { useOccupations, useCountries } from "../../../hooks/useInfoQueries";
 import JobFilter from "../../../components/JobFilter";
 import SearchComponent from "../../../components/SearchComponent";
 import ProfileCompletionModal from "../../../components/ProfileCompletionModal";
@@ -63,8 +63,42 @@ export default function JobsPage() {
     sortBy: ""
   });
 
-  const [categories, setCategories] = useState<Array<{label: string, value: number, count?: number}>>([]);
-  const [countries, setCountries] = useState<Array<{label: string, value: number, count?: number}>>([]);
+  // Use cached hooks for categories and countries
+  const { data: occupationsData = [] } = useOccupations();
+  const { data: countriesData = [] } = useCountries();
+  
+  // Process categories from cached occupations data
+  const categories = useMemo(() => {
+    if (occupationsData.length === 0) return [];
+    return occupationsData.map((item: any) => ({
+      id: item.id,
+      title: item.title || item.name || item.occupation,
+      name: item.title || item.name || item.occupation,
+      label: item.title || item.name || item.occupation,
+      value: item.id,
+      img: `/images/institute.png`,
+      count: 0
+    }));
+  }, [occupationsData]);
+  
+  // Process countries from cached data
+  const countries = useMemo(() => {
+    if (countriesData.length === 0) {
+      // Fallback countries
+      return [
+        { label: "United Arab Emirates", value: 1, count: 0 },
+        { label: "Saudi Arabia", value: 2, count: 0 },
+        { label: "Qatar", value: 3, count: 0 },
+        { label: "Kuwait", value: 4, count: 0 },
+        { label: "Singapore", value: 7, count: 0 },
+      ];
+    }
+    return countriesData.map((item: any) => ({
+      label: item.name,
+      value: item.id,
+      count: 0
+    }));
+  }, [countriesData]);
   
   const router = useRouter();
   // const searchParams = useSearchParams(); // Removed as not used
@@ -263,68 +297,7 @@ export default function JobsPage() {
     loadJobs();
   }, [payload, pageNo]);
 
-  // Fetch categories and countries
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await getOccupations();
-        
-        const occupationData = response?.data || response?.occupation || [];
-        if (Array.isArray(occupationData) && occupationData.length > 0) {
-          const categories = occupationData.map((item: any) => ({
-            id: item.id,
-            title: item.title || item.name || item.occupation,
-            name: item.title || item.name || item.occupation,
-            label: item.title || item.name || item.occupation,
-            value: item.id,
-            img: `/images/institute.png`,
-            count: 0
-          }));
-          setCategories(categories);
-        } else {
-          throw new Error('No valid categories found');
-        }
-      } catch (error) {
-        console.error('❌ Error fetching categories:', error);
-        // Set empty array - no fallback data
-        setCategories([]);
-        toast.error('Failed to load job categories. Please refresh the page.');
-      }
-    };
-
-    const fetchCountries = async () => {
-      try {
-        const response = await getCountries();
-        
-        const countryData = response?.countries || response?.data || [];
-        if (Array.isArray(countryData) && countryData.length > 0) {
-          const countries = countryData.map((item: any) => ({
-            label: item.name,
-            value: item.id,
-            count: 0
-          }));
-          setCountries(countries);
-        } else {
-          throw new Error('No valid countries found');
-        }
-      } catch (error) {
-        console.error('❌ Error fetching countries:', error);
-        // Fallback countries
-        const fallbackCountries = [
-          { label: "United Arab Emirates", value: 1, count: 0 },
-          { label: "Saudi Arabia", value: 2, count: 0 },
-          { label: "Qatar", value: 3, count: 0 },
-          { label: "Kuwait", value: 4, count: 0 },
-          { label: "Singapore", value: 7, count: 0 },
-        ];
-        setCountries(fallbackCountries);
-        toast.info('Using offline countries. Some features may be limited.');
-      }
-    };
-
-    fetchCategories();
-    fetchCountries();
-  }, []);
+  // Categories and countries now come from cached hooks above
 
   // Format date
   const formatDate = (dateString?: string) => {

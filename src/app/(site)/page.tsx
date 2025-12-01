@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { getOccupations, getCountriesForJobs, getNewsFeedData, getSuccessNotification } from '../../services/info.service';
+import { getNewsFeedData, getSuccessNotification } from '../../services/info.service';
+import { useOccupations, useCountriesForJobs } from '../../hooks/useInfoQueries';
 import { getInstitutes } from '../../services/institute.service';
 import { getHraList } from '../../services/hra.service';
 import { toast } from 'sonner';
@@ -93,89 +94,32 @@ const LoadingSkeleton = () => (
 
 export default function Home() {
   const router = useRouter();
-  const [departmentList, setDepartmentList] = useState<Department[]>([]);
-  const [countryList, setCountryList] = useState<Country[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
   const [instituteList, setInstituteList] = useState<Institute[]>([]);
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [successStories, setSuccessStories] = useState<unknown[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalNews, setModalNews] = useState<NewsItem | null>(null);
 
+  // Use cached hooks for critical data (TanStack Query handles caching)
+  const { data: occupationsData = [], isLoading: occupationsLoading } = useOccupations();
+  const { data: countriesData = [], isLoading: countriesLoading } = useCountriesForJobs();
+  
+  const loading = occupationsLoading || countriesLoading;
 
-  // Cache key for localStorage
-  const CACHE_KEY = 'overseas_home_data';
-  const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+  // Process occupations data into department list format
+  const departmentList = useMemo(() => {
+    return occupationsData.map((item: any) => ({
+      id: item.id,
+      title: item.title || item.name || item.occupation,
+      name: item.title || item.name || item.occupation,
+      label: item.title || item.name || item.occupation,
+      value: item.id,
+      img: `/images/institute.png`,
+    }));
+  }, [occupationsData]);
 
-  // Check cache first
-  const getCachedData = useCallback(() => {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_DURATION) {
-          return data;
-        }
-      }
-    } catch (error) {
-      // Cache read error - silently fail
-    }
-    return null;
-  }, []);
-
-  // Cache data to localStorage
-  const setCachedData = useCallback((data: unknown) => {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        data,
-        timestamp: Date.now()
-      }));
-    } catch (error) {
-      // Cache write error - silently fail
-    }
-  }, []);
-
-  // Fetch critical data first (Hero section needs)
-  const fetchCriticalData = useCallback(async () => {
-    try {
-      const cachedData = getCachedData();
-      if (cachedData && typeof cachedData === 'object') {
-        // Use cached data immediately
-        setDepartmentList((cachedData as any).occupations || []);
-        setCountryList((cachedData as any).countries || []);
-        setLoading(false);
-        toast.success('Loaded from cache!');
-        return;
-      }
-
-      // Fetch only critical data for initial render
-      const [occupationsRes, countriesRes] = await Promise.all([
-        getOccupations(),
-        getCountriesForJobs()
-      ]);
-
-      const occupations = occupationsRes?.data?.map((item: any) => ({
-        id: item.id,
-        title: item.title || item.name || item.occupation,
-        name: item.title || item.name || item.occupation,
-        label: item.title || item.name || item.occupation,
-        value: item.id,
-        img: `/images/institute.png`,
-      })) || [];
-      
-      setDepartmentList(occupations);
-      setCountryList(countriesRes?.data || []);
-      setLoading(false);
-
-      // Cache the critical data
-      setCachedData({ occupations, countries: countriesRes?.data || [] });
-      
-    } catch (error) {
-      console.error('Error loading critical home page data:', error);
-      toast.error('Failed to load some data. The page will still work with available features.');
-      setLoading(false);
-    }
-  }, [getCachedData, setCachedData]);
+  // Countries data is already in the right format
+  const countryList = useMemo(() => countriesData, [countriesData]);
 
   // Fetch non-critical data in background
   const fetchSecondaryData = useCallback(async () => {
@@ -207,16 +151,11 @@ export default function Home() {
     }
   }, []);
 
-  // Main fetch function that orchestrates progressive loading
-  const fetchData = useCallback(async () => {
-    await fetchCriticalData();
-    fetchSecondaryData();
-  }, [fetchCriticalData, fetchSecondaryData]);
-
-
+  // Fetch secondary data when component mounts
+  // Critical data (occupations/countries) now comes from cached hooks automatically
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchSecondaryData();
+  }, [fetchSecondaryData]);
 
   if (loading) {
     return <LoadingSkeleton />;
