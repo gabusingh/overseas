@@ -4,11 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createJobByHr, getEnhancedHrDetails } from "@/services/hra.service";
-import { 
-  getCountries, 
-  getOccupations, 
-  getSkillsByOccuId 
-} from "@/services/info.service";
+import { getSkillsByOccuId } from "@/services/info.service";
+import { useOccupations, useCountries } from "@/hooks/useInfoQueries";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -60,7 +57,13 @@ type FormFieldValue = string | string[] | File | null;
 
 // Helper function to safely access form data
 function getFormValue(formData: FormDataValues, name: keyof FormDataType): FormFieldValue {
-  return formData[name] ?? "";
+  const value = formData[name];
+  // Return empty array for array fields if not set
+  const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+  if (arrayFields.includes(name)) {
+    return Array.isArray(value) ? value : [];
+  }
+  return value ?? "";
 }
 
   // Helper function to safely update form data
@@ -83,7 +86,30 @@ function normalizeSubmissionValues(
     const value = data[name];
 
     if (Array.isArray(value)) {
-      const cleaned = value.filter((v) => v && !v.startsWith('_'));
+      // Only process arrays for fields that should be arrays
+      const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+      if (!arrayFields.includes(name)) {
+        // If this field shouldn't be an array, convert to empty string
+        console.warn(`Field ${name} is an array but should be a string. Converting to empty string.`);
+        normalized[name] = '';
+        return;
+      }
+      
+      const cleaned = value
+        .filter((v) => {
+          if (v == null || v === '') return false;
+          // Ensure all array items are strings before checking
+          const stringValue = typeof v === 'string' ? v : String(v);
+          return stringValue && !stringValue.startsWith('_');
+        })
+        .map((v) => {
+          // Convert all array items to strings - ensure no nested arrays
+          if (Array.isArray(v)) {
+            console.warn(`Nested array found in ${name}, converting to string`);
+            return JSON.stringify(v);
+          }
+          return typeof v === 'string' ? v : String(v);
+        });
       normalized[name] = cleaned.length > 0 ? cleaned : [];
       return;
     }
@@ -94,6 +120,20 @@ function normalizeSubmissionValues(
     }
 
     if (typeof value === 'string') {
+      // Check if this is an array field that got a string value
+      const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+      if (arrayFields.includes(name)) {
+        // Convert string to array (split by comma if it contains commas, otherwise single item)
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed.startsWith('_')) {
+          normalized[name] = [];
+        } else {
+          normalized[name] = trimmed.includes(',') 
+            ? trimmed.split(',').map(s => s.trim()).filter(s => s !== '')
+            : [trimmed];
+        }
+        return;
+      }
       const trimmed = value.trim();
       normalized[name] =
         trimmed === '' || trimmed.startsWith('_') ? '' : trimmed;
@@ -105,6 +145,13 @@ function normalizeSubmissionValues(
       return;
     }
 
+    // For array fields, default to empty array instead of empty string
+    const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+    if (arrayFields.includes(name)) {
+      normalized[name] = [];
+      return;
+    }
+
     normalized[name] = '';
   });
 
@@ -113,6 +160,7 @@ function normalizeSubmissionValues(
 
 
 type FormDataType = {
+  jobManualID: string;
   jobTitle: string;
   jobOccupation: string;
   jobSkill: string[];
@@ -154,13 +202,13 @@ type FormDataType = {
 };
 
 const REQUIRED_FIELDS: (keyof FormDataType)[] = [
+  'jobManualID',
   'jobTitle',
   'jobOccupation',
   'jobSkill',
   'jobLocationCountry',
   'jobDeadline',
   'jobVacancyNo',
-  'jobWages',
   'jobWagesCurrencyType',
   'salary_negotiable',
   'passport_type',
@@ -175,10 +223,17 @@ const REQUIRED_FIELDS: (keyof FormDataType)[] = [
   'jobTransportation',
   'jobAgeLimit',
   'languageRequired',
+  'DLReq',
+  'jobPhoto',
 ];
 
 const CreateJobs = () => {
   const router = useRouter();
+  
+  // Use cached hooks for countries and occupations
+  const { data: countriesApiData = [] } = useCountries();
+  const { data: occupationsApiData = [] } = useOccupations();
+  
   const [skillList, setSkillList] = useState<SelectOption[]>([]);
   const [countryList, setCountryList] = useState<SelectOption[]>([]);
   const [currencyList, setCurrencyList] = useState<SelectOption[]>([]);
@@ -187,6 +242,40 @@ const CreateJobs = () => {
   const [hrDetailsLoading, setHrDetailsLoading] = useState(false);
   const [formData, setFormData] = useState<FormDataValues>({} as FormDataValues);
   const [errors, setErrors] = useState<Partial<Record<keyof FormDataType, string>>>({});
+  
+  // Sync cached data to state when available
+  useEffect(() => {
+    if (countriesApiData.length > 0) {
+      const validCountries = countriesApiData.filter((country: any) => 
+        country && typeof country === 'object' && country.name && country.id
+      );
+      if (validCountries.length > 0) {
+        setCountryList(
+          validCountries.map((country: any) => ({
+            label: country.name,
+            value: country.id?.toString(),
+          }))
+        );
+      }
+    }
+  }, [countriesApiData]);
+  
+  useEffect(() => {
+    if (occupationsApiData.length > 0) {
+      const validOccupations = occupationsApiData.filter((occupation: any) => 
+        occupation && typeof occupation === 'object' && 
+        (occupation.occupation || occupation.name || occupation.title) && occupation.id
+      );
+      if (validOccupations.length > 0) {
+        setOccupations(
+          validOccupations.map((occupation: any) => ({
+            label: occupation.occupation || occupation.name || occupation.title,
+            value: occupation.id.toString(),
+          }))
+        );
+      }
+    }
+  }, [occupationsApiData]);
 
   // Function to populate form with demo data
   const populateDemoData = () => {
@@ -203,6 +292,7 @@ const CreateJobs = () => {
 
   // Demo job data for testing
   const demoJobData: FormDataValues = {
+    jobManualID: "",
     jobTitle: "Senior Electrician",
     jobOccupation: "1", // Construction
     jobSkill: ["101", "102"], // Masonry, Carpentry
@@ -228,7 +318,7 @@ const CreateJobs = () => {
     jobWorkingDay: "26",
     jobWorkingHour: "8",
     jobOvertime: "As Per Company Requirement",
-    jobFood: "Free Food",
+    jobFood: "Yes",
     jobAccommodation: "Yes",
     jobMedicalFacility: "Yes",
     jobTransportation: "Yes",
@@ -245,6 +335,12 @@ const CreateJobs = () => {
 
   // Memoize formFields to ensure stable references
   const formFields = React.useMemo((): FieldConfig[] => [
+    { 
+      name: "jobManualID" as keyof FormDataType, 
+      label: "Job Manual ID", 
+      type: "text",
+      containerClassName: "min-h-[4.5rem]"
+    },
     { 
       name: "jobTitle" as keyof FormDataType, 
       label: "Job Title", 
@@ -479,13 +575,12 @@ const CreateJobs = () => {
     },
     {
       name: "jobFood" as keyof FormDataType,
-      label: "Food",
+      label: "Food Allowance",
       type: "select",
       options: [
         { label: "Select", value: "_none" },
-        { label: "Free Food", value: "Yes" },
-        { label: "Food Allowance", value: "Food Allowance" },
-        { label: "No Food", value: "No" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
       ],
       containerClassName: "min-h-[4.5rem]"
     },
@@ -633,7 +728,7 @@ const CreateJobs = () => {
       jobWorkingDay: "Working days per month",
       jobWorkingHour: "Working hours per day",
       jobOvertime: "Select Overtime policy",
-      jobFood: "Select Food provision",
+      jobFood: "Select Food Allowance",
       jobAccommodation: "Select Accommodation",
       jobMedicalFacility: "Select Medical facility",
       jobTransportation: "Select Transportation",
@@ -683,120 +778,38 @@ const CreateJobs = () => {
   };
 
   // Effect hooks for data fetching
+  // Initialize static currency list (countries and occupations come from cached hooks above)
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        // First try to load data from the backend
-        // Attempt to fetch from cached API
-        try {
-          const [countriesRes, occupationsRes] = await Promise.all([
-            getCountries().catch(err => {
-              console.error('Error fetching countries:', err);
-              throw err; // Rethrow to trigger fallback
-            }),
-            getOccupations().catch(err => {
-              console.error('Error fetching occupations:', err);
-              throw err; // Rethrow to trigger fallback
-            })
-          ]);
-          
-          // 1. Handle countries data (expecting { countries: [...] } or { data: [...] } structure)
-          const countriesData = countriesRes?.countries || countriesRes?.data || [];
-          if (Array.isArray(countriesData) && countriesData.length > 0) {
-            const validCountries = countriesData.filter((country: any) => 
-              country && typeof country === 'object' && country.name && country.id
-            );
-            
-            if (validCountries.length > 0) {
-              setCountryList(
-                validCountries.map((country: any) => ({
-                  label: country.name,
-                  // Always use country ID as value to match database expectation
-                  value: country.id?.toString(),
-                }))
-              );
-            } else {
-              throw new Error('No valid countries found in API response');
-            }
-          } else {
-            throw new Error('Countries API response format invalid');
-          }
-
-          // 2. Handle occupations data (expecting { occupation: [...] } or { data: [...] } structure)
-          const occupationsData = occupationsRes?.occupation || occupationsRes?.data || [];
-          if (Array.isArray(occupationsData) && occupationsData.length > 0) {
-            const validOccupations = occupationsData.filter((occupation: any) => 
-              occupation && typeof occupation === 'object' && 
-              (occupation.occupation || occupation.name || occupation.title) && occupation.id
-            );
-            
-            if (validOccupations.length > 0) {
-              setOccupations(
-                validOccupations.map((occupation: any) => ({
-                  label: occupation.occupation || occupation.name || occupation.title,
-                  value: occupation.id.toString(),
-                }))
-              );
-            } else {
-              throw new Error('No valid occupations found in API response');
-            }
-          } else {
-            throw new Error('Occupations API response format invalid');
-          }
-          
-        } catch (apiError) {
-          // Use fallback data
-          setCountryList(
-            fallbackCountries.map(country => ({
-              label: country.name,
-              // Always use country ID as value to match database expectation
-              value: country.id?.toString(),
-            }))
-          );
-          
-          setOccupations(
-            fallbackOccupations.map(occupation => ({
-              label: occupation.name,
-              value: occupation.id.toString(),
-            }))
-          );
-          
-          // Notify user that we're using fallback data
-          toast.info('Using offline data. Some features may be limited.');
-        }
-
-        // Set currency list (this is static data)
-        setCurrencyList([
-          { label: "USD", value: "USD" },
-          { label: "INR", value: "INR" },
-          { label: "AED", value: "AED" },
-          { label: "SAR", value: "SAR" },
-          { label: "KWD", value: "KWD" },
-          { label: "QAR", value: "QAR" },
-          { label: "BHD", value: "BHD" },
-          { label: "OMR", value: "OMR" },
-        ]);
-        
-      } catch (error) {
-        console.error("❌ Error fetching initial data:", error);
-        // Even if there's an error, set empty arrays to prevent crashes
-        setCountryList([]);
-        setOccupations([]);
-        setCurrencyList([
-          { label: "USD", value: "USD" },
-          { label: "INR", value: "INR" },
-          { label: "AED", value: "AED" },
-          { label: "SAR", value: "SAR" },
-          { label: "KWD", value: "KWD" },
-          { label: "QAR", value: "QAR" },
-          { label: "BHD", value: "BHD" },
-          { label: "OMR", value: "OMR" },
-        ]);
-        toast.error("Some form data couldn't be loaded. You can still create jobs, but some dropdown options may be limited.");
-      }
-    };
-
-    fetchInitialData();
+    // Set currency list (this is static data)
+    setCurrencyList([
+      { label: "USD", value: "USD" },
+      { label: "INR", value: "INR" },
+      { label: "AED", value: "AED" },
+      { label: "SAR", value: "SAR" },
+      { label: "KWD", value: "KWD" },
+      { label: "QAR", value: "QAR" },
+      { label: "BHD", value: "BHD" },
+      { label: "OMR", value: "OMR" },
+    ]);
+    
+    // If cached data isn't available yet, use fallback data
+    if (countryList.length === 0 && countriesApiData.length === 0) {
+      setCountryList(
+        fallbackCountries.map(country => ({
+          label: country.name,
+          value: country.id?.toString(),
+        }))
+      );
+    }
+    
+    if (occupations.length === 0 && occupationsApiData.length === 0) {
+      setOccupations(
+        fallbackOccupations.map(occupation => ({
+          label: occupation.name,
+          value: occupation.id.toString(),
+        }))
+      );
+    }
   }, []);
 
   // Effect to fetch and prefill HR details
@@ -952,9 +965,32 @@ const CreateJobs = () => {
     REQUIRED_FIELDS.forEach(field => {
       const value = formData[field];
       
-      if (!value || 
-          (typeof value === 'string' && (value.trim() === '' || value.startsWith('_'))) ||
-          (Array.isArray(value) && value.length === 0)) {
+      // Check for File type (jobPhoto)
+      if (field === 'jobPhoto') {
+        if (!value || !(value instanceof File) || value.size === 0) {
+          const fieldLabel = fieldsByName[field]?.label || field;
+          newErrors[field] = `${fieldLabel} is required`;
+          missingFields.push(fieldLabel);
+        }
+      }
+      // Check for string arrays
+      else if (Array.isArray(value)) {
+        if (value.length === 0) {
+          const fieldLabel = fieldsByName[field]?.label || field;
+          newErrors[field] = `${fieldLabel} is required`;
+          missingFields.push(fieldLabel);
+        }
+      }
+      // Check for strings
+      else if (typeof value === 'string') {
+        if (value.trim() === '' || value.startsWith('_')) {
+          const fieldLabel = fieldsByName[field]?.label || field;
+          newErrors[field] = `${fieldLabel} is required`;
+          missingFields.push(fieldLabel);
+        }
+      }
+      // Check for null/undefined
+      else if (!value) {
         const fieldLabel = fieldsByName[field]?.label || field;
         newErrors[field] = `${fieldLabel} is required`;
         missingFields.push(fieldLabel);
@@ -1076,11 +1112,76 @@ const CreateJobs = () => {
       let hasValidData = false;
       const normalizedValues = normalizeSubmissionValues(formData, formFields);
       
-      (Object.entries(normalizedValues) as Array<[keyof FormDataType, FormFieldValue]>).forEach(([fieldName, value]) => {
+      // Define which fields contain arrays (these will be sent as comma-separated strings)
+      const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+      
+      // Ensure all fields from formFields are processed, even if they're empty
+      formFields.forEach((fieldConfig) => {
+        const fieldName = fieldConfig.name;
+        const value = normalizedValues[fieldName];
+        
         if (Array.isArray(value)) {
-          formDataInstance.append(fieldName, JSON.stringify(value));
+          // Only allow arrays for specific fields
+          if (!arrayFields.includes(fieldName)) {
+            console.warn(`Field ${fieldName} is an array but should be a string. Converting to empty string.`);
+            formDataInstance.append(fieldName, '');
+            return;
+          }
+          
+          // Laravel backend expects arrays as JSON strings to store in database
+          // Convert array to JSON string format like "[101,102]" or "[\"English\",\"Hindi\"]"
           if (value.length > 0) {
-            hasValidData = true;
+            // Filter and clean array items
+            const validItems: (string | number)[] = [];
+            value.forEach((item) => {
+              // Ensure item is a string or number, not an array or object
+              if (typeof item === 'string') {
+                const trimmed = item.trim();
+                if (trimmed && trimmed !== '' && !trimmed.startsWith('_')) {
+                  // Try to convert to number if it's a numeric string (for jobSkill IDs)
+                  if (fieldName === 'jobSkill' && !isNaN(Number(trimmed))) {
+                    validItems.push(Number(trimmed));
+                  } else {
+                    validItems.push(trimmed);
+                  }
+                }
+              } else if (typeof item === 'number') {
+                validItems.push(item);
+              } else if (item == null) {
+                return; // Skip null/undefined items
+              } else if (Array.isArray(item)) {
+                // Nested array - this shouldn't happen, but handle it
+                console.error(`Nested array found in ${fieldName}, skipping item`);
+                return;
+              } else if (typeof item === 'object') {
+                // Object - convert to JSON string (shouldn't happen for these fields)
+                console.error(`Object found in ${fieldName}, converting to JSON string`);
+                validItems.push(JSON.stringify(item));
+              } else {
+                // For any other type, convert to string
+                const stringItem = String(item);
+                if (stringItem && stringItem !== '' && !stringItem.startsWith('_')) {
+                  if (fieldName === 'jobSkill' && !isNaN(Number(stringItem))) {
+                    validItems.push(Number(stringItem));
+                  } else {
+                    validItems.push(stringItem);
+                  }
+                }
+              }
+            });
+            
+            // Convert array to JSON string and append as single field
+            if (validItems.length > 0) {
+              const jsonString = JSON.stringify(validItems);
+              formDataInstance.append(fieldName, jsonString);
+              hasValidData = true;
+            } else {
+              // Send empty array as JSON
+              formDataInstance.append(fieldName, JSON.stringify([]));
+            }
+          } else {
+            // Send empty array as JSON string
+            formDataInstance.append(fieldName, JSON.stringify([]));
           }
         } else if (value instanceof File) {
           if (value.size > 0) {
@@ -1098,13 +1199,29 @@ const CreateJobs = () => {
           } else {
             formDataInstance.append(fieldName, '');
           }
-        } else if (value != null && 
-                   value.toString().trim() !== '') {
-          const trimmedValue = String(value).trim();
-          formDataInstance.append(fieldName, trimmedValue);
-          hasValidData = true;
         } else {
-          formDataInstance.append(fieldName, '');
+          // Handle string, number, boolean, null, undefined, or empty string
+          // Always append the field, even if empty (required fields need to be sent)
+          let stringValue: string;
+          if (value == null || value === '') {
+            stringValue = '';
+          } else if (typeof value === 'string') {
+            stringValue = value.trim();
+          } else if (typeof value === 'number' || typeof value === 'boolean') {
+            stringValue = String(value);
+          } else if (Array.isArray(value)) {
+            // This shouldn't happen, but handle it just in case
+            console.warn(`Field ${fieldName} should not be an array here. Converting to empty string.`);
+            stringValue = '';
+          } else {
+            // For any other type, convert to string
+            stringValue = String(value).trim();
+          }
+          
+          formDataInstance.append(fieldName, stringValue);
+          if (stringValue !== '') {
+            hasValidData = true;
+          }
         }
       });
       
@@ -1112,8 +1229,39 @@ const CreateJobs = () => {
         throw new Error('No valid data to submit. Please fill in the required fields.');
       }
       
-      // Add timestamp for tracking
-      formDataInstance.append('submittedAt', new Date().toISOString());
+      // jobLocationCountry is sent as ID (not converted to name)
+      // The backend expects the country ID as a string
+      
+      // Ensure jobOccupation is sent as integer (Laravel expects integer for jobOccupation)
+      if (formDataInstance.has('jobOccupation')) {
+        const occValue = formDataInstance.get('jobOccupation');
+        if (occValue) {
+          formDataInstance.set('jobOccupation', String(occValue));
+        }
+      }
+      
+      // Debug: Log form data being sent (excluding file content)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📤 Form Data being sent:');
+        const formDataEntries: string[] = [];
+        for (const [key, value] of formDataInstance.entries()) {
+          if (value instanceof File) {
+            console.log(`${key}: [File] ${value.name} (${value.size} bytes)`);
+            formDataEntries.push(`${key}: [File]`);
+          } else {
+            // Ensure value is a string, not an array
+            const stringValue = typeof value === 'string' ? value : String(value);
+            console.log(`${key}: ${stringValue}`);
+            formDataEntries.push(`${key}: ${stringValue}`);
+            
+            // Check if value is accidentally an array
+            if (Array.isArray(value)) {
+              console.error(`⚠️ ERROR: Field ${key} is an array when it should be a string!`);
+            }
+          }
+        }
+        console.log('📋 All form data keys:', Array.from(formDataInstance.keys()));
+      }
       
       // Submit the form
       const response = await createJobByHr(formDataInstance, accessToken);
@@ -1204,7 +1352,16 @@ const CreateJobs = () => {
         errorMessage = '⚠️ Invalid job data. Please review your form and try again.';
       } else if (error?.response?.status >= 500) {
         errorTitle = 'Server Error';
-        errorMessage = '🔧 Server is temporarily unavailable. Please try again in a few minutes.';
+        // Check for specific backend error messages
+        const backendMessage = error?.response?.data?.message;
+        if (backendMessage && backendMessage.includes('property "id" on null')) {
+          errorMessage = '⚠️ Backend validation error: A required relationship is missing. This might be due to:\n' +
+            '• Your account may not have a company associated\n' +
+            '• One of the selected options (Country, Occupation, or Skills) may not exist in the database\n' +
+            '• Please contact support if this issue persists';
+        } else {
+          errorMessage = '🔧 Server is temporarily unavailable. Please try again in a few minutes.';
+        }
       } else if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network')) {
         errorTitle = 'Connection Error';
         errorMessage = '🌐 Check your internet connection and try again.';
@@ -1231,7 +1388,7 @@ const CreateJobs = () => {
       title: 'Basic Job Information',
       description: 'Essential details about the job position',
       icon: '💼',
-      fields: ['jobTitle', 'jobOccupation', 'jobSkill', 'cmpNameACT', 'jobDescription']
+      fields: ['jobManualID', 'jobTitle', 'jobOccupation', 'jobSkill', 'cmpNameACT', 'jobDescription']
     },
     {
       id: 'interview-details',
@@ -1304,7 +1461,7 @@ const CreateJobs = () => {
               if (field.name === "jobOccupation") {
                 getSkillList(value);
               }
-              // Clear errors for conditional fields when jobExpReq changes to "No"
+              // Clear errors and form data for conditional fields when jobExpReq changes to "No"
               if (field.name === "jobExpReq" && value === "No") {
                 setErrors((prev) => {
                   const newErrors = { ...prev };
@@ -1312,6 +1469,12 @@ const CreateJobs = () => {
                   delete newErrors.jobExpDuration;
                   return newErrors;
                 });
+                // Clear the form data values for conditional fields
+                setFormData((prev) => ({
+                  ...prev,
+                  jobExpTypeReq: '',
+                  jobExpDuration: '',
+                }));
               }
             }}
           >
@@ -1469,6 +1632,12 @@ const CreateJobs = () => {
               }
               className={`h-11 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
             />
+            {formData[field.name as keyof FormDataType] instanceof File && (
+              <p className="text-sm text-green-600 flex items-center gap-1">
+                <span>✓</span>
+                File selected: {(formData[field.name as keyof FormDataType] as File).name} ({(Math.round((formData[field.name as keyof FormDataType] as File).size / 1024))} KB)
+              </p>
+            )}
             <p className="text-xs text-gray-500">Max 10MB. Supported: JPEG, PNG, WebP</p>
           </div>
         )}
@@ -1525,13 +1694,20 @@ const CreateJobs = () => {
 
                 {/* Section Content */}
                 <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {sectionFields.map(field => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    {sectionFields
+                      .filter(field => {
+                        // Conditionally show jobExpTypeReq and jobExpDuration only when jobExpReq is "Yes"
+                        if (field.name === 'jobExpTypeReq' || field.name === 'jobExpDuration') {
+                          return formData.jobExpReq === 'Yes';
+                        }
+                        return true;
+                      })
+                      .map(field => (
                       <div 
                         key={field.name} 
                         className={`
-                          ${field.type === 'textarea' ? 'md:col-span-2 lg:col-span-3' : ''}
-                          ${field.name === 'jobTitle' || field.name === 'cmpNameACT' ? 'md:col-span-2' : ''}
+                          ${field.type === 'textarea' ? 'sm:col-span-2 md:col-span-3' : ''}
                         `}
                       >
                         {renderField(field)}

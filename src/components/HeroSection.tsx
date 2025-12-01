@@ -1,7 +1,7 @@
 "use client";
-import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { getOccupations } from "../services/info.service";
+import { useOccupations } from "../hooks/useInfoQueries";
 import SearchComponent from "./SearchComponent";
 import AnimatedLanguageText from "./AnimatedLanguageText";
 
@@ -23,8 +23,8 @@ interface HeroSectionProps {
 
 // Memoized HeroSection component to prevent unnecessary re-renders
 const HeroSection = React.memo(({ data: propData, countryData }: HeroSectionProps) => {
-  const [departmentList, setDepartmentList] = useState<Department[]>([]);
-  const [countryList, setCountryList] = useState<Country[]>([]);
+  // Use cached hook instead of direct API calls
+  const { data: occupationsData = [] } = useOccupations();
   
   // Animation refs
   const containerRef = useRef(null);
@@ -46,51 +46,24 @@ const HeroSection = React.memo(({ data: propData, countryData }: HeroSectionProp
     { text: "नोकरी", language: "Konkani" }
   ], []);
 
-  // Memoize the API call function to prevent recreation on every render
-  const getOccupationsListFunc = useCallback(async () => {
-    try {
-      const response = await getOccupations();
-      
-      const rawData = response?.data || response?.occupation || [];
-      const occupations = rawData.map((item: { id: number; title?: string; name?: string; occupation?: string }) => ({
-        id: item.id,
-        title: item.title || item.name || item.occupation,
-        name: item.title || item.name || item.occupation,
-        label: item.title || item.name || item.occupation || 'Unknown',
-        value: item.id,
-        img: `/images/institute.png`,
-      }));
-      setDepartmentList(occupations || []);
-    } catch (error) {
-      console.error('❌ HeroSection: Error fetching occupations:', error);
-      // Set empty array - no fallback data
-      setDepartmentList([]);
-    }
-  }, []);
-
   // Memoize the data processing to prevent unnecessary re-renders
   const processedDepartmentList = useMemo(() => {
     if (propData) {
       return propData;
     }
-    return departmentList;
-  }, [propData, departmentList]);
+    // Process occupations from cached data
+    return occupationsData.map((item: { id: number; title?: string; name?: string; occupation?: string }) => ({
+      id: item.id,
+      title: item.title || item.name || item.occupation,
+      name: item.title || item.name || item.occupation,
+      label: item.title || item.name || item.occupation || 'Unknown',
+      value: item.id,
+      img: `/images/institute.png`,
+    }));
+  }, [propData, occupationsData]);
 
   const processedCountryList = useMemo(() => {
-    return countryData || countryList;
-  }, [countryData, countryList]);
-
-  useEffect(() => {
-    // Only fetch data if not provided as props
-    if (!propData && departmentList.length === 0) {
-      getOccupationsListFunc();
-    }
-  }, [propData, getOccupationsListFunc, departmentList.length]);
-
-  useEffect(() => {
-    if (countryData) {
-      setCountryList(countryData);
-    }
+    return countryData || [];
   }, [countryData]);
 
   // Memoize the hero content to prevent unnecessary re-renders

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { getOccupations, getCountriesForJobs } from "../services/info.service";
+import { useOccupations, useCountriesForJobs } from "../hooks/useInfoQueries";
 import { Button } from "./ui/button";
 import { X, Filter, Check } from "lucide-react";
 
@@ -43,77 +43,44 @@ type OccupationItem = { id: number; title?: string; name?: string; occupation?: 
 type CountryItem = { id: number; name: string };
 
 function JobFilter({ setShowFilter, payload, setPayload }: JobFilterProps) {
-  const [departmentList, setDepartmentList] = useState<Department[]>([]);
-  const [countryList, setCountryList] = useState<Country[]>([]);
   const [showFullDep, setShowFullDep] = useState(false);
   const [showFullCountry, setShowFullCountry] = useState(false);
 
-  const getOccupationsListFunc = async () => {
-    try {
-      const response = await getOccupations();
-      
-      let occupationData: OccupationItem[] = [];
-      if (response?.occupation && Array.isArray(response.occupation)) {
-        occupationData = response.occupation;
-      } else if (response?.data && Array.isArray(response.data)) {
-        occupationData = response.data;
-      } else if (Array.isArray(response)) {
-        occupationData = response;
-      }
-      
-      const occupations = occupationData.map((item: OccupationItem) => ({
-        label: item.occupation || item.title || item.name || "",
-        value: item.id,
-        img: "/images/institute.png",
-      }));
-      
-      setDepartmentList(occupations || []);
-    } catch (error) {
-      console.error('❌ Error fetching occupations:', error);
-      // Fallback occupations
-      const fallbackOccupations = [
+  // Use cached hooks instead of direct API calls
+  const { data: occupationsData = [] } = useOccupations();
+  const { data: countriesData = [] } = useCountriesForJobs();
+
+  // Process occupations data into department list format
+  const departmentList: Department[] = React.useMemo(() => {
+    if (!occupationsData || occupationsData.length === 0) {
+      return [
         { label: "Construction", value: 1, img: "/images/institute.png" },
         { label: "Hospitality", value: 2, img: "/images/institute.png" },
         { label: "Healthcare", value: 3, img: "/images/institute.png" },
         { label: "Oil & Gas", value: 4, img: "/images/institute.png" },
         { label: "IT & Software", value: 5, img: "/images/institute.png" },
       ];
-      setDepartmentList(fallbackOccupations);
     }
-  };
+    return occupationsData.map((item: OccupationItem) => ({
+      label: item.occupation || item.title || item.name || "",
+      value: item.id,
+      img: "/images/institute.png",
+    }));
+  }, [occupationsData]);
 
-  const getCountriesForJobsFunc = async () => {
-    try {
-      const response = await getCountriesForJobs();
-      
-      let countryData: CountryItem[] = [];
-      if (response?.countries && Array.isArray(response.countries)) {
-        countryData = response.countries;
-      } else if (response?.data && Array.isArray(response.data)) {
-        countryData = response.data;
-      } else if (Array.isArray(response)) {
-        countryData = response;
-      }
-      
-      setCountryList(countryData || []);
-    } catch (error) {
-      console.error('❌ Error fetching countries:', error);
-      // Fallback countries
-      const fallbackCountries = [
+  // Process countries data
+  const countryList: Country[] = React.useMemo(() => {
+    if (!countriesData || countriesData.length === 0) {
+      return [
         { id: 1, name: "United Arab Emirates" },
         { id: 2, name: "Saudi Arabia" },
         { id: 3, name: "Qatar" },
         { id: 4, name: "Kuwait" },
         { id: 5, name: "Singapore" },
       ];
-      setCountryList(fallbackCountries);
     }
-  };
-
-  useEffect(() => {
-    getCountriesForJobsFunc();
-    getOccupationsListFunc();
-  }, []);
+    return countriesData;
+  }, [countriesData]);
 
   const handleCheckboxChange = (type: string, value: number | string) => {
     setPayload((prevState: JobFilterPayload) => {

@@ -11,10 +11,9 @@ import { toast } from "sonner";
 import { 
   getState, 
   getDistrict,
-  getOccupations,
-  getCountriesForJobs,
   getSkillsByOccuId
 } from "../services/info.service";
+import { useOccupations, useCountriesForJobs } from "../hooks/useInfoQueries";
 import { 
   profileCompleteStep2, 
   profileCompleteStep3,
@@ -85,11 +84,28 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [loadingInitialData, setLoadingInitialData] = useState(true);
   
-  // Options data
+  // Use cached hooks for occupations and countries
+  const { data: cachedOccupations = [] } = useOccupations();
+  const { data: cachedCountries = [] } = useCountriesForJobs();
+  
+  // Options data - prefer cached data
   const [occupations, setOccupations] = useState<any[]>([]);
   const [skills, setSkills] = useState<any[]>([]);
   const [countries, setCountries] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
+  
+  // Sync cached data to state when available
+  React.useEffect(() => {
+    if (cachedOccupations.length > 0) {
+      setOccupations(cachedOccupations);
+    }
+  }, [cachedOccupations]);
+  
+  React.useEffect(() => {
+    if (cachedCountries.length > 0) {
+      setCountries(cachedCountries);
+    }
+  }, [cachedCountries]);
   const [districts, setDistricts] = useState<any[]>([]);
   
   // Form data
@@ -163,16 +179,12 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
       const token = globalState?.user?.access_token;
       if (!token) return;
 
-      // Load existing profile data and options
+      // Load existing profile data and states (occupations/countries come from cached hooks)
       const [
         profileResponse,
-        occupationsResponse,
-        countriesResponse,
         statesResponse
       ] = await Promise.allSettled([
         getEmpDataForEdit(token),
-        getOccupations(),
-        getCountriesForJobs(),
         getState()
       ]);
       
@@ -209,17 +221,7 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
         // The form will start with empty default values, which is acceptable
       }
 
-      // Handle occupations
-      if (occupationsResponse.status === 'fulfilled') {
-        const occData = occupationsResponse.value?.occupation || occupationsResponse.value?.data || [];
-        setOccupations(occData);
-      }
-
-      // Handle countries
-      if (countriesResponse.status === 'fulfilled') {
-        const countryData = countriesResponse.value?.countries || countriesResponse.value?.data || [];
-        setCountries(countryData);
-      }
+      // Occupations and countries are handled by the cached hooks above
 
       // Handle states
       if (statesResponse.status === 'fulfilled') {
