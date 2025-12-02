@@ -4,117 +4,287 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import Head from "next/head";
-import { Formik, Form, Field, ErrorMessage, FieldArray } from "formik";
-import * as Yup from "yup";
 import { getJobById } from "@/services/job.service";
-import { editJob } from "@/services/hra.service";
+import { editJob, getEnhancedHrDetails } from "@/services/hra.service";
+import { getSkillsByOccuId } from "@/services/info.service";
+import { useOccupations, useCountries } from "@/hooks/useInfoQueries";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Select, 
+  SelectContent, 
+  SelectGroup, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
-interface JobData {
-  id: string;
-  title: string;
-  department: string;
-  location: string;
-  workMode: "onsite" | "remote" | "hybrid";
-  employmentType: "full-time" | "part-time" | "contract" | "temporary";
-  experienceLevel: "entry" | "junior" | "mid" | "senior" | "executive";
-  salaryMin: string;
-  salaryMax: string;
-  currency: string;
-  description: string;
-  requirements: string[];
-  responsibilities: string[];
-  skillsRequired: string[];
-  skillsPreferred: string[];
-  benefits: string[];
-  applicationDeadline: string;
-  startDate: string;
-  numberOfPositions: string;
-  reportingTo: string;
-  educationLevel: string;
-  certifications: string[];
-  languageRequirements: string[];
-  travelRequirement: string;
-  companyDescription: string;
-  applicationInstructions: string;
-  status: "draft" | "active" | "paused" | "closed";
-  featured: boolean;
-  urgent: boolean;
-  remoteWorkBenefits: string[];
-  workingHours: string;
-  probationPeriod: string;
-  noticePeriod: string;
+// Types - matching create job form
+type Country = {
+  name: string;
+  id: number;
+};
+
+type Occupation = {
+  id: number;
+  name: string;
+};
+
+type Skill = {
+  id: number;
+  name: string;
+};
+
+type FormDataValues = {
+  [K in keyof FormDataType]: FormDataType[K];
+};
+
+interface SelectOption {
+  label: string;
+  value: string;
 }
 
-const editJobValidationSchema = Yup.object().shape({
-  title: Yup.string().required("Job title is required").min(5, "Title must be at least 5 characters"),
-  department: Yup.string().required("Department is required"),
-  location: Yup.string().required("Location is required"),
-  workMode: Yup.string().required("Work mode is required"),
-  employmentType: Yup.string().required("Employment type is required"),
-  experienceLevel: Yup.string().required("Experience level is required"),
-  salaryMin: Yup.number().positive("Minimum salary must be positive").required("Minimum salary is required"),
-  salaryMax: Yup.number()
-    .positive("Maximum salary must be positive")
-    .required("Maximum salary is required")
-    .test("salary-range", "Maximum salary must be greater than minimum salary", function(value) {
-      return value > this.parent.salaryMin;
-    }),
-  currency: Yup.string().required("Currency is required"),
-  description: Yup.string().required("Job description is required").min(100, "Description must be at least 100 characters"),
-  requirements: Yup.array().of(Yup.string()).min(1, "At least one requirement is needed"),
-  responsibilities: Yup.array().of(Yup.string()).min(1, "At least one responsibility is needed"),
-  skillsRequired: Yup.array().of(Yup.string()).min(1, "At least one required skill is needed"),
-  applicationDeadline: Yup.date()
-    .min(new Date(), "Application deadline must be in the future")
-    .required("Application deadline is required"),
-  numberOfPositions: Yup.number().positive("Number of positions must be positive").required("Number of positions is required"),
-  reportingTo: Yup.string().required("Reporting manager is required"),
-  educationLevel: Yup.string().required("Education level is required"),
-});
+interface FieldConfig {
+  name: keyof FormDataType;
+  label: string;
+  type: 'text' | 'select' | 'multiple' | 'textarea' | 'number' | 'email' | 'date' | 'file';
+  options?: SelectOption[];
+  containerClassName?: string;
+}
+
+type FormFieldValue = string | string[] | File | null;
+
+// Helper function to safely access form data
+function getFormValue(formData: FormDataValues, name: keyof FormDataType): FormFieldValue {
+  const value = formData[name];
+  const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+  if (arrayFields.includes(name)) {
+    return Array.isArray(value) ? value : [];
+  }
+  return value ?? "";
+}
+
+// Helper function to safely update form data
+function updateFormData(
+  prevData: FormDataValues,
+  name: keyof FormDataType,
+  value: FormFieldValue
+): FormDataValues {
+  return { ...prevData, [name]: value };
+}
+
+// Normalize values before submission
+function normalizeSubmissionValues(
+  data: FormDataValues,
+  fields: FieldConfig[]
+): Record<keyof FormDataType, FormFieldValue> {
+  const normalized: Partial<Record<keyof FormDataType, FormFieldValue>> = {};
+
+  fields.forEach(({ name }) => {
+    const value = data[name];
+
+    if (Array.isArray(value)) {
+      const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+      if (!arrayFields.includes(name)) {
+        normalized[name] = '';
+        return;
+      }
+      
+      const cleaned = value
+        .filter((v) => {
+          if (v == null || v === '') return false;
+          const stringValue = typeof v === 'string' ? v : String(v);
+          return stringValue && !stringValue.startsWith('_');
+        })
+        .map((v) => {
+          if (Array.isArray(v)) {
+            return JSON.stringify(v);
+          }
+          return typeof v === 'string' ? v : String(v);
+        });
+      normalized[name] = cleaned.length > 0 ? cleaned : [];
+      return;
+    }
+
+    if (value instanceof File) {
+      normalized[name] = value.size > 0 ? value : '';
+      return;
+    }
+
+    if (typeof value === 'string') {
+      const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+      if (arrayFields.includes(name)) {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed.startsWith('_')) {
+          normalized[name] = [];
+        } else {
+          normalized[name] = trimmed.includes(',') 
+            ? trimmed.split(',').map(s => s.trim()).filter(s => s !== '')
+            : [trimmed];
+        }
+        return;
+      }
+      const trimmed = value.trim();
+      normalized[name] =
+        trimmed === '' || trimmed.startsWith('_') ? '' : trimmed;
+      return;
+    }
+
+    if (value != null) {
+      normalized[name] = value;
+      return;
+    }
+
+    const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+    if (arrayFields.includes(name)) {
+      normalized[name] = [];
+      return;
+    }
+
+    normalized[name] = '';
+  });
+
+  return normalized as Record<keyof FormDataType, FormFieldValue>;
+}
+
+type FormDataType = {
+  jobManualID: string;
+  jobTitle: string;
+  jobOccupation: string;
+  jobSkill: string[];
+  cmpNameACT: string;
+  jobLocationCountry: string;
+  jobDeadline: string;
+  jobVacancyNo: string;
+  jobWages: string;
+  jobMode: string;
+  jobInterviewPlace: string;
+  jobInterviewDate: string;
+  jobWagesCurrencyType: string;
+  salary_negotiable: string;
+  passport_type: string;
+  service_charge: string;
+  contract_period: string;
+  expCerificateReq: string;
+  DLReq: string;
+  jobWorkVideoReq: string;
+  jobExpReq: string;
+  jobExpTypeReq: string;
+  jobExpDuration: string;
+  jobWorkingDay: string;
+  jobWorkingHour: string;
+  jobOvertime: string;
+  jobFood: string;
+  jobAccommodation: string;
+  jobMedicalFacility: string;
+  jobTransportation: string;
+  jobAgeLimit: string;
+  jobDescription: string;
+  jobPhoto: File | null;
+  hrName: string;
+  hrEmail: string;
+  hrNumber: string;
+  companyJobID: string;
+  languageRequired: string[];
+  jobArea: string;
+};
+
+const REQUIRED_FIELDS: (keyof FormDataType)[] = [
+  'jobManualID',
+  'jobTitle',
+  'jobOccupation',
+  'jobSkill',
+  'jobLocationCountry',
+  'jobDeadline',
+  'jobVacancyNo',
+  'jobWagesCurrencyType',
+  'salary_negotiable',
+  'passport_type',
+  'contract_period',
+  'jobExpReq',
+  'jobWorkingDay',
+  'jobWorkingHour',
+  'jobOvertime',
+  'jobFood',
+  'jobAccommodation',
+  'jobMedicalFacility',
+  'jobTransportation',
+  'jobAgeLimit',
+  'languageRequired',
+  'DLReq',
+  'jobPhoto',
+];
 
 export default function EditJobPage() {
   const router = useRouter();
   const params = useParams();
   const jobId = params.id as string;
   
+  const { data: countriesApiData = [] } = useCountries();
+  const { data: occupationsApiData = [] } = useOccupations();
+  
+  const [skillList, setSkillList] = useState<SelectOption[]>([]);
+  const [countryList, setCountryList] = useState<SelectOption[]>([]);
+  const [currencyList, setCurrencyList] = useState<SelectOption[]>([]);
+  const [occupations, setOccupations] = useState<SelectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [jobData, setJobData] = useState<JobData | null>(null);
+  const [hrDetailsLoading, setHrDetailsLoading] = useState(false);
+  const [formData, setFormData] = useState<FormDataValues>({} as FormDataValues);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormDataType, string>>>({});
+  const [existingJobPhoto, setExistingJobPhoto] = useState<string | null>(null);
 
-  const currencies = [
-    { code: "AED", name: "UAE Dirham" },
-    { code: "USD", name: "US Dollar" },
-    { code: "EUR", name: "Euro" },
-    { code: "GBP", name: "British Pound" },
-    { code: "SAR", name: "Saudi Riyal" },
-    { code: "QAR", name: "Qatari Riyal" },
-    { code: "KWD", name: "Kuwaiti Dinar" },
-    { code: "OMR", name: "Omani Riyal" },
-    { code: "BHD", name: "Bahraini Dinar" }
-  ];
+  // Sync cached data to state when available
+  useEffect(() => {
+    if (countriesApiData.length > 0) {
+      const validCountries = countriesApiData.filter((country: any) => 
+        country && typeof country === 'object' && country.name && country.id
+      );
+      if (validCountries.length > 0) {
+        setCountryList(
+          validCountries.map((country: any) => ({
+            label: country.name,
+            value: country.id?.toString(),
+          }))
+        );
+      }
+    }
+  }, [countriesApiData]);
+  
+  useEffect(() => {
+    if (occupationsApiData.length > 0) {
+      const validOccupations = occupationsApiData.filter((occupation: any) => 
+        occupation && typeof occupation === 'object' && 
+        (occupation.occupation || occupation.name || occupation.title) && occupation.id
+      );
+      if (validOccupations.length > 0) {
+        setOccupations(
+          validOccupations.map((occupation: any) => ({
+            label: occupation.occupation || occupation.name || occupation.title,
+            value: occupation.id.toString(),
+          }))
+        );
+      }
+    }
+  }, [occupationsApiData]);
 
-  const departments = [
-    "Engineering", "Product", "Design", "Marketing", "Sales", "Operations", 
-    "Finance", "Human Resources", "Legal", "Customer Success", "Data & Analytics",
-    "Security", "Quality Assurance", "DevOps", "Research & Development"
-  ];
+  // Initialize currency list
+  useEffect(() => {
+    setCurrencyList([
+      { label: "USD", value: "USD" },
+      { label: "INR", value: "INR" },
+      { label: "AED", value: "AED" },
+      { label: "SAR", value: "SAR" },
+      { label: "KWD", value: "KWD" },
+      { label: "QAR", value: "QAR" },
+      { label: "BHD", value: "BHD" },
+      { label: "OMR", value: "OMR" },
+    ]);
+  }, []);
 
-  const availableBenefits = [
-    "Health Insurance", "Dental Insurance", "Vision Insurance", "Life Insurance",
-    "Retirement Plan (401k)", "Paid Time Off", "Sick Leave", "Maternity/Paternity Leave",
-    "Performance Bonus", "Stock Options", "Flexible Working Hours", "Remote Work Option",
-    "Professional Development", "Gym Membership", "Transportation Allowance",
-    "Meal Allowance", "Phone/Internet Allowance", "Annual Flight Tickets",
-    "Education Reimbursement", "Wellness Programs"
-  ];
-
-  const commonSkills = [
-    "JavaScript", "TypeScript", "React", "Node.js", "Python", "Java", "C#", "PHP",
-    "Angular", "Vue.js", "MongoDB", "PostgreSQL", "MySQL", "AWS", "Docker", "Kubernetes",
-    "Git", "REST APIs", "GraphQL", "HTML/CSS", "Sass/SCSS", "Webpack", "Jest",
-    "Cypress", "Selenium", "Agile/Scrum", "DevOps", "CI/CD", "Linux", "Redis"
-  ];
-
+  // Fetch job data
   useEffect(() => {
     fetchJobData();
   }, [jobId]);
@@ -126,7 +296,6 @@ export default function EditJobPage() {
       const loggedUser = localStorage.getItem("loggedUser");
       
       if (!token) {
-        console.error('❌ No access token found, redirecting to login');
         toast.error('Please log in to edit jobs');
         router.push("/login");
         return;
@@ -134,28 +303,16 @@ export default function EditJobPage() {
       
       if (loggedUser) {
         const userData = JSON.parse(loggedUser);
-        
-        // Verify this is a company user
         const userType = userData?.user?.type || userData?.type;
         if (userType !== 'company') {
-          console.error('❌ Access denied - user is not a company type:', userType);
           toast.error('Access denied. You must be logged in as an HR user to edit jobs.');
           router.push('/login');
           return;
         }
       }
 
-      // Fetch actual job data from API with timeout
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout - API took too long to respond')), 30000)
-      );
+      const response: any = await getJobById(jobId);
       
-      const response: any = await Promise.race([
-        getJobById(jobId),
-        timeoutPromise
-      ]);
-      
-      // Handle different response structures - be more strict about data validation
       let jobApiData;
       if (response?.data?.jobs) {
         jobApiData = response.data.jobs;
@@ -169,73 +326,73 @@ export default function EditJobPage() {
         throw new Error('Invalid API response structure - no job data found');
       }
       
-      // Strict validation - no fallback data allowed
       if (!jobApiData || typeof jobApiData !== 'object') {
         throw new Error('Job data is null, undefined, or not an object');
       }
       
       if (!jobApiData.id && !jobApiData.jobID) {
-        throw new Error(`Job not found - no valid ID in response. Available fields: ${Object.keys(jobApiData).join(', ')}`);
+        throw new Error(`Job not found - no valid ID in response`);
       }
-      
-      // Transform API response to match JobData interface - validate required fields
-      const transformedJobId = jobApiData.id || jobApiData.jobID;
-      const jobTitle = jobApiData.jobTitle || jobApiData.job_title || jobApiData.title;
-      
-      if (!jobTitle) {
-        throw new Error('Job title is missing from API response - cannot edit job without title');
+
+      // Store existing job photo URL if available
+      if (jobApiData.jobPhoto) {
+        setExistingJobPhoto(jobApiData.jobPhoto);
       }
-      
-      const transformedJobData: JobData = {
-        id: transformedJobId.toString(),
-        title: jobTitle,
-        department: jobApiData.jobOccupation || jobApiData.department || "",
-        location: jobApiData.jobLocationCountry?.name || jobApiData.location || jobApiData.jobLocation || "",
-        workMode: jobApiData.jobMode === "onsite" ? "onsite" : jobApiData.jobMode === "remote" ? "remote" : "hybrid",
-        employmentType: jobApiData.employmentType || "full-time",
-        experienceLevel: jobApiData.jobExpTypeReq || jobApiData.experienceLevel || "mid",
-        salaryMin: jobApiData.jobWages ? jobApiData.jobWages.toString() : (jobApiData.salaryMin ? jobApiData.salaryMin.toString() : "0"),
-        salaryMax: jobApiData.salaryMax ? jobApiData.salaryMax.toString() : (jobApiData.jobWages ? (parseFloat(jobApiData.jobWages.toString()) * 1.2).toString() : "0"),
-        currency: jobApiData.jobWagesCurrencyType || jobApiData.currency || "USD",
-        description: jobApiData.jobDescription || jobApiData.description || "",
-        requirements: Array.isArray(jobApiData.requirements) ? jobApiData.requirements : [],
-        responsibilities: Array.isArray(jobApiData.responsibilities) ? jobApiData.responsibilities : [],
-        skillsRequired: jobApiData.skills ? (Array.isArray(jobApiData.skills) ? jobApiData.skills.map((skill: any) => typeof skill === 'string' ? skill : (skill.skill || skill.name || String(skill))) : []) : [],
-        skillsPreferred: Array.isArray(jobApiData.skillsPreferred) ? jobApiData.skillsPreferred : [],
-        benefits: Array.isArray(jobApiData.benefits) ? jobApiData.benefits : [],
-        applicationDeadline: jobApiData.jobDeadline ? new Date(jobApiData.jobDeadline).toISOString().split('T')[0] : (jobApiData.applicationDeadline || ""),
-        startDate: jobApiData.startDate || "",
-        numberOfPositions: (jobApiData.jobVacancyNo || jobApiData.numberOfPositions || "1").toString(),
-        reportingTo: jobApiData.reportingTo || "",
-        educationLevel: jobApiData.educationLevel || "",
-        certifications: Array.isArray(jobApiData.certifications) ? jobApiData.certifications : [],
-        languageRequirements: Array.isArray(jobApiData.languageRequirements) ? jobApiData.languageRequirements : [],
-        travelRequirement: jobApiData.travelRequirement || "None",
-        companyDescription: jobApiData.companyDescription || "",
-        applicationInstructions: jobApiData.applicationInstructions || "",
-        status: (jobApiData.status || "active") as JobData['status'],
-        featured: Boolean(jobApiData.featured),
-        urgent: Boolean(jobApiData.urgent),
-        remoteWorkBenefits: Array.isArray(jobApiData.remoteWorkBenefits) ? jobApiData.remoteWorkBenefits : [],
-        workingHours: jobApiData.jobWorkingHour || jobApiData.workingHours || "",
-        probationPeriod: jobApiData.probationPeriod || "3 months",
-        noticePeriod: jobApiData.noticePeriod || ""
+
+      // Transform API response to match FormDataType
+      const transformedData: FormDataValues = {
+        jobManualID: jobApiData.jobManualID || jobApiData.jobID || jobApiData.id?.toString() || '',
+        jobTitle: jobApiData.jobTitle || jobApiData.title || '',
+        jobOccupation: jobApiData.jobOccupation_id || jobApiData.jobOccupation?.id?.toString() || jobApiData.jobOccupation || '',
+        jobSkill: jobApiData.skills ? (Array.isArray(jobApiData.skills) ? jobApiData.skills.map((skill: any) => skill.id?.toString() || skill.skill_id?.toString() || String(skill)) : []) : [],
+        cmpNameACT: jobApiData.cmpNameACT || jobApiData.companyName || jobApiData.cmpName || '',
+        jobLocationCountry: jobApiData.jobLocationCountry?.id?.toString() || jobApiData.jobLocationCountry?.toString() || '',
+        jobDeadline: jobApiData.jobDeadline ? new Date(jobApiData.jobDeadline).toISOString().split('T')[0] : '',
+        jobVacancyNo: (jobApiData.jobVacancyNo || jobApiData.vacancyNo || '1').toString(),
+        jobWages: (jobApiData.jobWages || jobApiData.wages || '0').toString(),
+        jobMode: jobApiData.jobMode || 'Offline',
+        jobInterviewPlace: jobApiData.jobInterviewPlace || '',
+        jobInterviewDate: jobApiData.jobInterviewDate ? new Date(jobApiData.jobInterviewDate).toISOString().split('T')[0] : '',
+        jobWagesCurrencyType: jobApiData.jobWagesCurrencyType || jobApiData.currencyType || 'USD',
+        salary_negotiable: jobApiData.salary_negotiable || 'No',
+        passport_type: jobApiData.passportType || jobApiData.passport_type || '',
+        service_charge: (jobApiData.service_charge || '0').toString(),
+        contract_period: (jobApiData.contract_period || jobApiData.contractPeriod || '0').toString(),
+        expCerificateReq: jobApiData.expCerificateReq || jobApiData.expCertificateReq || 'No',
+        DLReq: jobApiData.DLReq || jobApiData.drivingLicenseReq || 'No',
+        jobWorkVideoReq: jobApiData.jobWorkVideoReq || 'No',
+        jobExpReq: jobApiData.jobExpReq || 'No',
+        jobExpTypeReq: jobApiData.jobExpTypeReq || jobApiData.experienceType || '',
+        jobExpDuration: (jobApiData.jobExpDuration || jobApiData.experienceDuration || '').toString(),
+        jobWorkingDay: (jobApiData.jobWorkingDay || '26').toString(),
+        jobWorkingHour: (jobApiData.jobWorkingHour || '8').toString(),
+        jobOvertime: jobApiData.jobOvertime || 'As Per Company Requirement',
+        jobFood: jobApiData.jobFood || 'No',
+        jobAccommodation: jobApiData.jobAccommodation || 'No',
+        jobMedicalFacility: jobApiData.jobMedicalFacility || 'No',
+        jobTransportation: jobApiData.jobTransportation || 'No',
+        jobAgeLimit: (jobApiData.jobAgeLimit || '60').toString(),
+        jobDescription: jobApiData.jobDescription || '',
+        jobPhoto: null, // Will be set if user uploads new photo
+        hrName: jobApiData.hrName || '',
+        hrEmail: jobApiData.hrEmail || '',
+        hrNumber: jobApiData.hrNumber || jobApiData.hrContact || '',
+        companyJobID: jobApiData.companyJobID || '',
+        languageRequired: jobApiData.languageRequired ? (Array.isArray(jobApiData.languageRequired) ? jobApiData.languageRequired : [jobApiData.languageRequired]) : [],
+        jobArea: jobApiData.jobArea || jobApiData.location || '',
       };
 
-      setJobData(transformedJobData);
+      setFormData(transformedData);
+
+      // Load skills for the selected occupation
+      if (transformedData.jobOccupation) {
+        getSkillList(transformedData.jobOccupation);
+      }
       
     } catch (error: any) {
-      console.error("❌ Error fetching job data:", error);
-      console.error("Error details:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        stack: error.stack
-      });
-      
+      console.error("Error fetching job data:", error);
       const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
       
-      // Determine the type of error and show appropriate message
       if (error.message.includes('timeout')) {
         toast.error('Request timed out. Please check your internet connection and try again.');
       } else if (error.response?.status === 404) {
@@ -248,7 +405,6 @@ export default function EditJobPage() {
         toast.error(`Failed to load job data: ${errorMessage}`);
       }
       
-      // DO NOT create fallback data - redirect user instead
       setTimeout(() => {
         router.push('/hra-jobs');
       }, 3000);
@@ -258,104 +414,853 @@ export default function EditJobPage() {
     }
   };
 
-  const handleSubmit = async (values: JobData) => {
-    setSaving(true);
+  // Handle skill list updates when occupation changes
+  const getSkillList = async (id: string) => {
     try {
-      const token = localStorage.getItem("access_token");
-      if (!token) {
-        router.push("/login");
+      const occuId = Number(id);
+      if (!occuId || id.startsWith('_')) {
+        setSkillList([]);
         return;
       }
-
-      // Convert form data to FormData format expected by the API
-      const formData = new FormData();
-      formData.append('jobTitle', values.title);
-      formData.append('department', values.department);
-      formData.append('location', values.location);
-      formData.append('jobMode', values.workMode);
-      formData.append('employmentType', values.employmentType);
-      formData.append('experienceLevel', values.experienceLevel);
-      formData.append('salaryMin', values.salaryMin);
-      formData.append('salaryMax', values.salaryMax);
-      formData.append('currency', values.currency);
-      formData.append('jobDescription', values.description);
-      formData.append('numberOfPositions', values.numberOfPositions);
-      formData.append('reportingTo', values.reportingTo);
-      formData.append('educationLevel', values.educationLevel);
-      formData.append('applicationDeadline', values.applicationDeadline);
-      formData.append('startDate', values.startDate);
-      formData.append('status', values.status);
-      formData.append('featured', values.featured.toString());
-      formData.append('urgent', values.urgent.toString());
-      formData.append('workingHours', values.workingHours);
-      formData.append('probationPeriod', values.probationPeriod);
-      formData.append('noticePeriod', values.noticePeriod);
-      formData.append('travelRequirement', values.travelRequirement);
-      formData.append('companyDescription', values.companyDescription);
-      formData.append('applicationInstructions', values.applicationInstructions);
       
-      // Append arrays as JSON strings or individual items
-      formData.append('requirements', JSON.stringify(values.requirements));
-      formData.append('responsibilities', JSON.stringify(values.responsibilities));
-      formData.append('skillsRequired', JSON.stringify(values.skillsRequired));
-      formData.append('skillsPreferred', JSON.stringify(values.skillsPreferred));
-      formData.append('benefits', JSON.stringify(values.benefits));
-      formData.append('certifications', JSON.stringify(values.certifications));
-      formData.append('languageRequirements', JSON.stringify(values.languageRequirements));
-      formData.append('remoteWorkBenefits', JSON.stringify(values.remoteWorkBenefits));
-
-      // Call the actual API
-      await editJob(parseInt(values.id), formData, token);
-
-      toast.success("Job updated successfully!");
-      router.push("/hra-jobs");
+      const skillsResponse = await getSkillsByOccuId(occuId);
+      
+      if (skillsResponse?.skills && Array.isArray(skillsResponse.skills)) {
+        const validSkills = skillsResponse.skills.filter((skill: any) => 
+          skill && typeof skill === 'object' && (skill.skill || skill.name) && skill.id
+        );
+        
+        if (validSkills.length > 0) {
+          const uniqueSkills = validSkills.reduce((acc: any[], skill: any) => {
+            const skillName = skill.skill || skill.name;
+            const skillId = skill.id;
+            const existingIndex = acc.findIndex(s => s.label === skillName);
+            
+            if (existingIndex === -1) {
+              acc.push({
+                label: skillName,
+                value: skillId.toString(),
+                skillId: skillId,
+                skillName: skillName
+              });
+            }
+            return acc;
+          }, []);
+          
+          setSkillList(uniqueSkills);
+        }
+      }
     } catch (error) {
-      console.error("Error updating job:", error);
-      toast.error("Failed to update job. Please try again.");
+      console.error('Error fetching skills:', error);
+      setSkillList([]);
+    }
+  };
+
+  // Form fields configuration - matching create job form
+  const formFields = React.useMemo((): FieldConfig[] => [
+    { name: "jobManualID" as keyof FormDataType, label: "Job Manual ID", type: "text" },
+    { name: "jobTitle" as keyof FormDataType, label: "Job Title", type: "text" },
+    {
+      name: "jobOccupation" as keyof FormDataType,
+      label: "Job Department",
+      type: "select",
+      options: [{ label: "Select Department", value: "_none" }, ...occupations],
+    },
+    {
+      name: "jobSkill" as keyof FormDataType,
+      label: "Job Skill (Multiple)",
+      type: "multiple",
+      options: [{ label: "Select Skill", value: "_none" }, ...skillList],
+    },
+    { name: "cmpNameACT" as keyof FormDataType, label: "Actual Hiring Company", type: "text" },
+    {
+      name: "jobMode" as keyof FormDataType,
+      label: "Interview Mode",
+      type: "select",
+      options: [
+        { label: "Select Mode", value: "_none" },
+        { label: "CV Selection", value: "CV Selection" },
+        { label: "Client Interview", value: "Offline" },
+        { label: "Online Interview", value: "Online" },
+      ],
+    },
+    { name: "jobInterviewDate" as keyof FormDataType, label: "Interview Date", type: "date" },
+    { name: "jobInterviewPlace" as keyof FormDataType, label: "Interview Place", type: "text" },
+    {
+      name: "jobLocationCountry" as keyof FormDataType,
+      label: "Job Location Country",
+      type: "select",
+      options: [{ label: "Select Country", value: "_select_country" }, ...countryList],
+    },
+    { name: "jobArea" as keyof FormDataType, label: "Job Location City", type: "text" },
+    { name: "jobDeadline" as keyof FormDataType, label: "Job Deadline", type: "date" },
+    { name: "jobVacancyNo" as keyof FormDataType, label: "Number Of Vacancy", type: "number" },
+    { name: "jobWages" as keyof FormDataType, label: "Wages per month", type: "number" },
+    {
+      name: "jobWagesCurrencyType" as keyof FormDataType,
+      label: "Wages Currency Type",
+      type: "select",
+      options: [{ label: "Select Currency", value: "_select_currency" }, ...currencyList],
+    },
+    {
+      name: "salary_negotiable" as keyof FormDataType,
+      label: "Salary Negotiable",
+      type: "select",
+      options: [
+        { label: "Select", value: "_select" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
+      ],
+    },
+    {
+      name: "passport_type" as keyof FormDataType,
+      label: "Passport Type",
+      type: "select",
+      options: [
+        { label: "Select", value: "_select" },
+        { label: "ECR", value: "ECR" },
+        { label: "ECNR", value: "ECNR" },
+        { label: "ECR/ECNR", value: "ECR/ECNR" },
+      ],
+    },
+    { name: "service_charge" as keyof FormDataType, label: "Service Charge (in INR)", type: "number" },
+    { name: "contract_period" as keyof FormDataType, label: "Contract Period (in months)", type: "number" },
+    {
+      name: "expCerificateReq" as keyof FormDataType,
+      label: "Experience Certificate Required",
+      type: "select",
+      options: [
+        { label: "Select", value: "_select" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
+      ],
+    },
+    {
+      name: "jobWorkVideoReq" as keyof FormDataType,
+      label: "Work Video Required",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
+      ],
+    },
+    {
+      name: "jobExpReq" as keyof FormDataType,
+      label: "Job Experience ",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
+      ],
+    },
+    {
+      name: "jobExpTypeReq" as keyof FormDataType,
+      label: "Experience Type within India/International",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        { label: "Within India", value: "national" },
+        { label: "International", value: "international" },
+        { label: "India/International", value: "Any" },
+      ],
+    },
+    {
+      name: "jobExpDuration" as keyof FormDataType,
+      label: "Year of Experience ",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        ...Array.from({ length: 10 }, (_, i) => ({ label: `${i + 1} year of Experience`, value: `${i + 1}` }))
+      ],
+    },
+    {
+      name: "DLReq" as keyof FormDataType,
+      label: "Driving License ",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        { label: "Indian", value: "Indian" },
+        { label: "International", value: "International" },
+        { label: "Both Indian and International", value: "Both Indian and International" },
+        { label: "No", value: "No" },
+      ],
+    },
+    {
+      name: "jobWorkingDay" as keyof FormDataType,
+      label: "Job Working Day Per Month",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        ...Array.from({ length: 11 }, (_, i) => ({ label: `${20 + i}`, value: `${20 + i}` }))
+      ],
+    },
+    { 
+      name: "jobWorkingHour" as keyof FormDataType, 
+      label: "Job Working Hour", 
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        ...Array.from({ length: 24 }, (_, i) => ({ label: `${i + 1}`, value: `${i + 1}` }))
+      ],
+    },
+    {
+      name: "jobOvertime" as keyof FormDataType,
+      label: "Job Overtime",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        { label: "Fixed OT", value: "Yes" },
+        { label: "As Per Company Requirement", value: "As Per Company Requirement" },
+        { label: "No OT", value: "No" },
+      ],
+    },
+    {
+      name: "jobFood" as keyof FormDataType,
+      label: "Food Allowance",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
+      ],
+    },
+    {
+      name: "jobAccommodation" as keyof FormDataType,
+      label: "Accommodation",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
+      ],
+    },
+    {
+      name: "jobMedicalFacility" as keyof FormDataType,
+      label: "Medical Facility",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
+      ],
+    },
+    {
+      name: "jobTransportation" as keyof FormDataType,
+      label: "Free Work Transportation",
+      type: "select",
+      options: [
+        { label: "Select", value: "_none" },
+        { label: "Yes", value: "Yes" },
+        { label: "No", value: "No" },
+      ],
+    },
+    { name: "jobAgeLimit" as keyof FormDataType, label: "Age Limit", type: "number" },
+    { name: "hrName" as keyof FormDataType, label: "HR Name", type: "text" },
+    { name: "hrEmail" as keyof FormDataType, label: "HR Email", type: "email" },
+    { name: "hrNumber" as keyof FormDataType, label: "HR Number", type: "text" },
+    { name: "companyJobID" as keyof FormDataType, label: "Company Job ID", type: "text" },
+    {
+      name: "languageRequired" as keyof FormDataType,
+      label: "Language ",
+      type: "multiple",
+      options: [
+        { label: "Bengali", value: "Bengali" },
+        { label: "Assamese", value: "Assamese" },
+        { label: "Hindi", value: "Hindi" },
+        { label: "Marathi", value: "Marathi" },
+        { label: "Malayalam", value: "Malayalam" },
+        { label: "Oriya", value: "Oriya" },
+        { label: "Punjabi", value: "Punjabi" },
+        { label: "Tamil", value: "Tamil" },
+        { label: "Telugu", value: "Telugu" },
+        { label: "Urdu", value: "Urdu" },
+        { label: "Arabic", value: "Arabic" },
+        { label: "English", value: "English" },
+        { label: "Japanese", value: "Japanese" },
+        { label: "German", value: "German" },
+        { label: "Spanish", value: "Spanish" },
+        { label: "French", value: "French" },
+      ],
+    },
+    { name: "jobDescription" as keyof FormDataType, label: "Job Description", type: "textarea" },
+    { name: "jobPhoto" as keyof FormDataType, label: "Job Photo", type: "file" },
+  ], [occupations, skillList, countryList, currencyList]);
+
+  const fieldsByName = React.useMemo(() => 
+    Object.fromEntries(formFields.map((f) => [f.name, f] as const))
+  , [formFields]);
+
+  // Form validation - matching create job form
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof FormDataType, string>> = {};
+    const missingFields: string[] = [];
+    
+    REQUIRED_FIELDS.forEach(field => {
+      const value = formData[field];
+      
+      if (field === 'jobPhoto') {
+        // For edit, jobPhoto is only required if no existing photo
+        if (!existingJobPhoto && (!value || !(value instanceof File) || value.size === 0)) {
+          const fieldLabel = fieldsByName[field]?.label || field;
+          newErrors[field] = `${fieldLabel} is required`;
+          missingFields.push(fieldLabel);
+        }
+      }
+      else if (Array.isArray(value)) {
+        if (value.length === 0) {
+          const fieldLabel = fieldsByName[field]?.label || field;
+          newErrors[field] = `${fieldLabel} is required`;
+          missingFields.push(fieldLabel);
+        }
+      }
+      else if (typeof value === 'string') {
+        if (value.trim() === '' || value.startsWith('_')) {
+          const fieldLabel = fieldsByName[field]?.label || field;
+          newErrors[field] = `${fieldLabel} is required`;
+          missingFields.push(fieldLabel);
+        }
+      }
+      else if (!value) {
+        const fieldLabel = fieldsByName[field]?.label || field;
+        newErrors[field] = `${fieldLabel} is required`;
+        missingFields.push(fieldLabel);
+      }
+    });
+    
+    if (formData.jobExpReq === "Yes") {
+      const expTypeValue = formData.jobExpTypeReq;
+      if (!expTypeValue || 
+          (typeof expTypeValue === 'string' && (expTypeValue.trim() === '' || expTypeValue.startsWith('_')))) {
+        const fieldLabel = fieldsByName.jobExpTypeReq?.label || 'Experience Type within India/International';
+        newErrors.jobExpTypeReq = `${fieldLabel} is required`;
+        missingFields.push(fieldLabel);
+      }
+      
+      const expDurationValue = formData.jobExpDuration;
+      if (!expDurationValue || 
+          (typeof expDurationValue === 'string' && (expDurationValue.trim() === '' || expDurationValue.startsWith('_')))) {
+        const fieldLabel = fieldsByName.jobExpDuration?.label || 'Year of Experience';
+        newErrors.jobExpDuration = `${fieldLabel} is required`;
+        missingFields.push(fieldLabel);
+      }
+    }
+    
+    if (formData.hrEmail && !formData.hrEmail.toString().startsWith('_')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.hrEmail.toString())) {
+        newErrors.hrEmail = 'Please enter a valid email address';
+      }
+    }
+    
+    const numberFields: (keyof FormDataType)[] = ['jobVacancyNo', 'jobWages', 'service_charge', 'contract_period'];
+    numberFields.forEach(field => {
+      const value = formData[field];
+      if (value && !value.toString().startsWith('_')) {
+        const num = Number(value);
+        if (isNaN(num) || num <= 0) {
+          newErrors[field] = `${fieldsByName[field]?.label || field} must be a valid positive number`;
+        }
+      }
+    });
+    
+    if (formData.jobDeadline && !formData.jobDeadline.toString().startsWith('_')) {
+      const deadlineDate = new Date(formData.jobDeadline.toString());
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (deadlineDate < today) {
+        newErrors.jobDeadline = 'Job deadline cannot be in the past';
+      }
+    }
+    
+    setErrors(newErrors);
+    
+    if (missingFields.length > 0) {
+      if (missingFields.length === 1) {
+        toast.error(`${missingFields[0]} is required`);
+      } else if (missingFields.length <= 3) {
+        toast.error(`Required fields: ${missingFields.join(', ')}`);
+      } else {
+        toast.error(`Please fill in all required fields (${missingFields.length} missing)`);
+      }
+    }
+    
+    const otherErrors = Object.keys(newErrors).filter(key => 
+      !REQUIRED_FIELDS.includes(key as keyof FormDataType)
+    );
+    
+    if (otherErrors.length > 0) {
+      const firstError = newErrors[otherErrors[0] as keyof FormDataType];
+      toast.error(firstError || 'Please check your form inputs');
+    }
+    
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Form submission handler - matching create job form but calling editJob
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    setErrors({});
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setSaving(true);
+
+    try {
+      let accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        const legacyToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
+        if (legacyToken) {
+          localStorage.setItem('access_token', legacyToken);
+          accessToken = legacyToken;
+        } else {
+          throw new Error('Authentication token not found. Please log in again.');
+        }
+      }
+      
+      const formDataInstance = new FormData();
+      let hasValidData = false;
+      const normalizedValues = normalizeSubmissionValues(formData, formFields);
+      
+      const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
+      
+      formFields.forEach((fieldConfig) => {
+        const fieldName = fieldConfig.name;
+        const value = normalizedValues[fieldName];
+        
+        if (Array.isArray(value)) {
+          if (!arrayFields.includes(fieldName)) {
+            formDataInstance.append(fieldName, '');
+            return;
+          }
+          
+          if (value.length > 0) {
+            const validItems: (string | number)[] = [];
+            value.forEach((item) => {
+              if (typeof item === 'string') {
+                const trimmed = item.trim();
+                if (trimmed && trimmed !== '' && !trimmed.startsWith('_')) {
+                  if (fieldName === 'jobSkill' && !isNaN(Number(trimmed))) {
+                    validItems.push(Number(trimmed));
+                  } else {
+                    validItems.push(trimmed);
+                  }
+                }
+              } else if (typeof item === 'number') {
+                validItems.push(item);
+              }
+            });
+            
+            if (validItems.length > 0) {
+              const jsonString = JSON.stringify(validItems);
+              formDataInstance.append(fieldName, jsonString);
+              hasValidData = true;
+            } else {
+              formDataInstance.append(fieldName, JSON.stringify([]));
+            }
+          } else {
+            formDataInstance.append(fieldName, JSON.stringify([]));
+          }
+        } else if (value instanceof File) {
+          if (value.size > 0) {
+            if (value.size > 10 * 1024 * 1024) {
+              throw new Error('File size must be less than 10MB');
+            }
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(value.type)) {
+              throw new Error('Only JPEG, PNG, and WebP images are allowed');
+            }
+            formDataInstance.append(fieldName, value);
+            hasValidData = true;
+          } else {
+            // If no new file uploaded and existing photo exists, don't append (backend will keep existing)
+            if (!existingJobPhoto) {
+              formDataInstance.append(fieldName, '');
+            }
+          }
+        } else {
+          let stringValue: string;
+          if (value == null || value === '') {
+            stringValue = '';
+          } else if (typeof value === 'string') {
+            stringValue = value.trim();
+          } else if (typeof value === 'number' || typeof value === 'boolean') {
+            stringValue = String(value);
+          } else {
+            stringValue = String(value).trim();
+          }
+          
+          formDataInstance.append(fieldName, stringValue);
+          if (stringValue !== '') {
+            hasValidData = true;
+          }
+        }
+      });
+      
+      if (!hasValidData) {
+        throw new Error('No valid data to submit. Please fill in the required fields.');
+      }
+      
+      if (formDataInstance.has('jobOccupation')) {
+        const occValue = formDataInstance.get('jobOccupation');
+        if (occValue) {
+          formDataInstance.set('jobOccupation', String(occValue));
+        }
+      }
+      
+      // Call editJob instead of createJob
+      const response = await editJob(parseInt(jobId), formDataInstance, accessToken);
+      
+      if (response && typeof response === 'object') {
+        if ('message' in response && (response.message === 'Job updated successfully' || response.message === 'Job edited successfully')) {
+          toast.success('🎉 Job updated successfully!');
+        } else if ('error' in response) {
+          throw new Error(response.error as string || 'Server error occurred');
+        } else {
+          toast.success('🎉 Job updated successfully!');
+        }
+      } else {
+        toast.success('🎉 Job updated successfully!');
+      }
+      
+      router.push("/hra-jobs");
+      
+    } catch (error: any) {
+      console.error('Error updating job:', error);
+      let errorMessage = '❌ Failed to update job. Please try again.';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      toast.error(errorMessage, { duration: 5000 });
+      
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDuplicateJob = async () => {
-    if (!jobData) return;
-
-    try {
-      // Create a duplicate with modified title
-      const duplicateJob = {
-        ...jobData,
-        id: `${jobData.id}_copy`,
-        title: `${jobData.title} (Copy)`,
-        status: "draft" as const
-      };
-
-      toast.success("Job duplicated successfully! Redirecting to edit the copy...");
-      
-      // In real implementation, create new job and redirect to its edit page
-      setTimeout(() => {
-        router.push(`/edit-job/${duplicateJob.id}`);
-      }, 1000);
-    } catch (error) {
-      console.error("Error duplicating job:", error);
-      toast.error("Failed to duplicate job");
-    }
+  // Helper functions for placeholders
+  const getPlaceholder = (name: string) => {
+    const map: Record<string, string> = {
+      jobTitle: "e.g. Senior Electrician",
+      cmpNameACT: "e.g. Gulf Contracting Co.",
+      jobInterviewPlace: "e.g. Kolkata Office or Zoom",
+      jobArea: "e.g. Dubai, Abu Dhabi",
+      jobVacancyNo: "e.g. 25",
+      jobWages: "e.g. 3500",
+      service_charge: "e.g. 15000",
+      jobWorkingHour: "e.g. 8 hours/day",
+      jobAgeLimit: "18 - 60",
+      hrName: "Full name",
+      hrEmail: "name@company.com",
+      hrNumber: "+91 98xxxxxxx",
+      companyJobID: "Internal reference (optional)",
+    };
+    return map[name] || undefined;
   };
 
-  const handleDeleteJob = async () => {
-    if (!confirm("Are you sure you want to delete this job posting? This action cannot be undone.")) {
-      return;
-    }
+  const getSelectPlaceholder = (name: string, fallback: string = "Select option") => {
+    const map: Record<string, string> = {
+      jobOccupation: "Select department",
+      jobSkill: "Add a skill",
+      jobMode: "Select interview mode",
+      jobLocationCountry: "Select country",
+      jobWagesCurrencyType: "Select currency",
+      salary_negotiable: "Is salary negotiable?",
+      passport_type: "Select passport type",
+      expCerificateReq: "Experience certificate?",
+      jobWorkVideoReq: "Work video required?",
+      jobExpReq: "Experience required?",
+      jobExpTypeReq: "Experience location",
+      jobExpDuration: "Years of experience",
+      DLReq: "Driving license",
+      jobWorkingDay: "Working days per month",
+      jobWorkingHour: "Working hours per day",
+      jobOvertime: "Select Overtime policy",
+      jobFood: "Select Food Allowance",
+      jobAccommodation: "Select Accommodation",
+      jobMedicalFacility: "Select Medical facility",
+      jobTransportation: "Select Transportation",
+      languageRequired: "Add a language",
+    };
+    return map[name] || fallback;
+  };
 
-    try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success("Job deleted successfully!");
-      router.push("/hra-jobs");
-    } catch (error) {
-      console.error("Error deleting job:", error);
-      toast.error("Failed to delete job");
+  // Form sections - matching create job form
+  const formSections = React.useMemo(() => [
+    {
+      id: 'basic-info',
+      title: 'Basic Job Information',
+      description: 'Essential details about the job position',
+      icon: '💼',
+      fields: ['jobManualID', 'jobTitle', 'jobOccupation', 'jobSkill', 'cmpNameACT', 'jobDescription']
+    },
+    {
+      id: 'interview-details',
+      title: 'Interview & Location',
+      description: 'Interview process and job location details',
+      icon: '📍',
+      fields: ['jobMode', 'jobInterviewDate', 'jobInterviewPlace', 'jobLocationCountry', 'jobArea']
+    },
+    {
+      id: 'compensation',
+      title: 'Compensation & Benefits',
+      description: 'Salary, benefits and working conditions',
+      icon: '💰',
+      fields: ['jobWages', 'jobWagesCurrencyType', 'salary_negotiable', 'service_charge', 'contract_period',
+               'jobWorkingDay', 'jobWorkingHour', 'jobOvertime', 'jobFood', 'jobAccommodation', 
+               'jobMedicalFacility', 'jobTransportation']
+    },
+    {
+      id: 'requirements',
+      title: 'Job Requirements',
+      description: 'Experience, skills and qualification requirements',
+      icon: '📋',
+      fields: ['jobDeadline', 'jobVacancyNo', 'jobExpReq', 'jobExpTypeReq', 'jobExpDuration',
+               'expCerificateReq', 'DLReq', 'jobWorkVideoReq', 'passport_type', 'languageRequired', 'jobAgeLimit']
+    },
+    {
+      id: 'contact-info',
+      title: 'Contact Information',
+      description: 'HR contact details and additional information',
+      icon: '📞',
+      fields: ['hrName', 'hrEmail', 'hrNumber', 'companyJobID', 'jobPhoto']
     }
+  ], []);
+
+  // Render field function - matching create job form
+  const renderField = (field: FieldConfig) => {
+    const fieldName = field.name as keyof FormDataType;
+    const error = errors[fieldName];
+    const isRequired = REQUIRED_FIELDS.includes(fieldName) || 
+                      (fieldName === 'jobExpTypeReq' && formData.jobExpReq === 'Yes') || 
+                      (fieldName === 'jobExpDuration' && formData.jobExpReq === 'Yes');
+    
+    const isHrField = ['hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
+    const showLoading = isHrField && hrDetailsLoading;
+
+    return (
+      <div key={fieldName} className="space-y-2">
+        <Label htmlFor={fieldName} className="text-sm font-medium text-gray-700 flex items-center gap-1">
+          {field.label}
+          {isRequired && <span className="text-red-500 font-bold text-base ml-1" aria-label="required">*</span>}
+        </Label>
+        
+        {field.type === "select" && (
+          (() => {
+            const rawValue = getFormValue(formData, fieldName);
+            const selectValue =
+              typeof rawValue === "string" &&
+              rawValue.trim() !== "" &&
+              !rawValue.startsWith("_")
+                ? rawValue
+                : undefined;
+
+            return (
+          <Select
+            value={selectValue}
+            onValueChange={(value: string) => {
+              setFormData((prev) => ({ ...prev, [field.name]: value }));
+              if (field.name === "jobOccupation") {
+                getSkillList(value);
+              }
+              if (field.name === "jobExpReq" && value === "No") {
+                setErrors((prev) => {
+                  const newErrors = { ...prev };
+                  delete newErrors.jobExpTypeReq;
+                  delete newErrors.jobExpDuration;
+                  return newErrors;
+                });
+                setFormData((prev) => ({
+                  ...prev,
+                  jobExpTypeReq: '',
+                  jobExpDuration: '',
+                }));
+              }
+            }}
+          >
+            <SelectTrigger className={`h-11 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}>
+              <SelectValue placeholder={getSelectPlaceholder(field.name)} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {field.options?.map((option) => (
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+            );
+          })()
+        )}
+        
+        {field.type === "multiple" && (
+          <div className="space-y-3">
+            {Array.isArray(formData[field.name as keyof FormDataType]) && (formData[field.name as keyof FormDataType] as string[]).length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {(formData[field.name as keyof FormDataType] as string[])
+                  .filter(item => item && item !== "_none")
+                  .map((item, index) => {
+                    const option = skillList.find(opt => opt.value === item) || 
+                                  formFields.find(f => f.name === 'languageRequired')?.options?.find(opt => opt.value === item);
+                    const displayName = option?.label || item;
+                    
+                    return (
+                      <span
+                        key={`${item}-${index}`}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full border border-blue-200"
+                      >
+                        {displayName}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = (formData[field.name as keyof FormDataType] as string[]) || [];
+                            const updated = current.filter(s => s !== item);
+                            setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, updated));
+                          }}
+                          className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </span>
+                    );
+                  })
+                }
+              </div>
+            )}
+            
+            <Select
+              value=""
+              onValueChange={(value: string) => {
+                if (value && value !== "_none") {
+                  const current = (formData[field.name as keyof FormDataType] as string[]) || [];
+                  if (!current.includes(value)) {
+                    const updated = [...current, value];
+                    setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, updated));
+                  }
+                }
+              }}
+            >
+              <SelectTrigger className={`h-11 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}>
+                <SelectValue placeholder={getSelectPlaceholder(field.name)} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {field.options?.map((option, index) => {
+                    const current = (formData[field.name as keyof FormDataType] as string[]) || [];
+                    const isSelected = current.includes(option.value);
+                    const isPlaceholder = option.value === "_none";
+                    
+                    return (
+                      <SelectItem
+                        key={`${option.value}-${index}`}
+                        value={option.value}
+                        disabled={isSelected && !isPlaceholder}
+                        className={isSelected ? "opacity-50" : ""}
+                      >
+                        <div className="flex items-center gap-2">
+                          {option.label}
+                          {isSelected && !isPlaceholder && (
+                            <span className="text-xs text-green-600">✓ Added</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        
+        {field.type === "textarea" && (
+          <Textarea
+            id={field.name}
+            value={String(getFormValue(formData, field.name as keyof FormDataType))}
+            onChange={(e) =>
+              setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.value))
+            }
+            placeholder={getPlaceholder(field.name)}
+            className={`min-h-[120px] resize-none placeholder:text-gray-300 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
+          />
+        )}
+        
+        {(field.type === "text" || field.type === "number" || field.type === "email" || field.type === "date") && (
+          <div className="relative">
+            <Input
+              id={field.name}
+              type={field.type}
+              value={String(getFormValue(formData, field.name as keyof FormDataType))}
+              onChange={(e) =>
+                setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.value))
+              }
+              placeholder={showLoading ? "Loading..." : getPlaceholder(field.name)}
+              disabled={showLoading}
+              className={`h-11 placeholder:text-gray-500 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${showLoading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+            />
+            {showLoading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <svg className="animate-spin h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {field.type === "file" && (
+          <div className="space-y-2">
+            {existingJobPhoto && !(formData[field.name as keyof FormDataType] instanceof File) && (
+              <div className="mb-2">
+                <p className="text-sm text-gray-600 mb-2">Current photo:</p>
+                <img src={existingJobPhoto} alt="Current job photo" className="max-w-xs h-32 object-cover rounded border" />
+              </div>
+            )}
+            <Input
+              id={field.name}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              onChange={(e) =>
+                setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.files?.[0] || null))
+              }
+              className={`h-11 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
+            />
+            {formData[field.name as keyof FormDataType] instanceof File && (
+              <p className="text-sm text-green-600 flex items-center gap-1">
+                <span>✓</span>
+                New file selected: {(formData[field.name as keyof FormDataType] as File).name} ({(Math.round((formData[field.name as keyof FormDataType] as File).size / 1024))} KB)
+              </p>
+            )}
+            <p className="text-xs text-gray-500">Max 10MB. Supported: JPEG, PNG, WebP. Leave empty to keep current photo.</p>
+          </div>
+        )}
+        
+        {error && (
+          <p className="text-sm text-red-600 flex items-center gap-1">
+            <span className="text-red-500">⚠</span>
+            {error}
+          </p>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -369,656 +1274,124 @@ export default function EditJobPage() {
     );
   }
 
-  if (!jobData) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <i className="fa fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Job Not Found</h2>
-          <p className="text-gray-600 mb-4">The job you're trying to edit could not be found.</p>
-          <button
-            onClick={() => router.push("/hra-jobs")}
-            className="bg-[#17487f] text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Back to Jobs
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <Head>
-        <title>Edit Job - {jobData.title} | Overseas.ai</title>
-        <meta name="description" content={`Edit job posting for ${jobData.title} position`} />
+        <title>Edit Job - {formData.jobTitle || 'Job'} | Overseas.ai</title>
+        <meta name="description" content={`Edit job posting for ${formData.jobTitle || 'job'} position`} />
       </Head>
 
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold textBlue mb-2">
-              <i className="fa fa-edit mr-3"></i>
-              Edit Job Posting
-            </h1>
-            <p className="text-gray-600">
-              Update and manage your job posting: <span className="font-semibold">{jobData.title}</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Job Posting</h1>
+            <p className="text-gray-600 max-w-2xl mx-auto mb-4">
+              Update the information below to modify your job posting. 
+              All fields marked with <span className="text-red-500">*</span> are required.
             </p>
           </div>
-          
-          <div className="flex space-x-3">
-            <button
-              onClick={handleDuplicateJob}
-              className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <i className="fa fa-copy mr-2"></i>
-              Duplicate
-            </button>
-            <button
-              onClick={handleDeleteJob}
-              className="border border-red-300 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
-            >
-              <i className="fa fa-trash mr-2"></i>
-              Delete
-            </button>
-            <button
-              onClick={() => router.push("/hra-jobs")}
-              className="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <i className="fa fa-arrow-left mr-2"></i>
-              Back to Jobs
-            </button>
-          </div>
-        </div>
 
-        <Formik
-          initialValues={jobData}
-          validationSchema={editJobValidationSchema}
-          onSubmit={handleSubmit}
-          enableReinitialize
-        >
-          {({ values, setFieldValue, isValid }) => (
-            <Form>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Form */}
-                <div className="lg:col-span-2 space-y-8">
-                  
-                  {/* Basic Information */}
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Basic Information</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Job Title <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="title"
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g. Senior Software Engineer"
-                        />
-                        <ErrorMessage name="title" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {formSections.map((section, sectionIndex) => {
+              const sectionFields = formFields.filter(field => 
+                section.fields.includes(field.name as string)
+              );
 
+              return (
+                <div 
+                  key={section.id} 
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200"
+                >
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{section.icon}</span>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Department <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="department"
-                          as="select"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Select Department</option>
-                          {departments.map(dept => (
-                            <option key={dept} value={dept}>{dept}</option>
-                          ))}
-                        </Field>
-                        <ErrorMessage name="department" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Location <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="location"
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g. Dubai, UAE"
-                        />
-                        <ErrorMessage name="location" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Work Mode <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="workMode"
-                          as="select"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="onsite">On-site</option>
-                          <option value="remote">Remote</option>
-                          <option value="hybrid">Hybrid</option>
-                        </Field>
-                        <ErrorMessage name="workMode" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Employment Type <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="employmentType"
-                          as="select"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="full-time">Full-time</option>
-                          <option value="part-time">Part-time</option>
-                          <option value="contract">Contract</option>
-                          <option value="temporary">Temporary</option>
-                        </Field>
-                        <ErrorMessage name="employmentType" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Experience Level <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="experienceLevel"
-                          as="select"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="entry">Entry Level</option>
-                          <option value="junior">Junior</option>
-                          <option value="mid">Mid-level</option>
-                          <option value="senior">Senior</option>
-                          <option value="executive">Executive</option>
-                        </Field>
-                        <ErrorMessage name="experienceLevel" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Number of Positions <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="numberOfPositions"
-                          type="number"
-                          min="1"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <ErrorMessage name="numberOfPositions" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Reporting To <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="reportingTo"
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g. Engineering Manager"
-                        />
-                        <ErrorMessage name="reportingTo" component="div" className="text-red-500 text-sm mt-1" />
+                        <h2 className="text-xl font-semibold text-white">{section.title}</h2>
+                        <p className="text-blue-100 text-sm">{section.description}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Salary Information */}
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Salary & Benefits</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Minimum Salary <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="salaryMin"
-                          type="number"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="15000"
-                        />
-                        <ErrorMessage name="salaryMin" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Maximum Salary <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="salaryMax"
-                          type="number"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="25000"
-                        />
-                        <ErrorMessage name="salaryMax" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Currency <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="currency"
-                          as="select"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                      {sectionFields
+                        .filter(field => {
+                          if (field.name === 'jobExpTypeReq' || field.name === 'jobExpDuration') {
+                            return formData.jobExpReq === 'Yes';
+                          }
+                          return true;
+                        })
+                        .map(field => (
+                        <div 
+                          key={field.name} 
+                          className={`
+                            ${field.type === 'textarea' ? 'sm:col-span-2 md:col-span-3' : ''}
+                          `}
                         >
-                          {currencies.map(currency => (
-                            <option key={currency.code} value={currency.code}>
-                              {currency.code} - {currency.name}
-                            </option>
-                          ))}
-                        </Field>
-                        <ErrorMessage name="currency" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
+                          {renderField(field)}
+                        </div>
+                      ))}
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Benefits & Perks</label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-4">
-                        {availableBenefits.map((benefit) => (
-                          <label key={benefit} className="flex items-center text-sm">
-                            <input
-                              type="checkbox"
-                              checked={values.benefits.includes(benefit)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setFieldValue("benefits", [...values.benefits, benefit]);
-                                } else {
-                                  setFieldValue("benefits", values.benefits.filter(b => b !== benefit));
-                                }
-                              }}
-                              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            {benefit}
-                          </label>
+                  <div className="px-6 pb-4">
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span>Section {sectionIndex + 1} of {formSections.length}</span>
+                      <div className="flex space-x-1">
+                        {formSections.map((_, index) => (
+                          <div
+                            key={index}
+                            className={`h-2 w-8 rounded-full ${
+                              index <= sectionIndex ? 'bg-blue-500' : 'bg-gray-200'
+                            }`}
+                          />
                         ))}
                       </div>
                     </div>
                   </div>
-
-                  {/* Job Description */}
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Job Description</h2>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description <span className="text-red-500">*</span>
-                      </label>
-                      <Field
-                        name="description"
-                        as="textarea"
-                        rows={8}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Describe the role, responsibilities, and what makes this position exciting..."
-                      />
-                      <ErrorMessage name="description" component="div" className="text-red-500 text-sm mt-1" />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {values.description.length} characters (minimum 100 required)
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Requirements & Responsibilities */}
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Requirements & Responsibilities</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Requirements <span className="text-red-500">*</span>
-                        </label>
-                        <FieldArray name="requirements">
-                          {({ push, remove }) => (
-                            <div className="space-y-2">
-                              {values.requirements.map((_, index) => (
-                                <div key={index} className="flex space-x-2">
-                                  <Field
-                                    name={`requirements.${index}`}
-                                    type="text"
-                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter requirement..."
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => remove(index)}
-                                    className="text-red-600 hover:text-red-800 px-2"
-                                  >
-                                    <i className="fa fa-trash"></i>
-                                  </button>
-                                </div>
-                              ))}
-                              <button
-                                type="button"
-                                onClick={() => push("")}
-                                className="text-blue-600 hover:text-blue-800 text-sm"
-                              >
-                                <i className="fa fa-plus mr-1"></i>Add Requirement
-                              </button>
-                            </div>
-                          )}
-                        </FieldArray>
-                        <ErrorMessage name="requirements" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Responsibilities <span className="text-red-500">*</span>
-                        </label>
-                        <FieldArray name="responsibilities">
-                          {({ push, remove }) => (
-                            <div className="space-y-2">
-                              {values.responsibilities.map((_, index) => (
-                                <div key={index} className="flex space-x-2">
-                                  <Field
-                                    name={`responsibilities.${index}`}
-                                    type="text"
-                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter responsibility..."
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => remove(index)}
-                                    className="text-red-600 hover:text-red-800 px-2"
-                                  >
-                                    <i className="fa fa-trash"></i>
-                                  </button>
-                                </div>
-                              ))}
-                              <button
-                                type="button"
-                                onClick={() => push("")}
-                                className="text-blue-600 hover:text-blue-800 text-sm"
-                              >
-                                <i className="fa fa-plus mr-1"></i>Add Responsibility
-                              </button>
-                            </div>
-                          )}
-                        </FieldArray>
-                        <ErrorMessage name="responsibilities" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Skills */}
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Skills</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Required Skills <span className="text-red-500">*</span>
-                        </label>
-                        <div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto">
-                          <div className="grid grid-cols-2 gap-2">
-                            {commonSkills.map(skill => (
-                              <label key={skill} className="flex items-center text-sm">
-                                <input
-                                  type="checkbox"
-                                  checked={values.skillsRequired.includes(skill)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setFieldValue("skillsRequired", [...values.skillsRequired, skill]);
-                                    } else {
-                                      setFieldValue("skillsRequired", values.skillsRequired.filter(s => s !== skill));
-                                    }
-                                  }}
-                                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                {skill}
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                        <ErrorMessage name="skillsRequired" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Preferred Skills
-                        </label>
-                        <div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto">
-                          <div className="grid grid-cols-2 gap-2">
-                            {commonSkills.map(skill => (
-                              <label key={skill} className="flex items-center text-sm">
-                                <input
-                                  type="checkbox"
-                                  checked={values.skillsPreferred.includes(skill)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setFieldValue("skillsPreferred", [...values.skillsPreferred, skill]);
-                                    } else {
-                                      setFieldValue("skillsPreferred", values.skillsPreferred.filter(s => s !== skill));
-                                    }
-                                  }}
-                                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                {skill}
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Additional Information */}
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Additional Information</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Education Level <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="educationLevel"
-                          as="select"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Select Education Level</option>
-                          <option value="High School">High School</option>
-                          <option value="Associate Degree">Associate Degree</option>
-                          <option value="Bachelor's Degree">Bachelor's Degree</option>
-                          <option value="Master's Degree">Master's Degree</option>
-                          <option value="PhD">PhD</option>
-                          <option value="Professional Certification">Professional Certification</option>
-                        </Field>
-                        <ErrorMessage name="educationLevel" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Travel Requirement
-                        </label>
-                        <Field
-                          name="travelRequirement"
-                          as="select"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="None">No Travel Required</option>
-                          <option value="Minimal (0-10%)">Minimal (0-10%)</option>
-                          <option value="Occasional (10-25%)">Occasional (10-25%)</option>
-                          <option value="Frequent (25-50%)">Frequent (25-50%)</option>
-                          <option value="Extensive (50%+)">Extensive (50%+)</option>
-                        </Field>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Working Hours
-                        </label>
-                        <Field
-                          name="workingHours"
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g. 9:00 AM - 6:00 PM (Flexible)"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Probation Period
-                        </label>
-                        <Field
-                          name="probationPeriod"
-                          as="select"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="3 months">3 months</option>
-                          <option value="6 months">6 months</option>
-                          <option value="12 months">12 months</option>
-                          <option value="No probation">No probation period</option>
-                        </Field>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Application Deadline <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          name="applicationDeadline"
-                          type="date"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <ErrorMessage name="applicationDeadline" component="div" className="text-red-500 text-sm mt-1" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Start Date
-                        </label>
-                        <Field
-                          name="startDate"
-                          type="date"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
                 </div>
+              );
+            })}
 
-                {/* Sidebar */}
-                <div className="space-y-6">
-                  {/* Status & Settings */}
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Job Settings</h2>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                        <Field
-                          name="status"
-                          as="select"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="draft">Draft</option>
-                          <option value="active">Active</option>
-                          <option value="paused">Paused</option>
-                          <option value="closed">Closed</option>
-                        </Field>
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="flex items-center">
-                          <Field
-                            name="featured"
-                            type="checkbox"
-                            className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <span className="text-sm text-gray-700">Featured Job</span>
-                        </label>
-                        
-                        <label className="flex items-center">
-                          <Field
-                            name="urgent"
-                            type="checkbox"
-                            className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <span className="text-sm text-gray-700">Urgent Hiring</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Job Actions */}
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Actions</h2>
-                    
-                    <div className="space-y-3">
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/view-candidate-application-list?jobId=${jobId}`)}
-                        className="w-full text-left px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <i className="fa fa-users mr-2"></i>
-                        View Applications
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/recommended-candidates?jobId=${jobId}`)}
-                        className="w-full text-left px-4 py-2 text-green-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <i className="fa fa-magic mr-2"></i>
-                        AI Recommendations
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/bulk-hire?jobId=${jobId}`)}
-                        className="w-full text-left px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                      >
-                        <i className="fa fa-users mr-2"></i>
-                        Bulk Hire
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Save Actions */}
-                  <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <div className="space-y-3">
-                      <button
-                        type="submit"
-                        disabled={!isValid || saving}
-                        className="w-full bg-[#17487f] text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                      >
-                        {saving ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <i className="fa fa-save mr-2"></i>
-                            Update Job
-                          </>
-                        )}
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => router.push("/hra-jobs")}
-                        className="w-full border border-gray-300 text-gray-600 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  <p>Review all information before updating the job posting.</p>
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => router.push("/hra-jobs")}
+                    className="px-6 py-2 h-11"
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                  
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="px-8 py-2 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-sm"
+                  >
+                    {saving ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        Updating Job...
+                      </>
+                    ) : (
+                      'Update Job Posting'
+                    )}
+                  </Button>
                 </div>
               </div>
-            </Form>
-          )}
-        </Formik>
+            </div>
+          </form>
+        </div>
       </div>
     </>
   );
