@@ -18,7 +18,6 @@ export default function JobDetailsPage() {
           if (mounted) setJob(res?.data ?? res);
         }
       } catch (e) {
-        console.error(e);
       } finally {
         setLoading(false);
       }

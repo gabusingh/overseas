@@ -178,7 +178,6 @@ export default function EmployerSignupPage() {
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to send OTP. Please try again.";
-      console.error('OTP send error:', e);
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -360,7 +359,6 @@ export default function EmployerSignupPage() {
               }
             }, 500);
           } catch (redirectError) {
-            console.error('Error with router.push, using window.location:', redirectError);
             window.location.href = "/login?registered=1";
           }
         }, 2000);
@@ -370,7 +368,6 @@ export default function EmployerSignupPage() {
         toast.error(errorMessage);
       }
     } catch (error: unknown) {
-      console.error('Registration error:', error);
       
       // Handle specific error cases
       const axiosStatus = (error as any)?.response?.status;

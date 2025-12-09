@@ -29,7 +29,6 @@ function JobOpeningInTopCompany() {
       setCompanies(companiesData);
       setError(null);
     } catch (error) {
-      console.error('Error fetching companies:', error);
       setError('Failed to load companies');
       
       // Fallback to mock data if API fails

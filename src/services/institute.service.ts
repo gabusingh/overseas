@@ -31,7 +31,6 @@ export const getInstitutes = async () => {
     return institutesCache;
   } catch (error) {
     // No mock/fallback data — surface the actual error
-    console.error('Failed to fetch institutes from API:', error);
     throw error;
   } finally {
     isFetching = false;
@@ -49,7 +48,6 @@ export const getInstituteById = async (id: number) => {
     const response = await axios.get(BASE_URL + 'institutes/' + id);
     return response.data;
   } catch (error) {
-    console.error('Error fetching institute:', error);
     throw error;
   }
 };
@@ -59,7 +57,6 @@ export const getCourses = async () => {
     const response = await axios.get(BASE_URL + 'courses');
     return response.data;
   } catch (error) {
-    console.error('Error fetching courses:', error);
     throw error;
   }
 };
@@ -69,7 +66,6 @@ export const getCourseById = async (id: number) => {
     const response = await axios.get(BASE_URL + 'courses/' + id);
     return response.data;
   } catch (error) {
-    console.error('Error fetching course:', error);
     throw error;
   }
 };
@@ -82,7 +78,6 @@ export const applyCourse = async (courseId: number, userId: number) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error applying for course:', error);
     throw error;
   }
 };

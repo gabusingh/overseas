@@ -83,7 +83,6 @@ function ResizableHeader() {
       }
     } catch (error) {
       // Optionally show error to user, but proceed with logout
-      console.error("Logout API failed", error);
     } finally {
       localStorage.removeItem("access_token");
       localStorage.removeItem("user");

@@ -48,7 +48,6 @@ export default function Header() {
           }
         }
       } catch (e) {
-        console.error('Error parsing loggedUser:', e);
       }
       
       // Priority 2: Check localStorage user
@@ -60,7 +59,6 @@ export default function Header() {
             detectedType = parsed?.type;
           }
         } catch (e) {
-          console.error('Error parsing user:', e);
         }
       }
       
@@ -103,7 +101,6 @@ export default function Header() {
         await logOut(accessToken);
       }
     } catch (error) {
-      console.error('Logout API error:', error);
       // Continue with logout even if API call fails
     } finally {
       // Clear all stored authentication data

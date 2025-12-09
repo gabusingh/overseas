@@ -174,7 +174,6 @@ export default function EditProfilePage() {
       }
       
     } catch (error) {
-      console.error("Error loading profile data:", error);
       toast.error("Failed to load profile data");
     } finally {
       setLoading(false);
@@ -316,7 +315,6 @@ export default function EditProfilePage() {
         }, 100);
       }
     } catch (error: any) {
-      console.error("Error updating profile:", error);
       toast.error(error.response?.data?.message || error.message || "Failed to update profile");
     } finally {
       setSaving(false);

@@ -60,7 +60,6 @@ export default function TrainingInstitutesPage() {
         
         setInstitutes(mapped);
       } catch (err: any) {
-        console.error('Error fetching training institutes:', err);
         setError(err.message || 'Failed to load training institutes');
       } finally {
         setLoading(false);

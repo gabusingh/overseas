@@ -57,7 +57,6 @@ function getHrUserIdFromStorage(): string | null {
     // HR User ID not found in stored user data
     return null;
   } catch (error) {
-    console.error('Error extracting HR user ID:', error);
     return null;
   }
 }
@@ -211,13 +210,6 @@ export function HraDataProvider({ children, skipDataFetch = false }: HraDataProv
 
 
     } catch (error: any) {
-      console.error('❌ HRA Data Fetch Error:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        response: error.response?.data,
-        status: error.response?.status
-      });
 
       // Provide specific error messages
       let errorMessage = 'Failed to load HRA data. ';

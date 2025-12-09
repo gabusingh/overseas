@@ -81,11 +81,9 @@ export const getJobList = async (payload: FormData): Promise<JobListResponse> =>
     const response = await axios.post(BASE_URL + "filter-all-jobs", payload);
     return response.data;
   } catch (error: any) {
-    console.error("Error posting data:", error);
     
     // Handle 500 errors gracefully
     if (error?.response?.status === 500) {
-      console.error('Backend server error (500). Using empty response as fallback.');
       // Return empty but valid response structure
       return {
         jobs: [],
@@ -134,7 +132,6 @@ const getHrUserIdFromStorage = (): string | null => {
     
     return null;
   } catch (error) {
-    console.error('❌ Error extracting HR user ID:', error);
     return null;
   }
 };
@@ -157,7 +154,6 @@ const getUserTypeFromStorage = (): string | null => {
     
     return null;
   } catch (error) {
-    console.error('Error extracting user type:', error);
     return null;
   }
 };
@@ -207,7 +203,6 @@ export const getUserAwareJobList = async (payload: FormData): Promise<EnhancedJo
     };
     
   } catch (error) {
-    console.error('Error in getUserAwareJobList:', error);
     // Fallback to regular job list on error
     const fallbackResponse = await getJobList(payload);
     return {
@@ -227,7 +222,6 @@ export const getJobListForSearch = async (payload: object = {}): Promise<JobList
     });
     return response.data;
   } catch (error) {
-    console.error("Error posting data:", error);
     throw error;
   }
 };
@@ -255,7 +249,6 @@ export const searchJobsByKey = async (searchKey: string | FormData): Promise<Job
     const response = await axios.post(BASE_URL + "search-all-jobs", payload, { headers });
     return response.data;
   } catch (error) {
-    console.error("Error searching jobs:", error);
     throw error;
   }
 };
@@ -269,7 +262,6 @@ export const getSearchResult = async (occuId: number, countryId: number) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching search result:', error);
     throw error;
   }
 };
@@ -283,7 +275,6 @@ export const getThisWeekJob = async (payload: FormData): Promise<JobListResponse
     });
     return response.data;
   } catch (error) {
-    console.error("Error posting data:", error);
     throw error;
   }
 };
@@ -293,7 +284,6 @@ export const getOccupations = async () => {
     const response = await axios.get(BASE_URL + 'get-occupations');
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -303,7 +293,6 @@ export const getSkill = async () => {
     const response = await axios.post(BASE_URL + 'get-skills');
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -313,7 +302,6 @@ export const getJobByDepartment = async (id: number) => {
     const response = await axios.get(BASE_URL + 'occupation-wise-jobs/' + id);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -323,7 +311,6 @@ export const getJobByCountry = async (id: number) => {
     const response = await axios.get(BASE_URL + 'country-wise-jobs/' + id);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -333,7 +320,6 @@ export const getJobById = async (id: string | number): Promise<any> => {
     const response = await axios.get(BASE_URL + 'getJobs/' + id);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -359,7 +345,6 @@ export const applyJobApi = async (payload: any, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error applying for job:', error);
     throw error;
   }
 };
@@ -373,7 +358,6 @@ export const appliedJobList = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -387,7 +371,6 @@ export const appliedJobById = async (id: number, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -401,7 +384,6 @@ export const getInterviewById = async (id: number, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -415,7 +397,6 @@ export const favouriteJobList = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -429,7 +410,6 @@ export const saveJobById = async (jobId: number, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -443,7 +423,6 @@ export const userSavedJobsList = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching saved jobs:', error);
     throw error;
   }
 };
@@ -481,7 +460,6 @@ export const getRelatedJobs = async (jobId: number) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching related jobs:', error);
     throw error;
   }
 };
@@ -495,7 +473,6 @@ export const jobQuery = async (formData: FormData) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error submitting job query:', error);
     throw error;
   }
 };
@@ -508,7 +485,6 @@ export const getJobsByCountryByDepartment = async (countryId: number, department
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching jobs by country and department:', error);
     throw error;
   }
 };
@@ -523,7 +499,6 @@ export const getAppliedJobs = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching applied jobs:', error);
     throw error;
   }
 };
@@ -537,7 +512,6 @@ export const getSavedJobs = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching saved jobs:', error);
     throw error;
   }
 };
@@ -551,7 +525,6 @@ export const removeSavedJob = async (jobId: number, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error removing saved job:', error);
     throw error;
   }
 };
@@ -563,7 +536,6 @@ export const getCompanies = async (page: number = 1) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching companies:', error);
     throw error;
   }
 };
@@ -573,7 +545,6 @@ export const getCompanyById = async (id: number) => {
     const response = await axios.get(BASE_URL + 'company/' + id);
     return response;
   } catch (error) {
-    console.error('Error fetching company details:', error);
     throw error;
   }
 };
@@ -583,7 +554,6 @@ export const searchJobs = async (searchParams: any) => {
     const response = await axios.post(BASE_URL + 'search-jobs', searchParams);
     return response;
   } catch (error) {
-    console.error('Error searching jobs:', error);
     throw error;
   }
 };
@@ -593,7 +563,6 @@ export const getJobStatistics = async () => {
     const response = await axios.get(BASE_URL + 'job-statistics');
     return response;
   } catch (error) {
-    console.error('Error fetching job statistics:', error);
     throw error;
   }
 };

@@ -181,7 +181,6 @@ export default function HraViewJobsPage() {
       ));
       toast.success(`Job status updated to ${newStatus}`);
     } catch (error) {
-      console.error("Error updating job status:", error);
       toast.error("Failed to update job status");
     }
   };
@@ -195,7 +194,6 @@ export default function HraViewJobsPage() {
       setJobs(prev => prev.filter(job => job.id !== jobId));
       toast.success("Job deleted successfully");
     } catch (error) {
-      console.error("Error deleting job:", error);
       toast.error("Failed to delete job");
     }
   };
@@ -231,7 +229,6 @@ export default function HraViewJobsPage() {
       setJobs(prev => [duplicatedJob, ...prev]);
       toast.success("Job duplicated successfully");
     } catch (error) {
-      console.error("Error duplicating job:", error);
       toast.error("Failed to duplicate job");
     }
   };
@@ -324,7 +321,6 @@ export default function HraViewJobsPage() {
       
       setJobApplications(prev => ({ ...prev, [jobId]: applications }));
     } catch (error) {
-      console.error(`❌ Error fetching applications for job ${jobId}:`, error);
       
       // Try fallback to general candidates list
       try {

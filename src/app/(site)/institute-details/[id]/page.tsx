@@ -110,7 +110,6 @@ export default function InstituteDetailsPage() {
       
       setInstitute(foundInstitute);
     } catch (error: unknown) {
-      console.error('❌ Error fetching institute details:', error);
       const message = (error instanceof Error && error.message) ? error.message : 'Failed to load institute details. Please try again.';
       toast.error(message);
     } finally {
@@ -137,7 +136,6 @@ export default function InstituteDetailsPage() {
       }
       setCourses(Array.isArray(data?.data) ? data.data : []);
     } catch (error: unknown) {
-      console.error('❌ Error fetching courses:', error);
       const message = (error instanceof Error && error.message) ? error.message : 'Failed to load courses';
       toast.error(message);
       setCourses([]);

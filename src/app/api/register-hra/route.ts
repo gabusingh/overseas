@@ -155,7 +155,6 @@ export async function POST(request: NextRequest) {
     }, { status: 400 });
     
   } catch (error: any) {
-    console.error('Register HRA API error:', error);
     
     // Handle validation errors (422)
     if (error?.response?.status === 422) {

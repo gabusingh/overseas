@@ -390,7 +390,6 @@ export default function EditJobPage() {
       }
       
     } catch (error: any) {
-      console.error("Error fetching job data:", error);
       const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
       
       if (error.message.includes('timeout')) {
@@ -451,7 +450,6 @@ export default function EditJobPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching skills:', error);
       setSkillList([]);
     }
   };
@@ -931,7 +929,6 @@ export default function EditJobPage() {
       router.push("/hra-jobs");
       
     } catch (error: any) {
-      console.error('Error updating job:', error);
       let errorMessage = '❌ Failed to update job. Please try again.';
       
       if (error?.message) {

@@ -141,7 +141,6 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
       }
 
     } catch (error) {
-      console.error("Error fetching categories data:", error);
     } finally {
       setLoading(false);
     }
@@ -173,7 +172,6 @@ const BrowseJobsByCategory: React.FC<BrowseJobsByCategoryProps> = ({
       
       setJobCounts(countsMap);
     } catch (error) {
-      console.error("Error fetching job counts:", error);
     }
   };
 

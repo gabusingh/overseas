@@ -57,7 +57,6 @@ export const HrProfileProvider: React.FC<HrProfileProviderProps> = ({ children }
       
       return false;
     } catch (error) {
-      console.error('Error checking HR user status:', error);
       return false;
     }
   }, []);
@@ -86,7 +85,6 @@ export const HrProfileProvider: React.FC<HrProfileProviderProps> = ({ children }
         setError('Failed to load HR profile');
       }
     } catch (error) {
-      console.error('Error fetching HR profile:', error);
       setError('Failed to fetch HR profile');
       // Don't show toast error here to avoid spam
     } finally {

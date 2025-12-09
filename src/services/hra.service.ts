@@ -148,7 +148,6 @@ export const getAllCompanies = async (token: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error fetching all companies:", error);
     throw error;
   }
 };
@@ -161,7 +160,6 @@ export const getHraList = async () => {
 
     return response.data;
   } catch (error) {
-    console.error("Error fetching HRA list:", error);
     throw error;
   }
 };
@@ -173,7 +171,6 @@ export const getCompanyDetails = async (companyId: string, token: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error fetching company details:", error);
     throw error;
   }
 };
@@ -187,11 +184,6 @@ export const getJobsPostedByHra = async (hraId: string, token: string) => {
     // Return the response data directly - let the caller handle the structure
     return response.data;
   } catch (error: any) {
-    console.error("Error fetching jobs posted by HRA:", {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data
-    });
     
     // If it's a 404 or no data found, return empty structure instead of throwing
     if (error.response?.status === 404 || error.message?.includes('not found')) {
@@ -209,7 +201,6 @@ export const getHrDetails = async (token: string): Promise<HrDetails> => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error fetching HR details:", error);
     throw error;
   }
 };
@@ -257,7 +248,6 @@ export const getEnhancedHrDetails = async (token: string): Promise<any | null> =
     return mappedData;
 
   } catch (error) {
-    console.error('❌ Error fetching enhanced HR details:', error);
     throw error; // Re-throw to let the calling code handle it
   }
 };
@@ -272,7 +262,6 @@ export const getHraDashboardAnalytics = async (token: string) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching HRA dashboard analytics:", error);
     throw error;
   }
 };
@@ -288,9 +277,6 @@ export const createJob = async (formData: FormData, accessToken: string) => {
     
     return response;
   } catch (error: any) {
-    console.error('❌ Error creating job:', error);
-    console.error('❌ Error response:', error?.response?.data);
-    console.error('❌ Error status:', error?.response?.status);
     throw error;
   }
 };
@@ -349,7 +335,6 @@ export const getHraDashboardData = async (token: string): Promise<HraDashboardDa
 
     return transformedData;
   } catch (error) {
-    console.error('Error fetching HRA dashboard data:', error);
     throw error;
   }
 };
@@ -359,7 +344,6 @@ export const getHraJobs = async (hraId: string, accessToken: string) => {
     const response = await getJobsPostedByHra(hraId, accessToken);
     return response;
   } catch (error) {
-    console.error('Error fetching HRA jobs:', error);
     throw error;
   }
 };
@@ -374,7 +358,6 @@ export const editJob = async (jobId: number, formData: FormData, accessToken: st
     });
     return response;
   } catch (error) {
-    console.error('Error editing job:', error);
     throw error;
   }
 };
@@ -388,7 +371,6 @@ export const getJobApplications = async (jobId: number, accessToken: string) => 
     });
     return response;
   } catch (error) {
-    console.error('Error fetching job applications:', error);
     throw error;
   }
 };
@@ -404,7 +386,6 @@ export const getRecommendedCandidates = async (jobId?: number, accessToken?: str
     });
     return response;
   } catch (error) {
-    console.error('Error fetching recommended candidates:', error);
     throw error;
   }
 };
@@ -419,7 +400,6 @@ export const getJobWiseRecommandations = async (jobId: number, accessToken: stri
     });
     return response;
   } catch (error) {
-    console.error('Error fetching job recommendations:', error);
     throw error;
   }
 };
@@ -433,7 +413,6 @@ export const getHraNotifications = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching HRA notifications:', error);
     throw error;
   }
 };
@@ -448,7 +427,6 @@ export const createBulkHire = async (formData: FormData, accessToken: string) =>
     });
     return response;
   } catch (error) {
-    console.error('Error creating bulk hire:', error);
     throw error;
   }
 };
@@ -465,7 +443,6 @@ export const getAllCreatedJobs = async (token: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching all created jobs:', error);
     throw error;
   }
 };
@@ -484,7 +461,6 @@ export const getAppliedCandidatesList = async (token: string, pageNo: number = 1
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching applied candidates list:', error);
     throw error;
   }
 };
@@ -499,7 +475,6 @@ export const getNotifications = async (token: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching notifications:', error);
     throw error;
   }
 };
@@ -529,7 +504,6 @@ export const registerHra = async (registrationData: HraRegistrationData) => {
     
     return response.data;
   } catch (error: any) {
-    console.error('Error registering HRA:', error);
     
     // Return error response data instead of throwing
     if (error?.response?.data) {
@@ -553,7 +527,6 @@ export const sendHraOtp = async (phone: string, countryCode: string) => {
     const response = await axios.post(`${BASE_URL}get-otp`, formData);
     return response.data;
   } catch (error) {
-    console.error('Error sending HRA OTP:', error);
     throw error;
   }
 };
@@ -569,7 +542,6 @@ export const verifyHraOtp = async (phone: string, otp: string, countryCode: stri
     const response = await axios.post(`${BASE_URL}register-person-step1`, formData);
     return response.data;
   } catch (error) {
-    console.error('Error verifying HRA OTP:', error);
     throw error;
   }
 };

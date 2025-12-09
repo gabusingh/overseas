@@ -81,7 +81,6 @@ export default function MyProfilePage() {
         setActiveTab(tabParam);
       }
     } catch (error) {
-      console.error("Error parsing user data:", error);
       router.push("/login");
     }
   }, [router, searchParams]);
@@ -238,7 +237,6 @@ export default function MyProfilePage() {
       }
       
     } catch (error) {
-      console.error("Error loading user data:", error);
       // Set fallback data for all sections
       setDashboardData({
         profile_strength: 65,
@@ -689,7 +687,6 @@ export default function MyProfilePage() {
                               setNotifications(prev => prev.map(n => ({ ...n, is_read: true, isRead: true })));
                               toast.success('All notifications marked as read');
                             } catch (error) {
-                              console.error('Error marking notifications as read:', error);
                             }
                           }
                         }}
@@ -1224,7 +1221,6 @@ export default function MyProfilePage() {
                                         // You can add unsave API call here if needed
                                         toast.info('Please go to the job details page to unsave this job');
                                       } catch (error) {
-                                        console.error('Error unsaving job:', error);
                                       }
                                     }
                                   }}

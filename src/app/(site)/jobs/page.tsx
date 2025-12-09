@@ -156,7 +156,6 @@ export default function JobsPage() {
         toast.error(response?.data?.error || "Something went wrong");
       }
     } catch (error: unknown) {
-      console.error('Apply job error:', error);
       const errorMessage = (error as any)?.response?.data?.error || (error as any)?.message || "Internal Server Error";
       if (errorMessage === "You did not fill mandatory fields.") {
         setSelectedJobId(jobId);
@@ -186,7 +185,6 @@ export default function JobsPage() {
         toast.error(response?.data?.error || "Failed to save job");
       }
     } catch (error: unknown) {
-      console.error('Save job error:', error);
       toast.error((error as any)?.response?.data?.error || "Failed to save job");
     }
   };
@@ -272,7 +270,6 @@ export default function JobsPage() {
         setTotalJobs(totalCount);
         setTotalPages(lastPageFromServer);
       } catch (error: any) {
-        console.error('Error fetching jobs:', error);
         
         // Check for specific error types
         if (error?.response?.status === 500) {

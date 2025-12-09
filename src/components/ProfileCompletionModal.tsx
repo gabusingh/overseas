@@ -230,7 +230,6 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
       }
 
     } catch (error) {
-      console.error('Error loading initial data:', error);
       // Don't show error toast for missing profile data - user can still fill the form
       // Only show error if critical data (like occupations) fails to load
       if (occupations.length === 0 && states.length === 0) {
@@ -253,7 +252,6 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
       const response = await getSkillsByOccuId(parseInt(occupationId));
       setSkills(response?.skills || []);
     } catch (error) {
-      console.error('❌ Error loading skills:', error);
       // Set empty skills array on error
       setSkills([]);
     }
@@ -267,7 +265,6 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
       const response = await getDistrict(parseInt(stateId));
       setDistricts(response?.districts || []);
     } catch (error) {
-      console.error('Error loading districts:', error);
     }
   };
 
@@ -345,7 +342,6 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
       }
 
     } catch (error: any) {
-      console.error('Error submitting profile:', error);
       
       // Use our standardized error handling
       const processedError = handleApiError(error);

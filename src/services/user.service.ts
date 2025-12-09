@@ -22,7 +22,6 @@ export const loginUsingPassword = async (params: { empPhone: string; password: s
     const response = await axios.post(BASE_URL + "passsword-login", params);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -36,7 +35,6 @@ export const getSummarizedVideo = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -46,7 +44,6 @@ export const loginUsingOtp = async (params: { empPhone: string } | FormData) => 
     const response = await axios.post(BASE_URL + "otp-request", params);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -56,7 +53,6 @@ export const verifyOtpForLogin = async (params: { empPhone: string; otp: string 
     const response = await axios.post(BASE_URL + "otp-login", params);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -71,7 +67,6 @@ export const signUp = async (formData: FormData) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -81,7 +76,6 @@ export const verifyOtpForSignUp = async (formData: FormData) => {
     const response = await axios.post(BASE_URL + "register-person-step1", formData);
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -96,7 +90,6 @@ export const registerUserStep1 = async (formData: FormData, accessToken: string)
     });
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -111,7 +104,6 @@ export const registerUserStep2 = async (formData: FormData, accessToken: string)
     });
     return response.data;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -126,7 +118,6 @@ export const addExperienceStep2 = async (formData: FormData, accessToken: string
     });
     return response;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -141,7 +132,6 @@ export const editExperienceStepApi = async (formData: FormData, accessToken: str
     });
     return response;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -155,7 +145,6 @@ export const getAllExperience = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -170,7 +159,6 @@ export const uploadWorkVideo = async (formData: FormData, accessToken: string) =
     });
     return response;
   } catch (error) {
-    console.error('Error posting data:', error);
     throw error;
   }
 };
@@ -184,7 +172,6 @@ export const submitContactQuery = async (formData: FormData) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -200,13 +187,6 @@ export const editProfile = async (formData: FormData, accessToken: string) => {
     );
     return response;
   } catch (error: any) {
-    console.error('Error updating profile:', {
-      message: error.message,
-      status: error.status,
-      data: error.data,
-      originalError: error.originalError
-    });
-    
     // Provide more specific error messages
     if (error.message?.includes('Network Error') || !navigator.onLine) {
       const networkError = new Error('Network connection failed. Please check your internet connection and try again.');
@@ -235,7 +215,6 @@ export const getProfileStrength = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching data:', error);
     throw error;
   }
 };
@@ -249,7 +228,6 @@ export const getUserDashboard = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching user dashboard:', error);
     throw error;
   }
 };
@@ -263,7 +241,6 @@ export const getEmpData = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching employee data:', error);
     throw error;
   }
 };
@@ -325,7 +302,6 @@ export const profileCompleteStep2 = async (formData: FormData, accessToken: stri
     );
     return response?.data || {};
   } catch (error) {
-    console.error('Error completing profile step 2:', error);
     // Re-throw the enhanced error from our interceptors
     throw error;
   }
@@ -341,7 +317,6 @@ export const profileCompleteStep3 = async (formData: FormData, accessToken: stri
     });
     return response.data;
   } catch (error) {
-    console.error('Error completing profile step 3:', error);
     throw error;
   }
 };
@@ -356,7 +331,6 @@ export const passportUpload = async (formData: FormData, accessToken: string) =>
     });
     return response.data;
   } catch (error) {
-    console.error('Error uploading passport:', error);
     throw error;
   }
 };
@@ -370,7 +344,6 @@ export const passportView = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching passport:', error);
     throw error;
   }
 };
@@ -385,7 +358,6 @@ export const passportEdit = async (formData: FormData, accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error editing passport:', error);
     throw error;
   }
 };
@@ -399,7 +371,6 @@ export const experienceList = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching experience list:', error);
     throw error;
   }
 };
@@ -413,7 +384,6 @@ export const viewExperience = async (id: number, accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching experience:', error);
     throw error;
   }
 };
@@ -428,7 +398,6 @@ export const addExperience = async (formData: FormData, accessToken: string) => 
     });
     return response.data;
   } catch (error) {
-    console.error('Error adding experience:', error);
     throw error;
   }
 };
@@ -442,7 +411,6 @@ export const pastExperienceList = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching past experience list:', error);
     throw error;
   }
 };
@@ -457,7 +425,6 @@ export const updatePastOccupation = async (formData: FormData, accessToken: stri
     });
     return response.data;
   } catch (error) {
-    console.error('Error updating past occupation:', error);
     throw error;
   }
 };
@@ -472,7 +439,6 @@ export const storeLocation = async (formData: FormData, accessToken: string) => 
     });
     return response.data;
   } catch (error) {
-    console.error('Error storing location:', error);
     throw error;
   }
 };
@@ -487,7 +453,6 @@ export const storeAppUseTime = async (formData: FormData, accessToken: string) =
     });
     return response.data;
   } catch (error) {
-    console.error('Error storing app use time:', error);
     throw error;
   }
 };
@@ -502,7 +467,6 @@ export const getNotification = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching notifications:', error);
     throw error;
   }
 };
@@ -517,7 +481,6 @@ export const addPassportApi = async (formData: FormData, accessToken: string) =>
     });
     return response;
   } catch (error) {
-    console.error('Error uploading passport:', error);
     throw error;
   }
 };
@@ -532,7 +495,6 @@ export const addCvApi = async (formData: FormData, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error uploading CV:', error);
     throw error;
   }
 };
@@ -547,7 +509,6 @@ export const addCovidCertificateApi = async (formData: FormData, accessToken: st
     });
     return response;
   } catch (error) {
-    console.error('Error uploading COVID certificate:', error);
     throw error;
   }
 };
@@ -562,7 +523,6 @@ export const editPassportApi = async (formData: FormData, accessToken: string) =
     });
     return response;
   } catch (error) {
-    console.error('Error editing passport:', error);
     throw error;
   }
 };
@@ -576,7 +536,6 @@ export const getPassportDetails = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching passport details:', error);
     throw error;
   }
 };
@@ -591,7 +550,6 @@ export const addDrivingLicense = async (formData: FormData, accessToken: string)
     });
     return response;
   } catch (error) {
-    console.error('Error uploading driving license:', error);
     throw error;
   }
 };
@@ -606,7 +564,6 @@ export const addHighestEduCertificate = async (formData: FormData, accessToken: 
     });
     return response;
   } catch (error) {
-    console.error('Error uploading education certificate:', error);
     throw error;
   }
 };
@@ -621,7 +578,6 @@ export const addOtherDoc = async (formData: FormData, accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error uploading other documents:', error);
     throw error;
   }
 };
@@ -636,7 +592,6 @@ export const submitLoanForm = async (formData: FormData, accessToken: string) =>
     });
     return response;
   } catch (error) {
-    console.error('Error submitting loan form:', error);
     throw error;
   }
 };
@@ -650,7 +605,6 @@ export const getAllDocApi = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching all documents:', error);
     throw error;
   }
 };
@@ -665,7 +619,6 @@ export const editDrivingLicense = async (formData: FormData, accessToken: string
     });
     return response;
   } catch (error) {
-    console.error('Error editing driving license:', error);
     throw error;
   }
 };
@@ -679,7 +632,6 @@ export const logOut = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error logging out:', error);
     throw error;
   }
 };
@@ -694,7 +646,6 @@ export const submitReference = async (formData: FormData, accessToken: string) =
     });
     return response;
   } catch (error) {
-    console.error('Error submitting reference:', error);
     throw error;
   }
 };
@@ -709,7 +660,6 @@ export const checkServiceCode = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error checking service code:', error);
     throw error;
   }
 };
@@ -719,7 +669,6 @@ export const getOtpOnEmail = async (formData: FormData) => {
     const response = await axios.post(BASE_URL + "get-email-otp", formData);
     return response;
   } catch (error) {
-    console.error('Error getting OTP on email:', error);
     throw error;
   }
 };
@@ -734,7 +683,6 @@ export const storeUserLocation = async (formData: FormData, accessToken: string)
     });
     return response;
   } catch (error) {
-    console.error('Error storing user location:', error);
     throw error;
   }
 };
@@ -749,7 +697,6 @@ export const getUserDetails = async (accessToken: string) => {
     });
     return response;
   } catch (error) {
-    console.error('Error fetching user details:', error);
     throw error;
   }
 };

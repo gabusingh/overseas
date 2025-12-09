@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('Send OTP API error:', error);
     
     // Handle specific error responses from the external API
     if (error?.response?.status === 422) {

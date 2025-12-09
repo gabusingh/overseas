@@ -88,8 +88,6 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('Send OTP API error:', error.message || error);
-    console.error('Error response:', error?.response?.data);
     
     // Handle specific error responses from the external API
     if (error?.response?.data?.error) {

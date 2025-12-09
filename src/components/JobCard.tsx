@@ -96,7 +96,6 @@ export default function JobCard({
         toast.success("Job saved successfully");
       }
     } catch (error) {
-      console.error('Save job error:', error);
       toast.error("Failed to save job");
     } finally {
       setIsSaving(false);
