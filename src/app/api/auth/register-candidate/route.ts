@@ -96,7 +96,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   } catch (error: any) {
-    console.error('Registration API error:', error);
     
     // Handle specific error responses from the external API
     if (error?.response?.data?.error) {

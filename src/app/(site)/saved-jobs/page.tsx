@@ -41,7 +41,6 @@ export default function SavedJobsPage() {
       const response = await userSavedJobsList(token);
       setSavedJobs(response?.jobs || response || []);
     } catch (error) {
-      console.error("Error fetching saved jobs:", error);
       toast.error("Failed to load saved jobs");
     } finally {
       setLoading(false);
@@ -57,7 +56,6 @@ export default function SavedJobsPage() {
       setSavedJobs(savedJobs.filter(job => job.id !== jobId));
       toast.success("Job removed from saved jobs");
     } catch (error) {
-      console.error("Error unsaving job:", error);
       toast.error("Failed to remove job from saved list");
     }
   };

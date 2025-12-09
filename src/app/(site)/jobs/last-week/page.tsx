@@ -133,7 +133,6 @@ export default function JobsLastWeekPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching last week jobs:', error);
       toast.error('Failed to load jobs. Please try again.');
       if (append) {
         setHasMore(false);

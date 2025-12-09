@@ -44,7 +44,6 @@ export default function CourseDetailsPage() {
         const details = (data?.data || data) as CourseDetail;
         setCourse(details);
       } catch (error: unknown) {
-        console.error('Error loading course details:', error);
         toast.error((error as any)?.message || 'Failed to load course details');
       } finally {
         setLoading(false);
@@ -82,7 +81,6 @@ export default function CourseDetailsPage() {
         toast.success('Applied successfully');
       }
     } catch (error: unknown) {
-      console.error('Apply course error:', error);
       toast.error((error as any)?.message || 'Failed to apply');
     } finally {
       setApplying(false);

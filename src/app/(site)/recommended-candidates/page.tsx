@@ -144,7 +144,6 @@ export default function RecommendedCandidatesPage() {
         setSelectedJob(availableJobsList[0] || null);
       }
     } catch (error) {
-      console.error("Error fetching jobs:", error);
       toast.error("Failed to load jobs");
     }
   };
@@ -468,7 +467,6 @@ export default function RecommendedCandidatesPage() {
 
       setCandidates(candidatesData);
     } catch (error) {
-      console.error("Error fetching recommended candidates:", error);
       toast.error("Failed to load recommended candidates");
     } finally {
       setLoading(false);
@@ -571,7 +569,6 @@ export default function RecommendedCandidatesPage() {
         `${candidate?.candidateName} ${candidate?.isBookmarked ? 'removed from' : 'added to'} bookmarks`
       );
     } catch (error) {
-      console.error("Error toggling bookmark:", error);
       toast.error("Failed to update bookmark");
     }
   };
@@ -619,7 +616,6 @@ export default function RecommendedCandidatesPage() {
       setShowContactModal(false);
       setContactMessage("");
     } catch (error) {
-      console.error("Error contacting candidates:", error);
       toast.error("Failed to contact candidates");
     } finally {
       setIsContacting(false);

@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
       message: 'OTP verified successfully'
     });
   } catch (error: any) {
-    console.error('Validate OTP API error:', error);
     return NextResponse.json(
       { error: 'Mobile Number Not Found or Invalid OTP.' },
       { status: 422 }

@@ -90,7 +90,6 @@ function normalizeSubmissionValues(
       const arrayFields: (keyof FormDataType)[] = ['jobSkill', 'languageRequired'];
       if (!arrayFields.includes(name)) {
         // If this field shouldn't be an array, convert to empty string
-        console.warn(`Field ${name} is an array but should be a string. Converting to empty string.`);
         normalized[name] = '';
         return;
       }
@@ -105,7 +104,6 @@ function normalizeSubmissionValues(
         .map((v) => {
           // Convert all array items to strings - ensure no nested arrays
           if (Array.isArray(v)) {
-            console.warn(`Nested array found in ${name}, converting to string`);
             return JSON.stringify(v);
           }
           return typeof v === 'string' ? v : String(v);
@@ -1130,7 +1128,6 @@ const CreateJobs = () => {
         if (Array.isArray(value)) {
           // Only allow arrays for specific fields
           if (!arrayFields.includes(fieldName)) {
-            console.warn(`Field ${fieldName} is an array but should be a string. Converting to empty string.`);
             formDataInstance.append(fieldName, '');
             return;
           }
@@ -1158,11 +1155,9 @@ const CreateJobs = () => {
                 return; // Skip null/undefined items
               } else if (Array.isArray(item)) {
                 // Nested array - this shouldn't happen, but handle it
-                console.error(`Nested array found in ${fieldName}, skipping item`);
                 return;
               } else if (typeof item === 'object') {
                 // Object - convert to JSON string (shouldn't happen for these fields)
-                console.error(`Object found in ${fieldName}, converting to JSON string`);
                 validItems.push(JSON.stringify(item));
               } else {
                 // For any other type, convert to string
@@ -1218,7 +1213,6 @@ const CreateJobs = () => {
             stringValue = String(value);
           } else if (Array.isArray(value)) {
             // This shouldn't happen, but handle it just in case
-            console.warn(`Field ${fieldName} should not be an array here. Converting to empty string.`);
             stringValue = '';
           } else {
             // For any other type, convert to string
@@ -1245,29 +1239,6 @@ const CreateJobs = () => {
         if (occValue) {
           formDataInstance.set('jobOccupation', String(occValue));
         }
-      }
-      
-      // Debug: Log form data being sent (excluding file content)
-      if (process.env.NODE_ENV === 'development') {
-        console.log('📤 Form Data being sent:');
-        const formDataEntries: string[] = [];
-        for (const [key, value] of formDataInstance.entries()) {
-          if (value instanceof File) {
-            console.log(`${key}: [File] ${value.name} (${value.size} bytes)`);
-            formDataEntries.push(`${key}: [File]`);
-          } else {
-            // Ensure value is a string, not an array
-            const stringValue = typeof value === 'string' ? value : String(value);
-            console.log(`${key}: ${stringValue}`);
-            formDataEntries.push(`${key}: ${stringValue}`);
-            
-            // Check if value is accidentally an array
-            if (Array.isArray(value)) {
-              console.error(`⚠️ ERROR: Field ${key} is an array when it should be a string!`);
-            }
-          }
-        }
-        console.log('📋 All form data keys:', Array.from(formDataInstance.keys()));
       }
       
       // Submit the form
@@ -1301,7 +1272,6 @@ const CreateJobs = () => {
       }, 2000);
       
     } catch (error: any) {
-      console.error("Error creating job:", error);
       
       // Handle different error types with enhanced messages
       let errorMessage = '❌ Failed to create job. Please try again.';

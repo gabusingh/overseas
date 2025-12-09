@@ -155,7 +155,6 @@ export default function SearchResultsPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching jobs:', error);
       setError('Failed to load jobs. Please try again.');
       if (append) {
         setHasMore(false);

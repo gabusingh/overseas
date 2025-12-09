@@ -77,7 +77,6 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
         };
 
         recognition.onerror = (event) => {
-          console.error("Speech recognition error:", event.error);
           setIsListening(false);
         };
 
@@ -87,7 +86,6 @@ const SearchComponent = React.memo(({ fullWidth, data = [], countryData = [] }: 
 
         recognitionRef.current = recognition;
       } else {
-        console.error("Sorry, your browser does not support the Web Speech API.");
       }
     }
   }, []);

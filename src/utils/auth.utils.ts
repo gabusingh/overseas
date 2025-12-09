@@ -74,7 +74,6 @@ export const safeApiCall = async <T>(
     }
 
     // For unexpected errors, log and return fallback instead of throwing
-    console.error(`Error during ${description}:`, error);
     return fallbackValue;
   }
 };

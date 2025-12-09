@@ -185,7 +185,6 @@ export default function JobDescriptionPage() {
         throw new Error('Job not found');
       }
     } catch (error) {
-      console.error('Error fetching job details:', error);
       toast.error('Failed to load job details. Please try again.');
       router.push('/jobs');
     } finally {
@@ -228,7 +227,6 @@ export default function JobDescriptionPage() {
         toast.error(response?.data?.error || "Something went wrong");
       }
     } catch (error: any) {
-      console.error('Apply job error:', error);
       const errorMessage = error?.response?.data?.error || error?.message || "Internal Server Error";
       if (errorMessage === "You did not fill mandatory fields.") {
         // Show profile completion modal instead of redirecting
@@ -262,7 +260,6 @@ export default function JobDescriptionPage() {
         toast.error('Failed to save job');
       }
     } catch (error) {
-      console.error('Error saving job:', error);
       toast.error('Failed to save job. Please try again.');
     } finally {
       setSaving(false);
@@ -283,7 +280,6 @@ export default function JobDescriptionPage() {
         toast.success('Job link copied to clipboard!');
       }
     } catch (error) {
-      console.error('Error sharing job:', error);
       toast.error('Failed to share job');
     }
   };

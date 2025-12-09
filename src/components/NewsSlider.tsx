@@ -44,7 +44,6 @@ function NewsSlider() {
       setNews(newsData);
       setError(null);
     } catch (error) {
-      console.error('Error fetching news feed:', error);
       setError('Failed to load news');
       
       // Fallback to mock data if API fails

@@ -11,7 +11,6 @@ export const getNotifications = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching notifications:', error);
     throw error;
   }
 };
@@ -25,7 +24,6 @@ export const markNotificationAsRead = async (notificationId: number, accessToken
     });
     return response.data;
   } catch (error) {
-    console.error('Error marking notification as read:', error);
     throw error;
   }
 };
@@ -39,7 +37,6 @@ export const markAllNotificationsAsRead = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
     throw error;
   }
 };
@@ -53,7 +50,6 @@ export const deleteNotification = async (notificationId: number, accessToken: st
     });
     return response.data;
   } catch (error) {
-    console.error('Error deleting notification:', error);
     throw error;
   }
 };
@@ -67,7 +63,6 @@ export const getNotificationSettings = async (accessToken: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching notification settings:', error);
     throw error;
   }
 };
@@ -81,7 +76,6 @@ export const updateNotificationSettings = async (settings: any, accessToken: str
     });
     return response.data;
   } catch (error) {
-    console.error('Error updating notification settings:', error);
     throw error;
   }
 };

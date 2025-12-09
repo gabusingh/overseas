@@ -75,7 +75,6 @@ export default function LoginPage() {
         toast.error("Failed to send OTP");
       }
     } catch (error: any) {
-      console.error('OTP error:', error);
       const errorMessage = error?.response?.data?.error || "Failed to send OTP";
       
       // Check for specific "not registered" error messages
@@ -240,7 +239,6 @@ export default function LoginPage() {
         }
       }
     } catch (error: any) {
-      console.error('Login error:', error);
       const errorMessage = error?.response?.data?.error || error?.message || "Login failed";
       
       // Check for specific "not registered" error messages

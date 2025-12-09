@@ -71,12 +71,6 @@ export default function JobAppliedPage() {
       setAppliedJobs(safeJobsData);
 
     } catch (error: any) {
-      console.error('Error fetching applied jobs:', error);
-      console.error('Error details:', {
-        message: error?.message || 'Unknown error',
-        response: error?.response?.data,
-        status: error?.response?.status
-      });
 
       // Always set empty array on error
       setAppliedJobs([]);
@@ -89,7 +83,6 @@ export default function JobAppliedPage() {
   const filterJobs = () => {
     // Ensure appliedJobs is an array
     if (!Array.isArray(appliedJobs)) {
-      console.error('appliedJobs is not an array:', appliedJobs);
       setFilteredJobs([]);
       return;
     }

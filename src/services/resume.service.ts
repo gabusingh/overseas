@@ -11,7 +11,6 @@ export const getResumeOtp = async (loginForm: { name: string; contact: string })
     const response = await apiRequest.post('get-otp', formData);
     return response;
   } catch (error: any) {
-    console.error('Error sending OTP:', error);
     throw error;
   }
 };
@@ -29,7 +28,6 @@ export const verifyOtpForResumeUser = async (loginForm: { name: string; contact:
     const response = await apiRequest.post('register-person-step1', formData);
     return response;
   } catch (error: any) {
-    console.error('Error verifying OTP:', error);
     throw error;
   }
 };
@@ -46,14 +44,12 @@ export const updateResumeApi = async (formData: FormData, accessToken?: string) 
     const response = await apiRequest.post('user-complete-profile-edit', formData, token);
     return response?.data;
   } catch (error) {
-    console.error('Error updating resume:', error);
     // If the edit endpoint fails, try the profile completion endpoint
     try {
       const token = accessToken || (typeof window !== 'undefined' ? sessionStorage.getItem('resumeAccessToken') : null);
       const fallbackResponse = await apiRequest.post('user-profile-complete-step2', formData, token);
       return fallbackResponse?.data;
     } catch (fallbackError) {
-      console.error('Fallback profile update also failed:', fallbackError);
       throw error; // Throw the original error
     }
   }
@@ -70,7 +66,6 @@ export const updateResumeExperience = async (formData: FormData, accessToken?: s
     const response = await apiRequest.post('add-experience', formData, token);
     return response?.data;
   } catch (error) {
-    console.error('Error updating experience:', error);
     throw error;
   }
 };
@@ -86,7 +81,6 @@ export const updateResumeLicence = async (formData: FormData, accessToken?: stri
     const response = await apiRequest.post('upload-dl-by-user', formData, token);
     return response?.data;
   } catch (error) {
-    console.error('Error updating licence:', error);
     throw error;
   }
 };
@@ -108,7 +102,6 @@ export const updatePassport = async (formData: FormData, accessToken?: string) =
     }
     return response?.data;
   } catch (error) {
-    console.error('Error updating passport:', error);
     throw error;
   }
 };

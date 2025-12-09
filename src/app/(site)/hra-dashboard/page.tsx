@@ -75,7 +75,6 @@ export default function HraDashboardPage() {
       // Use context to fetch HRA data with caching
       await fetchHraData();
     } catch (error) {
-      console.error("Error initializing dashboard:", error);
       toast.error("Failed to initialize dashboard. Please try again.");
     }
   };

@@ -78,7 +78,6 @@ export default function TradeTestingInstitutePage() {
         
         setTests(mapped);
       } catch (err: any) {
-        console.error('Error fetching trade tests:', err);
         setError(err.message || 'Failed to load trade tests');
       } finally {
         setLoading(false);
@@ -113,7 +112,6 @@ export default function TradeTestingInstitutePage() {
       router.push('/trade-test-center');
       
     } catch (error) {
-      console.error('Error scheduling test:', error);
       toast.error('Failed to schedule test. Please try again.');
     }
   };

@@ -222,7 +222,6 @@ export default function CandidateRegisterPage() {
         }
       }
     } catch (error) {
-      console.error("Registration error:", error);
       toast.error("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);

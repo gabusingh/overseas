@@ -103,7 +103,6 @@ export default function CompanyDetailsPage() {
         router.push('/companies');
       }
     } catch (error: any) {
-      console.error('❌ Error fetching company details:', error);
       if (error?.response?.status === 404) {
         toast.error('Company not found');
       } else {

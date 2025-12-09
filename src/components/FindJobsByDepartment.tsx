@@ -87,7 +87,6 @@ const FindJobsByDepartment: React.FC<FindJobsByDepartmentProps> = ({
       });
       setJobCounts(countsMap);
     } catch (error) {
-      console.error("Error fetching job counts:", error);
     }
   };
 
