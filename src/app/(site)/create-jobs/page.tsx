@@ -209,6 +209,7 @@ const REQUIRED_FIELDS: (keyof FormDataType)[] = [
   'jobLocationCountry',
   'jobDeadline',
   'jobVacancyNo',
+  'jobWages',
   'jobWagesCurrencyType',
   'salary_negotiable',
   'passport_type',
@@ -242,7 +243,13 @@ const CreateJobs = () => {
   const [hrDetailsLoading, setHrDetailsLoading] = useState(false);
   const [formData, setFormData] = useState<FormDataValues>({} as FormDataValues);
   const [errors, setErrors] = useState<Partial<Record<keyof FormDataType, string>>>({});
+  const [isMounted, setIsMounted] = useState(false);
   
+  // Track mount state to prevent hydration mismatches
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Sync cached data to state when available
   useEffect(() => {
     if (countriesApiData.length > 0) {
@@ -1427,9 +1434,11 @@ const CreateJobs = () => {
     const fieldName = field.name as keyof FormDataType;
     const error = errors[fieldName];
     // Conditional required: jobExpTypeReq and jobExpDuration are required only when jobExpReq === "Yes"
+    // Only check conditional requirements after mount to prevent hydration mismatch
+    const jobExpReqValue = isMounted ? formData.jobExpReq : undefined;
     const isRequired = REQUIRED_FIELDS.includes(fieldName) || 
-                      (fieldName === 'jobExpTypeReq' && formData.jobExpReq === 'Yes') || 
-                      (fieldName === 'jobExpDuration' && formData.jobExpReq === 'Yes');
+                      (isMounted && fieldName === 'jobExpTypeReq' && jobExpReqValue === 'Yes') || 
+                      (isMounted && fieldName === 'jobExpDuration' && jobExpReqValue === 'Yes');
     
     
     // Check if this is an HR field that should show loading state
@@ -1698,8 +1707,9 @@ const CreateJobs = () => {
                     {sectionFields
                       .filter(field => {
                         // Conditionally show jobExpTypeReq and jobExpDuration only when jobExpReq is "Yes"
+                        // Only filter after mount to prevent hydration mismatch
                         if (field.name === 'jobExpTypeReq' || field.name === 'jobExpDuration') {
-                          return formData.jobExpReq === 'Yes';
+                          return isMounted && formData.jobExpReq === 'Yes';
                         }
                         return true;
                       })
