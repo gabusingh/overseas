@@ -150,7 +150,7 @@ function normalizeSubmissionValues(
 }
 
 type FormDataType = {
-  jobManualID: string;
+  jobManualId: string;
   jobTitle: string;
   jobOccupation: string;
   jobSkill: string[];
@@ -192,7 +192,7 @@ type FormDataType = {
 };
 
 const REQUIRED_FIELDS: (keyof FormDataType)[] = [
-  'jobManualID',
+  'jobManualId',
   'jobTitle',
   'jobOccupation',
   'jobSkill',
@@ -341,7 +341,7 @@ export default function EditJobPage() {
 
       // Transform API response to match FormDataType
       const transformedData: FormDataValues = {
-        jobManualID: jobApiData.jobManualID || jobApiData.jobID || jobApiData.id?.toString() || '',
+        jobManualId: jobApiData.jobManualId || jobApiData.jobID || jobApiData.id?.toString() || '',
         jobTitle: jobApiData.jobTitle || jobApiData.title || '',
         jobOccupation: jobApiData.jobOccupation_id || jobApiData.jobOccupation?.id?.toString() || jobApiData.jobOccupation || '',
         jobSkill: jobApiData.skills ? (Array.isArray(jobApiData.skills) ? jobApiData.skills.map((skill: any) => skill.id?.toString() || skill.skill_id?.toString() || String(skill)) : []) : [],
@@ -456,7 +456,7 @@ export default function EditJobPage() {
 
   // Form fields configuration - matching create job form
   const formFields = React.useMemo((): FieldConfig[] => [
-    { name: "jobManualID" as keyof FormDataType, label: "Job Manual ID", type: "text" },
+    { name: "jobManualId" as keyof FormDataType, label: "Job Manual ID", type: "text" },
     { name: "jobTitle" as keyof FormDataType, label: "Job Title", type: "text" },
     {
       name: "jobOccupation" as keyof FormDataType,
@@ -1000,7 +1000,7 @@ export default function EditJobPage() {
       title: 'Basic Job Information',
       description: 'Essential details about the job position',
       icon: '💼',
-      fields: ['jobManualID', 'jobTitle', 'jobOccupation', 'jobSkill', 'cmpNameACT', 'jobDescription']
+      fields: ['jobManualId', 'jobTitle', 'jobOccupation', 'jobSkill', 'cmpNameACT', 'jobDescription']
     },
     {
       id: 'interview-details',
