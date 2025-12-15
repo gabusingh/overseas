@@ -426,20 +426,6 @@ export default function HraViewJobsPage() {
               </button>
             )}
           </div>
-          
-          {/* Debug information */}
-          {process.env.NODE_ENV === 'development' && (
-            <details className="mt-6 text-left text-xs text-gray-500">
-              <summary className="cursor-pointer">Debug Information</summary>
-              <div className="mt-2 p-3 bg-gray-100 rounded">
-                <p className="mb-1"><strong>Jobs Data:</strong> {jobsData ? `${jobsData.length} items` : 'null'}</p>
-                <p className="mb-1"><strong>Dashboard Data:</strong> {dashboardData ? 'Available' : 'null'}</p>
-                <p className="mb-1"><strong>Error:</strong> {error}</p>
-                <p className="mb-1"><strong>LocalStorage User:</strong> {localStorage.getItem('user') ? 'Present' : 'Missing'}</p>
-                <p className="mb-1"><strong>LocalStorage Token:</strong> {localStorage.getItem('access_token') ? 'Present' : 'Missing'}</p>
-              </div>
-            </details>
-          )}
         </div>
       </div>
     );
