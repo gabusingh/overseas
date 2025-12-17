@@ -1042,6 +1042,7 @@ export default function EditJobPage() {
     const isRequired = REQUIRED_FIELDS.includes(fieldName) || 
                       (fieldName === 'jobExpTypeReq' && formData.jobExpReq === 'Yes') || 
                       (fieldName === 'jobExpDuration' && formData.jobExpReq === 'Yes');
+    const isServiceChargeField = fieldName === 'service_charge';
     
     const isHrField = ['hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
     const showLoading = isHrField && hrDetailsLoading;
@@ -1209,8 +1210,9 @@ export default function EditJobPage() {
                 setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.value))
               }
               placeholder={showLoading ? "Loading..." : getPlaceholder(field.name)}
-              disabled={showLoading}
-              className={`h-11 placeholder:text-gray-500 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${showLoading ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+              disabled={showLoading || isServiceChargeField}
+              title={isServiceChargeField ? "You can’t edit this value while updating a job" : undefined}
+              className={`h-11 placeholder:text-gray-500 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${(showLoading || isServiceChargeField) ? 'bg-gray-50 cursor-not-allowed' : ''}`}
             />
             {showLoading && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
