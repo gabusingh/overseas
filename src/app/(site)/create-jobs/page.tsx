@@ -158,7 +158,7 @@ function normalizeSubmissionValues(
 
 
 type FormDataType = {
-  jobManualID: string;
+  jobManualId: string;
   jobTitle: string;
   jobOccupation: string;
   jobSkill: string[];
@@ -200,7 +200,7 @@ type FormDataType = {
 };
 
 const REQUIRED_FIELDS: (keyof FormDataType)[] = [
-  'jobManualID',
+  'jobManualId',
   'jobTitle',
   'jobOccupation',
   'jobSkill',
@@ -297,7 +297,7 @@ const CreateJobs = () => {
 
   // Demo job data for testing
   const demoJobData: FormDataValues = {
-    jobManualID: "",
+    jobManualId: "",
     jobTitle: "Senior Electrician",
     jobOccupation: "1", // Construction
     jobSkill: ["101", "102"], // Masonry, Carpentry
@@ -341,7 +341,7 @@ const CreateJobs = () => {
   // Memoize formFields to ensure stable references
   const formFields = React.useMemo((): FieldConfig[] => [
     { 
-      name: "jobManualID" as keyof FormDataType, 
+      name: "jobManualId" as keyof FormDataType, 
       label: "Job Manual ID", 
       type: "text",
       containerClassName: "min-h-[4.5rem]"
@@ -1365,7 +1365,7 @@ const CreateJobs = () => {
       title: 'Basic Job Information',
       description: 'Essential details about the job position',
       icon: '💼',
-      fields: ['jobManualID', 'jobTitle', 'jobOccupation', 'jobSkill', 'cmpNameACT', 'jobDescription']
+      fields: ['jobManualId', 'jobTitle', 'jobOccupation', 'jobSkill', 'cmpNameACT', 'jobDescription']
     },
     {
       id: 'interview-details',
