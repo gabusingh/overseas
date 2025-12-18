@@ -1043,12 +1043,18 @@ export default function EditJobPage() {
                       (fieldName === 'jobExpTypeReq' && formData.jobExpReq === 'Yes') || 
                       (fieldName === 'jobExpDuration' && formData.jobExpReq === 'Yes');
     const isServiceChargeField = fieldName === 'service_charge';
+    const isJobManualIdField = fieldName === 'jobManualId';
+    const isLockedField = isServiceChargeField || isJobManualIdField;
     
     const isHrField = ['hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
     const showLoading = isHrField && hrDetailsLoading;
 
     return (
-      <div key={fieldName} className="space-y-2">
+      <div
+        key={fieldName}
+        className="space-y-2"
+        title={isLockedField ? "You can’t edit this value while updating a job" : undefined}
+      >
         <Label htmlFor={fieldName} className="text-sm font-medium text-gray-700 flex items-center gap-1">
           {field.label}
           {isRequired && <span className="text-red-500 font-bold text-base ml-1" aria-label="required">*</span>}
@@ -1206,13 +1212,16 @@ export default function EditJobPage() {
               id={field.name}
               type={field.type}
               value={String(getFormValue(formData, field.name as keyof FormDataType))}
-              onChange={(e) =>
-                setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.value))
-              }
+              onChange={(e) => {
+                if (isLockedField) {
+                  // Prevent editing locked fields while updating job
+                  return;
+                }
+                setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.value));
+              }}
               placeholder={showLoading ? "Loading..." : getPlaceholder(field.name)}
-              disabled={showLoading || isServiceChargeField}
-              title={isServiceChargeField ? "You can’t edit this value while updating a job" : undefined}
-              className={`h-11 placeholder:text-gray-500 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${(showLoading || isServiceChargeField) ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+              disabled={showLoading || isLockedField}
+              className={`h-11 placeholder:text-gray-500 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${(showLoading || isLockedField) ? 'bg-gray-50 cursor-not-allowed' : ''}`}
             />
             {showLoading && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
