@@ -13,30 +13,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
-  Select, 
-  SelectContent, 
-  SelectGroup, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 
 // Types - matching create job form
-type Country = {
-  name: string;
-  id: number;
-};
-
-type Occupation = {
-  id: number;
-  name: string;
-};
-
-type Skill = {
-  id: number;
-  name: string;
-};
-
 type FormDataValues = {
   [K in keyof FormDataType]: FormDataType[K];
 };
@@ -341,7 +326,8 @@ export default function EditJobPage() {
 
       // Transform API response to match FormDataType
       const transformedData: FormDataValues = {
-        jobManualId: jobApiData.jobManualId || jobApiData.jobID || jobApiData.id?.toString() || '',
+        // Map several possible API keys to `jobManualId` to handle variations/typos
+        jobManualId: jobApiData.jobManualId || jobApiData.job_manual_id || jobApiData.jobmanualid || jobApiData.jobManualID || jobApiData.jonmanualid || '',
         jobTitle: jobApiData.jobTitle || jobApiData.title || '',
         jobOccupation: jobApiData.jobOccupation_id || jobApiData.jobOccupation?.id?.toString() || jobApiData.jobOccupation || '',
         jobSkill: jobApiData.skills ? (Array.isArray(jobApiData.skills) ? jobApiData.skills.map((skill: any) => skill.id?.toString() || skill.skill_id?.toString() || String(skill)) : []) : [],
@@ -356,7 +342,7 @@ export default function EditJobPage() {
         jobWagesCurrencyType: jobApiData.jobWagesCurrencyType || jobApiData.currencyType || 'USD',
         salary_negotiable: jobApiData.salary_negotiable || 'No',
         passport_type: jobApiData.passportType || jobApiData.passport_type || '',
-        service_charge: (jobApiData.service_charge || '0').toString(),
+        service_charge: jobApiData.service_charge != null ? String(jobApiData.service_charge) : '',
         contract_period: (jobApiData.contract_period || jobApiData.contractPeriod || '0').toString(),
         expCerificateReq: jobApiData.expCerificateReq || jobApiData.expCertificateReq || 'No',
         DLReq: jobApiData.DLReq || jobApiData.drivingLicenseReq || 'No',
@@ -373,7 +359,7 @@ export default function EditJobPage() {
         jobTransportation: jobApiData.jobTransportation || 'No',
         jobAgeLimit: (jobApiData.jobAgeLimit || '60').toString(),
         jobDescription: jobApiData.jobDescription || '',
-        jobPhoto: null, // Will be set if user uploads new photo
+        jobPhoto: null,
         hrName: jobApiData.hrName || '',
         hrEmail: jobApiData.hrEmail || '',
         hrNumber: jobApiData.hrNumber || jobApiData.hrContact || '',
@@ -752,7 +738,7 @@ export default function EditJobPage() {
       }
     }
     
-    const numberFields: (keyof FormDataType)[] = ['jobVacancyNo', 'jobWages', 'service_charge', 'contract_period'];
+    const numberFields: (keyof FormDataType)[] = ['jobVacancyNo', 'jobWages','contract_period'];
     numberFields.forEach(field => {
       const value = formData[field];
       if (value && !value.toString().startsWith('_')) {
@@ -1044,7 +1030,6 @@ export default function EditJobPage() {
                       (fieldName === 'jobExpDuration' && formData.jobExpReq === 'Yes');
     const isServiceChargeField = fieldName === 'service_charge';
     const isJobManualIdField = fieldName === 'jobManualId';
-    const isLockedField = isServiceChargeField || isJobManualIdField;
     
     const isHrField = ['hrName', 'hrEmail', 'hrNumber'].includes(fieldName);
     const showLoading = isHrField && hrDetailsLoading;
@@ -1053,7 +1038,6 @@ export default function EditJobPage() {
       <div
         key={fieldName}
         className="space-y-2"
-        title={isLockedField ? "You can’t edit this value while updating a job" : undefined}
       >
         <Label htmlFor={fieldName} className="text-sm font-medium text-gray-700 flex items-center gap-1">
           {field.label}
@@ -1213,15 +1197,11 @@ export default function EditJobPage() {
               type={field.type}
               value={String(getFormValue(formData, field.name as keyof FormDataType))}
               onChange={(e) => {
-                if (isLockedField) {
-                  // Prevent editing locked fields while updating job
-                  return;
-                }
                 setFormData(prev => updateFormData(prev, field.name as keyof FormDataType, e.target.value));
               }}
               placeholder={showLoading ? "Loading..." : getPlaceholder(field.name)}
-              disabled={showLoading || isLockedField}
-              className={`h-11 placeholder:text-gray-500 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${(showLoading || isLockedField) ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+              disabled={showLoading}
+              className={`h-11 placeholder:text-gray-500 ${error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} ${(showLoading ? 'bg-gray-50 cursor-not-allowed' : '')}`}
             />
             {showLoading && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
